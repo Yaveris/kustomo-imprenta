@@ -78,10 +78,12 @@
         <select id="p-style"><option value="">Auto: a shirt is read from the name; anything else has none</option></select>
         <div style="font-size:12px;color:var(--muted);margin-top:4px;">What the app shows for this product in the 3D preview, the designer and the AR try-on. Add new ones on <a href="models.html" style="color:var(--orange);">Models &amp; Try-On</a>.</div>
       </div>
-      <div class="fg-row">
-        <div class="fg"><label>Price (₱) *</label><input type="number" id="p-price" placeholder="499" min="20" step="0.01"></div>
-        <div class="fg"><label>Was (₱, optional)</label><input type="number" id="p-orig" placeholder="699, shown crossed out" min="0" step="0.01"></div>
+      <div class="fg-row price-row">
+        <div class="fg"><label for="p-price">Price (₱) *</label><input type="number" id="p-price" placeholder="499" min="20" step="0.01"></div>
+        <div class="fg"><label for="p-disc">Discount (%)</label><input type="number" id="p-disc" placeholder="0 = no discount" min="0" max="90" step="1" inputmode="numeric"></div>
+        <div class="fg"><label id="p-pay-lbl">Customers pay</label><div class="price-tag empty" id="p-pay" role="status" aria-live="polite" aria-labelledby="p-pay-lbl">Enter a price</div></div>
       </div>
+      <div class="price-note" id="p-pay-note"></div>
       <div class="fg"><label>Description</label><textarea id="p-desc" placeholder="Short product description…"></textarea></div>
       <div class="fg"><label for="p-img">Photo</label>
         <div style="display:flex;gap:8px;align-items:center;">
@@ -254,7 +256,7 @@
         <td>${safeUrl(p.imageUrl)?`<img src="${safeUrl(p.imageUrl)}" class="prod-thumb" alt="" onerror="this.style.display='none'">`:(modelOf(p)&&modelOf(p).thumbUrl?`<img src="${esc(modelOf(p).thumbUrl)}" class="prod-thumb" alt="" style="object-fit:contain;background:rgba(255,255,255,.04);">`:'<div style="width:40px;height:40px;border-radius:7px;background:rgba(255,92,0,.1);display:flex;align-items:center;justify-content:center;font-size:19px;">🛍️</div>')}</td>
         <td><strong>${esc(p.name||'—')}</strong>${p.tag?` <span class="tag tag-${esc(p.tag.toLowerCase())}">${esc(p.tag)}</span>`:''}${p.description?`<div style="font-size:12px;color:var(--muted);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.description)}</div>`:''}</td>
         <td style="font-size:13px;">${esc(p.category||'—')}${p.category&&productCategory(p)!==p.category?`<div style="font-size:11.5px;color:var(--muted);">shown as ${esc(productCategory(p))}</div>`:''}</td>
-        <td style="color:var(--orange);font-weight:700;white-space:nowrap;">${peso(p.price)}${p.originalPrice?`<div style="color:var(--muted);font-size:12px;font-weight:400;text-decoration:line-through;">${peso(p.originalPrice)}</div>`:''}${(()=>{const m=modelOf(p);return !m&&p.shirtStyle?`<div style="color:#FF6B6B;font-size:11.5px;font-weight:400;">3D model missing</div>`:'';})()}</td>
+        <td style="color:var(--orange);font-weight:700;white-space:nowrap;">${peso(p.price)}${p.originalPrice>p.price?`<div style="font-size:12px;font-weight:400;"><span style="color:var(--muted);text-decoration:line-through;">${peso(p.originalPrice)}</span> <span style="color:var(--pink);font-weight:600;">-${Number.isInteger(p.discountPercent)&&p.discountPercent>0?p.discountPercent:Math.max(1,Math.round((1-p.price/p.originalPrice)*100))}%</span></div>`:''}${(()=>{const m=modelOf(p);return !m&&p.shirtStyle?`<div style="color:#FF6B6B;font-size:11.5px;font-weight:400;">3D model missing</div>`:'';})()}</td>
         <td style="font-size:12px;color:var(--muted);">${szs}</td>
         <td style="font-size:12.5px;">${modelOf(p)?`<a href="design.html?product=${p.id}" style="color:var(--orange);">${p.defaultCustomization?'Edit':'Create'}</a>`:'<span style="color:var(--muted);" title="Only products with a model can be designed">—</span>'}${p.defaultCustomization?` <button class="btn-icon del" title="Remove the starting design" aria-label="Remove the starting design" onclick="clearDefaultDesign('${p.id}')" style="margin-left:4px;"><i class="bi bi-x-lg"></i></button>`:''}</td>
         <td><label class="avail" title="Shown in the app when on"><input type="checkbox" ${p.isAvailable===true?'checked':''} onchange="toggleAvail('${p.id}',this.checked)" aria-label="${esc(p.name||'Product')} for sale"><span class="avail-sl"></span></label></td>
@@ -294,7 +296,9 @@
     fillCatSelect(cat!=='all'?cat:'');
     showPreview();
     document.getElementById('p-price').value='';
-    document.getElementById('p-orig').value='';
+    document.getElementById('p-disc').value='';
+    loadedPrice=null; tagTouched=false;
+    updatePriceTag();
     document.getElementById('p-tag').value='';
     document.getElementById('p-style').value='';
     document.getElementById('p-avail').checked=true;
@@ -322,8 +326,14 @@
     document.getElementById('edit-id').value=p.id;
     document.getElementById('p-name').value=p.name||'';
     fillCatSelect(productCategory(p));
-    document.getElementById('p-price').value=p.price||'';
-    document.getElementById('p-orig').value=p.originalPrice||'';
+    // The form takes the regular price and a discount; older products saved a "was" price instead
+    const onSale=p.originalPrice>p.price;
+    const regular=onSale?p.originalPrice:(p.price||0);
+    const disc=onSale?(Number.isInteger(p.discountPercent)&&p.discountPercent>0?p.discountPercent:Math.max(1,Math.round((1-p.price/p.originalPrice)*100))):0;
+    document.getElementById('p-price').value=regular||'';
+    document.getElementById('p-disc').value=disc||'';
+    loadedPrice=regular?{regular,disc,price:p.price}:null; tagTouched=true;
+    updatePriceTag();
     document.getElementById('p-desc').value=p.description||'';
     document.getElementById('p-img').value=p.imageUrl||'';
     showPreview();
@@ -362,11 +372,48 @@
     finally{lbl.style.opacity='';save.disabled=false;}
   });
 
+  // ── Price and discount ─────────────────────────────────────────────────────────────────────────────
+  // The product keeps `price` (what customers pay) and, when on sale, `originalPrice` (shown crossed out) and
+  // `discountPercent` (the app's "-15%" badge), so the app needs nothing new to show a sale.
+  let loadedPrice=null;   // the product being edited: its exact price is kept while its price and discount stay as loaded
+  let tagTouched=false;   // the Tag box was set by hand, so a discount doesn't change it
+  const discountValue=()=>{const v=document.getElementById('p-disc').value.trim();return v===''?0:Number(v);};
+  const discountOk=d=>Number.isInteger(d)&&d>=0&&d<=90;
+  /** What customers pay: the price less the discount, rounded down to whole pesos so the discount is never smaller than shown. */
+  function salePrice(regular,d){
+    if(loadedPrice&&regular===loadedPrice.regular&&d===loadedPrice.disc)return loadedPrice.price;
+    if(!d)return regular;
+    return Math.floor(Math.round(regular*100)*(100-d)/10000);
+  }
+  function updatePriceTag(){
+    const box=document.getElementById('p-pay'), note=document.getElementById('p-pay-note');
+    const regular=parseFloat(document.getElementById('p-price').value), d=discountValue();
+    note.className='price-note';
+    if(isNaN(regular)||regular<=0){box.className='price-tag empty';box.textContent='Enter a price';note.textContent='';return;}
+    if(!discountOk(d)){box.className='price-tag empty';box.textContent='Discount: 0 to 90%';note.textContent='Use a whole number, like 15.';return;}
+    const pay=salePrice(regular,d);
+    box.className='price-tag';
+    box.innerHTML=d
+      ?`<span class="now">${peso(pay)}</span><span class="was">${peso(regular)}</span><span class="off">${d}% OFF</span>`
+      :`<span class="now">${peso(pay)}</span><span class="off none">No discount</span>`;
+    if(pay<20){note.className='price-note bad';note.textContent='Below ₱20, the lowest amount GCash accepts. Lower the discount or raise the price.';}
+    else note.textContent=d?`Customers save ${peso(regular-pay)}. The app shows ${peso(regular)} crossed out with a "-${d}%" badge.`:'';
+  }
+  ['p-price','p-disc'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{
+    updatePriceTag();
+    // A product on sale gets the "Sale" tag unless one was picked by hand
+    const tagSel=document.getElementById('p-tag');
+    if(!tagTouched&&!tagSel.value&&discountValue()>0)tagSel.value='Sale';
+  }));
+  document.getElementById('p-tag').addEventListener('change',()=>{tagTouched=true;});
+  // The price box can't be selected, copied or typed into: it only shows the result
+  document.getElementById('p-pay').addEventListener('mousedown',e=>e.preventDefault());
+
   async function saveProduct(){
     const name=document.getElementById('p-name').value.trim();
     const cat2=document.getElementById('p-cat').value==='__new'?'':document.getElementById('p-cat').value;
-    const price=parseFloat(document.getElementById('p-price').value);
-    const orig=parseFloat(document.getElementById('p-orig').value)||null;
+    const regular=parseFloat(document.getElementById('p-price').value);
+    const disc=discountValue();
     const desc=document.getElementById('p-desc').value.trim();
     const img=document.getElementById('p-img').value.trim();
     const tag=document.getElementById('p-tag').value;
@@ -376,16 +423,20 @@
     if(!name){toast('Name is required','warn');return;}
     if(name.length>80){toast('Keep the name under 80 characters','warn');return;}
     if(!cat2){toast('Category is required','warn');return;}
-    if(isNaN(price)||price<20){toast('Enter a price of at least ₱20 (the lowest amount GCash accepts)','warn');return;}
-    if(price>100000){toast('That price looks too high. Check it again.','warn');return;}
+    if(isNaN(regular)||regular<20){toast('Enter a price of at least ₱20 (the lowest amount GCash accepts)','warn');return;}
+    if(regular>100000){toast('That price looks too high. Check it again.','warn');return;}
+    if(!discountOk(disc)){toast('The discount must be a whole number from 0 to 90','warn');document.getElementById('p-disc').focus();return;}
+    const price=salePrice(regular,disc);
+    if(price<20){toast(`With ${disc}% off, customers would pay ${peso(price)}. It must be at least ₱20 (the lowest amount GCash accepts).`,'warn');document.getElementById('p-disc').focus();return;}
     if(document.querySelectorAll('.stock-in').length&&[...document.querySelectorAll('.stock-in')].some(i=>i.value!==''&&(!/^\d+$/.test(i.value.trim())||+i.value>100000))){toast('Stock must be a whole number from 0 up','warn');return;}
-    if(orig!==null&&orig<=price){toast('The original price should be higher than the price (it shows as crossed out)','warn');return;}
     if(img&&!safeUrl(img)){toast('The photo must be an https:// link','warn');return;}
     if(!sizes.length){toast('Pick at least one size','warn');return;}
 
     const btn=document.getElementById('save-btn'); btn.disabled=true;
-    const data={name,category:cat2,price,originalPrice:orig,description:desc,imageUrl:img||null,tag:tag||'',shirtStyle:style||'',isAvailable:avail,sizes};
+    const data={name,category:cat2,price,originalPrice:disc?regular:null,description:desc,imageUrl:img||null,tag:tag||'',shirtStyle:style||'',isAvailable:avail,sizes};
     const eid=document.getElementById('edit-id').value;
+    if(disc)data.discountPercent=disc;
+    else if(eid)data.discountPercent=firebase.firestore.FieldValue.delete();
     const inv=getStock(sizes);
     if(inv)data.inventory=inv;
     else if(eid)data.inventory=firebase.firestore.FieldValue.delete();

@@ -352,6 +352,30 @@ table.tbl {
 .fg-check { display:flex; align-items:center; gap:9px; font-size:13.5px; color:var(--text); cursor:pointer; }
 .fg-check input[type=checkbox] { width:16px; height:16px; accent-color:var(--orange); cursor:pointer; }
 
+/* Price, discount and the read-only "Customers pay" tag (Products) */
+.fg-row.price-row { grid-template-columns:1fr 1fr 1.35fr; }
+.fg-row.price-row .fg { margin-bottom:6px; min-width:0; }
+.price-tag {
+  display:flex; align-items:center; gap:8px; min-height:38px; padding:7px 12px; border-radius:8px;
+  border:1px dashed rgba(255,92,0,.5); background:rgba(255,92,0,.08);
+  white-space:nowrap; overflow:hidden; cursor:default;
+  user-select:none; -webkit-user-select:none;
+}
+.price-tag .now { color:var(--orange); font-weight:700; font-size:15px; }
+.price-tag .was { color:var(--muted); font-size:12.5px; text-decoration:line-through; }
+.price-tag .off {
+  margin-left:auto; flex-shrink:0; background:var(--pink); color:#fff; font-size:10.5px; font-weight:700;
+  letter-spacing:.4px; padding:3px 8px; border-radius:10px;
+}
+.price-tag .off.none { background:rgba(255,255,255,.07); color:var(--muted); font-weight:600; letter-spacing:0; }
+.price-tag.empty { color:var(--muted); font-size:12.5px; border-color:var(--border); background:rgba(255,255,255,.02); }
+.price-note { font-size:12px; color:var(--muted); margin:0 0 16px; min-height:16px; }
+.price-note.bad { color:#FF6B6B; }
+@media(max-width:768px) {
+  .fg-row.price-row { grid-template-columns:1fr 1fr; }
+  .fg-row.price-row .fg:last-child { grid-column:1 / -1; }
+}
+
 /* Size tag pills */
 .size-pills { display:flex; gap:7px; flex-wrap:wrap; }
 .sz {
