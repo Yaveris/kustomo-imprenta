@@ -28,10 +28,10 @@
     .ac-avatar.sa { background: linear-gradient(135deg, #FFD600, #FF5C00); color: #000; }
     .ac-avatar.admin { background: linear-gradient(135deg, var(--orange), var(--pink)); color: #fff; }
     .ac-name { font-size: 14.5px; font-weight: 700; color: var(--text); }
-    .ac-email { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .ac-email { font-size: 13px; color: var(--muted); margin-top: 1px; }
     .ac-badge { margin-top: 5px; }
     .ac-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-    .status-label { font-size: 11px; color: var(--muted); display: block; text-align: center; margin-bottom: 3px; }
+    .status-label { font-size: 12.5px; color: var(--muted); display: block; text-align: center; margin-bottom: 3px; }
     .accounts-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
@@ -56,7 +56,7 @@
     <div class="topbar-title" style="display:flex;align-items:center;gap:10px;">
       <span style="background:linear-gradient(135deg,#FFD600,#FF5C00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Admin</span>
       <span>Accounts</span>
-      <span style="background:rgba(255,214,0,.12);color:var(--yellow);border:1px solid rgba(255,214,0,.25);padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.5px;">SUPER ADMIN</span>
+      <span style="background:rgba(255,214,0,.12);color:var(--yellow);border:1px solid rgba(255,214,0,.25);padding:2px 9px;border-radius:20px;font-size:12.5px;font-weight:700;letter-spacing:.5px;">SUPER ADMIN</span>
     </div>
     <div class="topbar-right">
       <div class="search-wrap"><i class="bi bi-search"></i><input type="text" id="q" placeholder="Search admins…"></div>
@@ -73,14 +73,14 @@
       <div>
         <div class="sa-banner-label"><i class="bi bi-shield-fill-check"></i> &nbsp;Super Admin Control Panel</div>
         <div class="sa-banner-title">Admin Account Management</div>
-        <div style="margin-top:8px;font-size:13px;color:rgba(255,255,255,.55);">
+        <div style="margin-top:8px;font-size:14px;color:rgba(255,255,255,.55);">
           Create, view, and enable/disable admin accounts. Super Admin accounts are protected.
         </div>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:10.5px;color:rgba(255,214,0,.7);text-transform:uppercase;letter-spacing:1px;">Total Accounts</div>
+        <div style="font-size:12px;color:rgba(255,214,0,.7);text-transform:uppercase;letter-spacing:1px;">Total Accounts</div>
         <div style="font-size:32px;font-weight:800;color:var(--yellow);line-height:1.1;" id="total-count">—</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+        <div style="font-size:13px;color:var(--muted);margin-top:2px;">
           <span id="admin-count-lbl">— Admins</span> &nbsp;·&nbsp; <span id="sa-count-lbl">— Super Admins</span>
         </div>
       </div>
@@ -136,7 +136,7 @@
         </div>
       </div>
 
-      <div style="background:rgba(255,92,0,.07);border:1px solid rgba(255,92,0,.18);border-radius:8px;padding:10px 14px;font-size:12.5px;color:rgba(255,255,255,.6);margin-top:4px;">
+      <div style="background:rgba(255,92,0,.07);border:1px solid rgba(255,92,0,.18);border-radius:8px;padding:10px 14px;font-size:13.5px;color:rgba(255,255,255,.6);margin-top:4px;">
         <i class="bi bi-info-circle" style="color:var(--orange);"></i>
         &nbsp;You stay signed in. If the email already has a KustomoImprenta account (a customer), you can make that account an admin instead.
         The new admin can change the password with <strong style="color:var(--text);">Forgot password?</strong> on the sign-in page.
@@ -144,7 +144,7 @@
     </div>
     <div class="modal-ft">
       <button class="btn-ghost" onclick="closeCreate()">Cancel</button>
-      <button id="create-btn" onclick="createAdmin()" style="background:linear-gradient(90deg,#FFD600,#FF5C00);color:#000;border:none;padding:9px 18px;border-radius:8px;font-size:13.5px;font-weight:700;display:inline-flex;align-items:center;gap:7px;">
+      <button id="create-btn" onclick="createAdmin()" style="background:linear-gradient(90deg,#FFD600,#FF5C00);color:#000;border:none;padding:9px 18px;border-radius:8px;font-size:14.5px;font-weight:700;display:inline-flex;align-items:center;gap:7px;">
         <i class="bi bi-person-plus-fill"></i> Create Account
       </button>
     </div>
@@ -226,7 +226,7 @@
                 ${isSA ? '⭐ Super Admin' : 'Admin'}
               </span>
               ${!isSA ? `
-                <span style="font-size:11px;margin-left:8px;">
+                <span style="font-size:12.5px;margin-left:8px;">
                   <span class="status-dot ${isActive ? 'dot-active' : 'dot-disabled'}"></span>
                   <span style="color:${isActive ? '#00E676' : 'var(--muted)'};">${status}</span>
                 </span>` : ''}
@@ -234,7 +234,7 @@
           </div>
           <div class="ac-actions">
             ${isSA
-              ? `<span style="font-size:11.5px;color:rgba(255,214,0,.55);font-style:italic;">Protected</span>`
+              ? `<span style="font-size:13px;color:rgba(255,214,0,.55);font-style:italic;">Protected</span>`
               : `
                 <div style="text-align:center;">
                   <span class="status-label">${isActive ? 'Active' : 'Disabled'}</span>

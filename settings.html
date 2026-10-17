@@ -10,11 +10,11 @@
     .set-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 16px; }
     .set-body { padding: 0 18px 18px; }
     .set-body .fg { margin-bottom: 12px; }
-    .set-body .fg small { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+    .set-body .fg small { display: block; font-size: 13px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
     .money { display: flex; align-items: center; gap: 6px; }
     .money span { color: var(--muted); }
     .money input { flex: 1; min-width: 0; }
-    .preview { border: 1px dashed var(--border); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.6; }
+    .preview { border: 1px dashed var(--border); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.6; }
     .preview b { color: var(--orange); }
     .terms-row { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
     .terms-row .tr-head { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
@@ -84,6 +84,20 @@
       </div>
     </div>
 
+    <div class="card" style="margin-top:16px;" id="loc-card">
+      <div class="card-head"><span class="card-title"><i class="bi bi-shop" style="color:var(--orange);margin-right:6px;"></i>Shop location</span><span class="pill" id="loc-state">—</span></div>
+      <div class="set-body">
+        <div class="loc-row">
+          <div class="loc-info">
+            <p class="note" style="margin-bottom:10px;">Where orders leave from. The order page uses it to show each customer's distance and directions. Saved right away, separate from the button below.</p>
+            <div class="loc-now" id="loc-now">Not set yet.</div>
+            <button class="btn-grad" type="button" style="margin-top:12px;" onclick="setLocation()"><i class="bi bi-geo-alt"></i> <span id="loc-btn">Set the location</span></button>
+          </div>
+          <div class="loc-mini" id="loc-mini" hidden></div>
+        </div>
+      </div>
+    </div>
+
     <div class="card" style="margin-top:16px;">
       <div class="card-head"><span class="card-title">What customers see</span></div>
       <div class="set-body"><div class="preview" id="preview"></div></div>
@@ -116,6 +130,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="js/firebase.js"></script>
+<script src="js/shop-map.js"></script>
 <script src="js/layout.js"></script>
 <script src="js/auth.js"></script>
 <script>
@@ -129,6 +144,7 @@
       setTimeout(() => location.href = 'dashboard.html', 1500);
       return;
     }
+    showLocation();
     try {
       const snap = await db.collection('appConfig').doc('shop').get();
       const d = snap.exists ? snap.data() : {};
@@ -144,6 +160,18 @@
       toast(e.code === 'permission-denied' ? "Couldn't read the settings: the database rules need updating (App Keys → For your developer)." : "Couldn't load: " + e.message, 'err');
     }
   };
+
+  // ── Shop location (appConfig/shop.shopLocation, saved by the picker in js/shop-map.js) ──
+  async function showLocation(force) {
+    const loc = await loadShopLocation(force).catch(() => null), shared = loc && !loc.mine ? loc : null;
+    $('loc-state').textContent = shared ? 'Set' : 'Not set'; $('loc-state').className = 'pill ' + (shared ? 'ok' : 'warn');
+    $('loc-btn').textContent = shared ? 'Change the location' : 'Set the location';
+    $('loc-now').innerHTML = shared ? `<i class="bi bi-geo-alt-fill" style="color:var(--orange);"></i> ${esc(shared.address || `${shared.lat.toFixed(5)}, ${shared.lng.toFixed(5)}`)}`
+      : 'Not set yet.' + (loc && loc.mine ? ' (Your account has its own, which only you see.)' : '');
+    $('loc-mini').hidden = !shared;
+    if (shared) drawDeliveryMap($('loc-mini'), shared, null, null).catch(e => { $('loc-mini').textContent = e.message; });
+  }
+  async function setLocation() { if (await pickShopLocation()) showLocation(true); }
 
   // ── Terms & Privacy: sections of {title, body}, saved as appConfig/shop.terms (ShopSettings.terms in the app) ──
   let terms = [];

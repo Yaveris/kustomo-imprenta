@@ -8,12 +8,12 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
     [hidden] { display: none !important; }
-    .k-intro { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+    .k-intro { font-size: 14.5px; color: var(--muted); line-height: 1.6; }
     .k-intro strong { color: var(--text); }
     .k-status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
     .k-pill {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      padding: 4px 11px; border-radius: 20px; font-size: 13px; font-weight: 600;
       background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--border);
       white-space: nowrap;
     }
@@ -23,7 +23,7 @@
 
     .k-section { display: flex; align-items: baseline; gap: 12px; margin: 28px 0 12px; }
     .k-section h2 { font-size: 15px; font-weight: 800; letter-spacing: .2px; }
-    .k-section p { font-size: 12.5px; color: var(--muted); }
+    .k-section p { font-size: 13.5px; color: var(--muted); }
 
     .k-card { margin-bottom: 16px; }
     .k-card .card-head { margin-bottom: 14px; gap: 10px; flex-wrap: wrap; }
@@ -36,43 +36,43 @@
     .k-grid.k-one { grid-template-columns: minmax(0, 1fr); }
     .k-grid.k-one > form { max-width: 680px; }
     details.k-how { border-top: 1px solid var(--border); padding-top: 12px; }
-    details.k-how > summary { cursor: pointer; color: var(--orange); font-size: 13px; font-weight: 600; list-style: none; }
+    details.k-how > summary { cursor: pointer; color: var(--orange); font-size: 14px; font-weight: 600; list-style: none; }
     details.k-how > summary::-webkit-details-marker { display: none; }
     details.k-how[open] > summary { margin-bottom: 10px; }
     details.k-dev { margin-top: 28px; padding: 18px 20px; }
     details.k-dev > summary { cursor: pointer; list-style: none; display: flex; flex-direction: column; gap: 4px; }
     details.k-dev > summary::-webkit-details-marker { display: none; }
-    details.k-dev > summary .k-sum { font-size: 12.5px; color: var(--muted); }
+    details.k-dev > summary .k-sum { font-size: 13.5px; color: var(--muted); }
     details.k-dev[open] > summary { margin-bottom: 8px; }
 
-    .fg .k-hint { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.45; text-transform: none; letter-spacing: 0; font-weight: 400; }
+    .fg .k-hint { font-size: 13px; color: var(--muted); margin-top: 5px; line-height: 1.45; text-transform: none; letter-spacing: 0; font-weight: 400; }
     .fg .k-hint.err  { color: #FF6B6B; }
     .fg .k-hint.note { color: var(--yellow); }
     .fg .k-opt { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
-    .k-mono { font-family: Consolas, 'Cascadia Mono', Menlo, monospace !important; font-size: 12.5px !important; }
+    .k-mono { font-family: Consolas, 'Cascadia Mono', Menlo, monospace !important; font-size: 13.5px !important; }
     .k-secret { position: relative; }
     .k-secret input { padding-right: 62px; }
     .k-secret button {
       position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
       background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--border);
-      border-radius: 6px; font-size: 11.5px; padding: 3px 8px; cursor: pointer;
+      border-radius: 6px; font-size: 13px; padding: 3px 8px; cursor: pointer;
     }
     .k-secret button:hover { color: var(--text); }
     .k-actions { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; margin-top: 4px; }
-    .k-saved { font-size: 12px; color: var(--muted); margin-top: 10px; }
-    .k-result { font-size: 12.5px; margin-top: 10px; line-height: 1.5; }
+    .k-saved { font-size: 13px; color: var(--muted); margin-top: 10px; }
+    .k-result { font-size: 13.5px; margin-top: 10px; line-height: 1.5; }
     .k-result.ok  { color: #00E676; }
     .k-result.err { color: #FF6B6B; }
 
     .k-steps { background: rgba(255,255,255,.025); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
-    .k-steps h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 10px; }
-    .k-steps ol { padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text); }
+    .k-steps h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 10px; }
+    .k-steps ol { padding-left: 20px; font-size: 14px; line-height: 1.6; color: var(--text); }
     .k-steps li { margin-bottom: 7px; padding-left: 2px; }
     .k-steps li::marker { color: var(--orange); font-weight: 700; }
     .k-steps a, .k-intro a, .k-why a { color: var(--orange); }
     .k-steps .k-sub { color: var(--muted); }
     code, .k-code {
-      font-family: Consolas, 'Cascadia Mono', Menlo, monospace; font-size: 12px;
+      font-family: Consolas, 'Cascadia Mono', Menlo, monospace; font-size: 13px;
       background: rgba(255,255,255,.07); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px;
       overflow-wrap: anywhere;
     }
@@ -84,10 +84,10 @@
     details.k-card > summary::-webkit-details-marker { display: none; }
     details.k-card > summary .k-chev { margin-left: auto; color: var(--muted); transition: transform .18s; }
     details.k-card[open] > summary .k-chev { transform: rotate(180deg); }
-    details.k-card > summary .k-sum { font-size: 12.5px; color: var(--muted); flex-basis: 100%; margin-top: 4px; }
+    details.k-card > summary .k-sum { font-size: 13.5px; color: var(--muted); flex-basis: 100%; margin-top: 4px; }
     details.k-card[open] > summary { margin-bottom: 16px; }
     .k-why {
-      font-size: 12.5px; color: var(--muted); line-height: 1.55; margin-top: 12px;
+      font-size: 13.5px; color: var(--muted); line-height: 1.55; margin-top: 12px;
       border-left: 3px solid var(--yellow); padding: 4px 0 4px 12px;
     }
     .k-why strong { color: var(--text); }
@@ -95,10 +95,10 @@
     .k-block { position: relative; margin-top: 8px; }
     .k-block pre {
       background: #121212; border: 1px solid var(--border); border-radius: 9px;
-      padding: 42px 16px 14px; font-family: Consolas, 'Cascadia Mono', Menlo, monospace; font-size: 12.5px;
+      padding: 42px 16px 14px; font-family: Consolas, 'Cascadia Mono', Menlo, monospace; font-size: 13.5px;
       line-height: 1.55; color: #E6E6E6; overflow-x: auto; white-space: pre;
     }
-    .k-block .k-copy { position: absolute; top: 8px; right: 8px; padding: 4px 10px; font-size: 12px; }
+    .k-block .k-copy { position: absolute; top: 8px; right: 8px; padding: 4px 10px; font-size: 13px; }
 
     .k-check { list-style: none; display: flex; flex-direction: column; gap: 8px; }
     .k-row {
@@ -114,15 +114,15 @@
     .s-warn .k-ico { background: rgba(255,214,0,.14); color: var(--yellow); }
     .s-bad .k-ico  { background: rgba(255,68,68,.14); color: #FF6B6B; }
     .s-unk .k-ico  { background: rgba(255,255,255,.07); color: var(--muted); }
-    .k-name { font-size: 13.5px; font-weight: 700; }
-    .k-where { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
-    .k-label { display: block; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 2px; }
+    .k-name { font-size: 14.5px; font-weight: 700; }
+    .k-where { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .k-label { display: block; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 2px; }
     .s-ok .k-label { color: #00E676; } .s-warn .k-label { color: var(--yellow); }
     .s-bad .k-label { color: #FF6B6B; } .s-unk .k-label { color: var(--muted); }
-    .k-detail { font-size: 12.5px; line-height: 1.45; }
-    .k-fix { font-size: 12.5px; color: var(--orange); white-space: nowrap; text-decoration: none; }
+    .k-detail { font-size: 13.5px; line-height: 1.45; }
+    .k-fix { font-size: 13.5px; color: var(--orange); white-space: nowrap; text-decoration: none; }
     .k-fix:hover { text-decoration: underline; }
-    .k-from { font-size: 12px; color: var(--muted); }
+    .k-from { font-size: 13px; color: var(--muted); }
     @media (max-width: 760px) {
       .k-row { grid-template-columns: 30px minmax(0, 1fr); }
       .k-row .k-state, .k-row .k-fix { grid-column: 2; }
@@ -150,7 +150,7 @@
   <div class="topbar">
     <div class="topbar-title" style="display:flex;align-items:center;gap:10px;">
       App Keys <span>The shop's own accounts</span>
-      <span style="background:rgba(255,214,0,.12);color:var(--yellow);border:1px solid rgba(255,214,0,.25);padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.5px;white-space:nowrap;">SUPER ADMIN</span>
+      <span style="background:rgba(255,214,0,.12);color:var(--yellow);border:1px solid rgba(255,214,0,.25);padding:2px 9px;border-radius:20px;font-size:12.5px;font-weight:700;letter-spacing:.5px;white-space:nowrap;">SUPER ADMIN</span>
     </div>
     <div class="topbar-right">
       <button class="btn-ghost" onclick="loadKeys()"><i class="bi bi-arrow-clockwise"></i> Reload</button>
@@ -173,6 +173,7 @@
         The accounts the app uses for AR try-on and photo uploads. Changes here reach the app right away. Maps and address search need no key.
         Payments (PayMongo) and the other settings at the bottom are built into the app, so your developer changes those.
       </p>
+      <p class="k-intro" style="margin-top:8px;"><i class="bi bi-flag" style="color:var(--orange);"></i> Setting these up for the first time? <a href="getting-started.html" style="color:var(--orange);font-weight:600;">Getting Started</a> walks through each account in plain steps.</p>
       <div class="k-status" id="k-status"><span class="k-pill">Checking…</span></div>
     </div>
 
@@ -199,7 +200,7 @@
         <button type="button" class="btn-ghost" onclick="fillPreset()"><i class="bi bi-input-cursor-text"></i> Fill the forms</button>
         <button type="button" class="btn-grad" onclick="applyPreset()"><i class="bi bi-check2-all"></i> Fill and save</button>
       </div>
-      <div class="k-hint" id="preset-note" style="margin-top:10px;font-size:12.5px;color:var(--muted);line-height:1.5;"></div>
+      <div class="k-hint" id="preset-note" style="margin-top:10px;font-size:13.5px;color:var(--muted);line-height:1.5;"></div>
     </section>
 
     <div class="k-section"><h2>Accounts you can change here</h2></div>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Getting Started — KustomoImprenta Admin</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="img/logo.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    .gs { max-width: 900px; }
+    .gs-hero { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 22px; }
+    .gs-hero h1 { font-size: 26px; font-weight: 800; line-height: 1.25; }
+    .gs-hero p { font-size: 16px; color: #c8c8c8; margin-top: 6px; max-width: 620px; }
+    .gs-hero .grow { flex: 1; min-width: 260px; }
+    .gs-prog { min-width: 220px; padding: 16px 18px; border-radius: 14px; background: var(--card-bg); border: 1px solid var(--border); }
+    .gs-prog .v { font-size: 22px; font-weight: 800; }
+    .gs-prog .bar { height: 10px; border-radius: 6px; background: rgba(255,255,255,.07); margin-top: 10px; overflow: hidden; }
+    .gs-prog .bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--orange), var(--pink)); transition: width .3s; }
+    .gs-part { display: flex; align-items: baseline; gap: 12px; margin: 30px 0 6px; }
+    .gs-part h2 { font-size: 21px; font-weight: 800; }
+    .gs-part span { font-size: 14px; color: var(--muted); }
+    .gs-lead { font-size: 15.5px; color: #c8c8c8; margin-bottom: 14px; }
+    .step { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 14px; padding: 18px; border-radius: 14px; background: var(--card-bg); border: 1px solid var(--border); margin-bottom: 12px; }
+    .step.done { border-color: rgba(0,230,118,.35); }
+    .step-num { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-size: 19px; font-weight: 800; background: rgba(255,92,0,.13); color: var(--orange); }
+    .step.done .step-num { background: rgba(0,230,118,.14); color: #00E676; }
+    .step h3 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .step .why { font-size: 15.5px; color: #c8c8c8; margin-top: 4px; }
+    .step .facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .step .facts span { font-size: 13.5px; padding: 4px 11px; border-radius: 20px; background: rgba(255,255,255,.05); border: 1px solid var(--border); color: #c8c8c8; }
+    .step .facts i { color: var(--orange); margin-right: 4px; }
+    .step ol { margin: 12px 0 0 20px; display: grid; gap: 8px; font-size: 15.5px; line-height: 1.6; }
+    .step ol li::marker { color: var(--orange); font-weight: 700; }
+    .step b.ui { color: var(--text); background: rgba(255,255,255,.07); border: 1px solid var(--border); border-radius: 6px; padding: 0 6px; font-weight: 600; white-space: nowrap; }
+    .step code { font-family: Consolas, Menlo, monospace; font-size: 14px; background: rgba(255,255,255,.07); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
+    .step a { color: var(--orange); font-weight: 600; }
+    .step .acts { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 14px; }
+    .step .acts a.btn-grad, .step .acts a.btn-ghost { font-weight: 600; }
+    .step .acts a.btn-grad { color: #fff; }
+    .step .acts a.btn-ghost { color: #c4c4c4; }
+    .tick { display: inline-flex; align-items: center; gap: 8px; font-size: 14.5px; color: var(--muted); cursor: pointer; margin-left: auto; }
+    .tick input { width: 18px; height: 18px; accent-color: #00E676; cursor: pointer; }
+    .auto { font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+    .auto.yes { background: rgba(0,230,118,.12); color: #00E676; }
+    .auto.no { background: rgba(255,214,0,.12); color: var(--yellow); }
+    .safe { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: rgba(255,214,0,.07); border: 1px solid rgba(255,214,0,.25); font-size: 15px; color: #e8dca0; }
+    .safe i { color: var(--yellow); margin-right: 6px; }
+    details.more { margin-top: 10px; }
+    details.more > summary { cursor: pointer; color: var(--orange); font-weight: 600; font-size: 15px; list-style: none; }
+    details.more > summary::-webkit-details-marker { display: none; }
+    details.more > summary::before { content: '▸ '; }
+    details.more[open] > summary::before { content: '▾ '; }
+    .sa-tag { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 20px; background: rgba(255,214,0,.12); color: var(--yellow); }
+    @media (max-width: 600px) {
+      .step { grid-template-columns: minmax(0, 1fr); }
+      .step-num { width: 38px; height: 38px; font-size: 16px; }
+      .gs-hero h1 { font-size: 22px; }
+      .tick { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Getting <span>Started</span></div>
+  </div>
+  <div class="page-content">
+    <div class="gs">
+      <div class="gs-hero">
+        <div class="grow">
+          <h1>Welcome! Let's get your shop ready.</h1>
+          <p>Go through the steps in order. Each one is short, and the ones with a green check are already done. Tick the others off as you finish them.</p>
+        </div>
+        <div class="gs-prog"><div class="v" id="prog-v">0 of 0 done</div><div class="bar"><span id="prog-bar"></span></div></div>
+      </div>
+
+      <!-- ── Part 1 ─────────────────────────────────────────────────────────── -->
+      <div class="gs-part"><h2>Part 1 · Set up the shop</h2><span>about 30 minutes, here on this site</span></div>
+      <p class="gs-lead">Everything in this part is done from this admin site. No technical knowledge needed.</p>
+
+      <div class="step" data-step="settings">
+        <div class="step-num">1</div>
+        <div>
+          <h3>Check the shipping fee and payment rules <span class="sa-tag">Super Admin</span><span class="auto" data-auto="settings" hidden></span></h3>
+          <p class="why">What customers pay for delivery, when shipping is free, and whether big orders can pay half now.</p>
+          <ol>
+            <li>Open <a href="settings.html">Shop Settings</a>.</li>
+            <li>Change the amounts. The box <b class="ui">What customers see</b> shows the result as you type.</li>
+            <li>Under <b class="ui">Terms &amp; Privacy Policy</b>, press <b class="ui">Start from the built-in text</b>, read it, and change anything that doesn't fit your shop.</li>
+            <li>Press <b class="ui">Save settings</b>.</li>
+          </ol>
+          <div class="acts"><a class="btn-grad" href="settings.html"><i class="bi bi-sliders"></i> Open Shop Settings</a><label class="tick"><input type="checkbox" data-tick="settings"> Done</label></div>
+        </div>
+      </div>
+
+      <div class="step" data-step="location">
+        <div class="step-num">2</div>
+        <div>
+          <h3>Set your shop's location <span class="auto" data-auto="location" hidden></span></h3>
+          <p class="why">Each order then shows how far the customer is from you, with directions for the driver.</p>
+          <ol>
+            <li>Press <b class="ui">Set the location</b> below.</li>
+            <li>Type your shop's address and pick it from the list, or press <b class="ui">Use where I am</b> if you're at the shop.</li>
+            <li>Drag the pin onto your door, then press <b class="ui">Save location</b>.</li>
+          </ol>
+          <div class="acts"><button class="btn-grad" type="button" onclick="setLocation()"><i class="bi bi-geo-alt"></i> Set the location</button><label class="tick"><input type="checkbox" data-tick="location"> Done</label></div>
+        </div>
+      </div>
+
+      <div class="step" data-step="products">
+        <div class="step-num">3</div>
+        <div>
+          <h3>Add your products and how many you have <span class="auto" data-auto="products" hidden></span></h3>
+          <p class="why">What customers can buy in the app, with prices, sizes and the stock in storage.</p>
+          <ol>
+            <li>Open <a href="products.html">Products &amp; Stock</a> and press <b class="ui">Categories</b> to set up your shelves (for example Tees, Hoodies, Caps).</li>
+            <li>Press <b class="ui">Add Product</b>. Fill in the name, category, price and sizes.</li>
+            <li>Turn on <b class="ui">Count how many are in storage</b> and type how many of each size you have. Each order takes them off by itself.</li>
+            <li>Press <b class="ui">Save</b>. Repeat for each product.</li>
+          </ol>
+          <div class="acts"><a class="btn-grad" href="products.html"><i class="bi bi-box-seam"></i> Open Products &amp; Stock</a><label class="tick"><input type="checkbox" data-tick="products"> Done</label></div>
+        </div>
+      </div>
+
+      <div class="step" data-step="presets">
+        <div class="step-num">4</div>
+        <div>
+          <h3>Make a few ready-made designs <span class="auto" data-auto="presets" hidden></span></h3>
+          <p class="why">Customers who don't have a design can start from one of yours.</p>
+          <ol>
+            <li>Open <a href="design.html">Design Studio</a> and choose <b class="ui">Presets</b>.</li>
+            <li>Add text, a shape or a picture on the shirt.</li>
+            <li>Press <b class="ui">Publish preset</b>. It appears in the app's designer straight away.</li>
+          </ol>
+          <div class="acts"><a class="btn-grad" href="design.html"><i class="bi bi-palette"></i> Open Design Studio</a><label class="tick"><input type="checkbox" data-tick="presets"> Done</label></div>
+        </div>
+      </div>
+
+      <div class="step" data-step="staff">
+        <div class="step-num">5</div>
+        <div>
+          <h3>Add your staff <span class="sa-tag">Super Admin</span><span class="auto" data-auto="staff" hidden></span></h3>
+          <p class="why">Give each person their own sign-in, so you can switch one off without changing everyone's password.</p>
+          <ol>
+            <li>Open <a href="admins.html">Admin Accounts</a> and press <b class="ui">Create Admin</b>.</li>
+            <li>Type their name, email and a starting password. Tell them the password in person, not by message.</li>
+          </ol>
+          <div class="acts"><a class="btn-grad" href="admins.html"><i class="bi bi-person-badge"></i> Open Admin Accounts</a><label class="tick"><input type="checkbox" data-tick="staff"> Done</label></div>
+        </div>
+      </div>
+
+      <div class="step" data-step="share">
+        <div class="step-num">6</div>
+        <div>
+          <h3>Share the app with your customers</h3>
+          <p class="why">Customers install the app from your download page. It has a QR code you can print and stick on the counter.</p>
+          <ol>
+            <li>Open the <a href="index.html" target="_blank" rel="noopener">download page</a> and check that the button downloads the app.</li>
+            <li>Share its link on your Facebook page, or print the QR code.</li>
+          </ol>
+          <div class="acts"><a class="btn-grad" href="index.html" target="_blank" rel="noopener"><i class="bi bi-phone"></i> Open the download page</a><label class="tick"><input type="checkbox" data-tick="share"> Done</label></div>
+        </div>
+      </div>
+
+      <!-- ── Part 2 ─────────────────────────────────────────────────────────── -->
+      <div class="gs-part"><h2>Part 2 · The accounts behind the app</h2><span>one time only</span></div>
+      <p class="gs-lead">The app uses a few outside services. Each one should be in the shop's own name, so the shop owns its customers, pictures and payments.
+        Where it says <b>your developer</b>, they can do it with you in a short call.</p>
+
+      <div class="step" data-step="firebase">
+        <div class="step-num"><i class="bi bi-fire"></i></div>
+        <div>
+          <h3>Firebase: your database and sign-ins</h3>
+          <p class="why">Firebase keeps the shop's records: customer accounts, products, orders and messages. Think of it as the shop's filing cabinet.</p>
+          <div class="facts"><span><i class="bi bi-cash-coin"></i>Free for a shop this size</span><span><i class="bi bi-person"></i>You and your developer</span><span><i class="bi bi-clock"></i>10 minutes</span></div>
+          <ol>
+            <li>Use a Google account that belongs to the shop (make one at <a href="https://accounts.google.com/signup" target="_blank" rel="noopener">accounts.google.com</a> if needed).</li>
+            <li>Your developer adds that account as the project's <b class="ui">Owner</b>. You get an email from Firebase: open it and press <b class="ui">Accept</b>.</li>
+            <li>Sign in at <a href="https://console.firebase.google.com/" target="_blank" rel="noopener">console.firebase.google.com</a> and check that you can see the project.</li>
+            <li>Your developer then removes their own access. Nothing in the app or this site changes.</li>
+          </ol>
+          <div class="safe"><i class="bi bi-shield-lock"></i>Turn on 2-Step Verification for that Google account. Whoever controls it controls the shop's data.</div>
+          <details class="more"><summary>For your developer</summary>
+            <p class="why">Project settings → Users and permissions → Add member (role Owner). The database rules are on <a href="keys.html#rules">App Keys → One-time Firestore setup</a>; publish them once after any update to this site.</p></details>
+          <div class="acts"><label class="tick"><input type="checkbox" data-tick="firebase"> Done</label></div>
+        </div>
+      </div>
+
+      <div class="step" data-step="images">
+        <div class="step-num"><i class="bi bi-images"></i></div>
+        <div>
+          <h3>Picture storage (Cloudinary) <span class="sa-tag">Super Admin</span><span class="auto" data-auto="images" hidden></span></h3>
+          <p class="why">Stores the pictures customers put on their designs, and your product photos.</p>
+          <div class="facts"><span><i class="bi bi-cash-coin"></i>Free plan is enough to start</span><span><i class="bi bi-person"></i>You</span><span><i class="bi bi-clock"></i>10 minutes</span></div>
+          <ol>
+            <li>Sign up at <a href="https://cloudinary.com/users/register_free" target="_blank" rel="noopener">cloudinary.com</a> with the shop's email.</li>
+            <li>On the Cloudinary home screen, copy your <b class="ui">Cloud name</b>.</li>
+            <li>Click the gear (<b class="ui">Settings</b>) → <b class="ui">Upload</b> → <b class="ui">Add upload preset</b>. Set <b class="ui">Signing mode</b> to <b class="ui">Unsigned</b>, press <b class="ui">Save</b>, and copy the preset's name.</li>
+            <li>Open <a href="keys.html#cloudinary">App Keys</a>, paste both, press <b class="ui">Test upload</b>, then <b class="ui">Save Cloudinary keys</b>.</li>
+          </ol>
+          <div class="safe"><i class="bi bi-shield-lock"></i>Only the cloud name and the preset name go in App Keys. Never paste Cloudinary's "API secret" anywhere.</div>
+          <div class="acts"><a class="btn-ghost" href="keys.html#cloudinary"><i class="bi bi-key"></i> Open App Keys</a><label class="tick"><input type="checkbox" data-tick="images"> Done</label></div>
+        </div>
+      </div>
+
+      <div class="step done" data-step="maps">
+        <div class="step-num"><i class="bi bi-map"></i></div>
+        <div>
+          <h3>Maps: nothing to set up <span class="auto yes">Ready</span></h3>
+          <p class="why">The app's delivery map and address search, and this site's distances, use OpenStreetMap. It's free and needs no account, key or credit card.</p>
+          <div class="facts"><span><i class="bi bi-cash-coin"></i>Free</span><span><i class="bi bi-check2"></i>Nothing to sign up for</span></div>
+          <ol><li>Just set your shop's location (Part 1, step 2).</li></ol>
+        </div>
+      </div>
+
+      <div class="step" data-step="ar">
+        <div class="step-num"><i class="bi bi-camera"></i></div>
+        <div>
+          <h3>AR Try-On (Snapchat Camera Kit) <span class="sa-tag">Super Admin</span><span class="auto" data-auto="ar" hidden></span></h3>
+          <p class="why">Lets customers point their phone camera at themselves and see the shirt on them. It runs on Snapchat's Camera Kit, so it needs a Snapchat business account.</p>
+          <div class="facts"><span><i class="bi bi-cash-coin"></i>Free</span><span><i class="bi bi-person"></i>You, with your developer for step 4</span><span><i class="bi bi-clock"></i>30 minutes</span></div>
+          <ol>
+            <li>Sign in at <a href="https://my-lenses.snapchat.com/" target="_blank" rel="noopener">my-lenses.snapchat.com</a> with the shop's Snapchat account and create an <b class="ui">Organization</b> for the shop.</li>
+            <li>Turn on <b class="ui">Camera Kit</b> and create an app. If it asks for the package name, type <code>com.ksprintexpress.fitfusion</code>.</li>
+            <li>Copy the app's <b class="ui">Production API token</b>.</li>
+            <li>Your developer opens the try-on project in <b>Lens Studio</b> (Snapchat's free program for computers) and publishes it to your Organization. This is done once.</li>
+            <li>In My Lenses, open <b class="ui">Lens Scheduler</b>, make a <b class="ui">Lens Group</b>, add the shirt Lens to it, and copy the group's <b class="ui">Lens Group ID</b>.</li>
+            <li>Open <a href="keys.html#snap">App Keys</a>, paste the token and the Lens Group ID, and press <b class="ui">Save Snap keys</b>. Then try AR Try-On in the app.</li>
+          </ol>
+          <details class="more"><summary>For your developer</summary>
+            <p class="why">Open <code>lens-studio/FitFusionShirts</code> in Lens Studio → Publish Lens → the shop's Organization → a new Lens Folder. "Save as Draft" only goes through automatic checks. App Keys has the detailed steps and the optional Lens ID. Fitted garments that bend with the body are added in Lens Studio; caps, glasses and bags are added on the <a href="models.html">3D Models</a> page.</p></details>
+          <div class="acts"><a class="btn-ghost" href="keys.html#snap"><i class="bi bi-key"></i> Open App Keys</a><label class="tick"><input type="checkbox" data-tick="ar"> Done</label></div>
+        </div>
+      </div>
+
+      <div class="step" data-step="gcash">
+        <div class="step-num"><i class="bi bi-wallet2"></i></div>
+        <div>
+          <h3>GCash payments (PayMongo)</h3>
+          <p class="why">Customers pay with GCash through PayMongo, and the money goes to the shop's PayMongo account, then to the shop's bank.</p>
+          <div class="facts"><span><i class="bi bi-cash-coin"></i>No monthly fee; PayMongo takes a small cut of each payment</span><span><i class="bi bi-person"></i>You, then your developer</span><span><i class="bi bi-clock"></i>a few days for verification</span></div>
+          <ol>
+            <li>Sign up at <a href="https://dashboard.paymongo.com/signup" target="_blank" rel="noopener">paymongo.com</a> in the shop's name.</li>
+            <li>Finish PayMongo's <b class="ui">business verification</b> (they ask for business documents). Until then only test payments work.</li>
+            <li>Your developer puts the shop's payment key into the app and makes a new app file. Give it to them in person or by phone, never by chat or email.</li>
+            <li>Place one real order with GCash to check that the money arrives.</li>
+          </ol>
+          <div class="safe"><i class="bi bi-shield-lock"></i>The PayMongo "secret key" can move money. Never paste it on this site, in a chat, or in an email.</div>
+          <div class="acts"><a class="btn-ghost" href="https://dashboard.paymongo.com/" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> PayMongo dashboard</a><label class="tick"><input type="checkbox" data-tick="gcash"> Done</label></div>
+        </div>
+      </div>
+
+      <!-- ── Part 3 ─────────────────────────────────────────────────────────── -->
+      <div class="gs-part"><h2>Part 3 · Every day</h2><span>what running the shop looks like</span></div>
+      <div class="step" data-step="daily">
+        <div class="step-num"><i class="bi bi-sun"></i></div>
+        <div>
+          <h3>A normal day</h3>
+          <ol>
+            <li>Check the <a href="dashboard.html">Dashboard</a>: it lists what needs you today.</li>
+            <li>Open new orders in <a href="orders.html">Orders</a>, approve the design in the order's chat, and move the status along as you print.</li>
+            <li>When it's ready to go, assign a driver on the order. It shows the address, the distance and directions.</li>
+            <li>When stock arrives, add it in <a href="products.html?view=stock">Products &amp; Stock → In storage</a>.</li>
+            <li>Once a month, a Super Admin downloads a backup from <b class="ui">Advanced</b> → <a href="export.html">Export</a>.</li>
+          </ol>
+          <div class="acts"><a class="btn-ghost" href="help.html"><i class="bi bi-question-circle"></i> Step-by-step help for each task</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/shop-map.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  // Ticks are kept in this browser; steps the site can check for itself show a green "Done" instead.
+  const KEY = 'getting-started-ticks';
+  let ticks = {}, auto = {};
+  try { ticks = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { ticks = {}; }
+  document.querySelectorAll('[data-tick]').forEach(cb => {
+    cb.checked = !!ticks[cb.dataset.tick];
+    cb.addEventListener('change', () => { ticks[cb.dataset.tick] = cb.checked; try { localStorage.setItem(KEY, JSON.stringify(ticks)); } catch (e) {} paint(); });
+  });
+  function paint() {
+    const steps = [...document.querySelectorAll('.step[data-step]')].filter(s => s.querySelector('[data-tick]') || s.querySelector('[data-auto]'));
+    let done = 0;
+    steps.forEach(s => {
+      const id = s.dataset.step, a = auto[id], isDone = a === true || !!ticks[id];
+      s.classList.toggle('done', isDone);
+      if (isDone) done++;
+      const chip = s.querySelector('[data-auto]');
+      if (chip && a !== undefined) { chip.hidden = false; chip.className = 'auto ' + (a ? 'yes' : 'no'); chip.textContent = a ? '✓ Done' : 'Not yet'; }
+      const tick = s.querySelector('.tick'); if (tick) tick.hidden = a === true;
+    });
+    document.getElementById('prog-v').textContent = `${done} of ${steps.length} done`;
+    document.getElementById('prog-bar').style.width = (steps.length ? done / steps.length * 100 : 0) + '%';
+  }
+  paint();
+
+  // What the site can see for itself
+  window.onAuthReady = async () => {
+    const safe = p => p.then(v => v, () => undefined);
+    const [shopDoc, loc, prods, presets, staff, keys] = await Promise.all([
+      safe(db.collection('appConfig').doc('shop').get()), safe(loadShopLocation()),
+      safe(db.collection('products').limit(1).get()), safe(db.collection('designPresets').limit(1).get()),
+      safe(db.collection('users').where('role', '==', 'admin').limit(1).get()), safe(loadAppKeys())
+    ]);
+    if (shopDoc) auto.settings = shopDoc.exists;
+    if (loc !== undefined) auto.location = !!loc;
+    if (prods) auto.products = !prods.empty;
+    if (presets) auto.presets = !presets.empty;
+    if (staff) auto.staff = !staff.empty;
+    if (keys) { auto.images = !!(keys.cloudinaryCloudName && keys.cloudinaryUploadPreset); auto.ar = !!(keys.snapApiToken && keys.snapLensGroupId); }
+    paint();
+  };
+  async function setLocation() {
+    if (await pickShopLocation()) { auto.location = true; paint(); }
+  }
+</script>
+</body>
+</html>

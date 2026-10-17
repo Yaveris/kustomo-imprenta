@@ -23,14 +23,14 @@
   <div class="topbar">
     <div class="topbar-title">Usage <span>of outside services</span></div>
     <div class="topbar-right">
-      <select id="u-month" style="padding:7px 10px;border-radius:8px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);font-size:13px;"></select>
+      <select id="u-month" style="padding:7px 10px;border-radius:8px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);font-size:14px;"></select>
       <button class="btn-ghost" onclick="loadUsage()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
     </div>
   </div>
 
   <div class="page-content">
     <div class="card" style="margin-bottom:16px;">
-      <div style="padding:14px 18px;font-size:13px;color:var(--muted);line-height:1.55;">
+      <div style="padding:14px 18px;font-size:14px;color:var(--muted);line-height:1.55;">
         <strong style="color:var(--text);">These are estimates.</strong>
         The app counts its own uploads and address searches and this page adds them up across customers.
         Counting started with the app update that added this page, so anything used before that, or outside the app, is not included.
@@ -44,10 +44,10 @@
 
     <div class="card" style="margin-top:16px;">
       <div class="card-head"><span class="card-title">Database size</span>
-        <a id="u-fb-link" href="https://console.firebase.google.com/" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--orange);">Open Firebase usage <i class="bi bi-box-arrow-up-right"></i></a></div>
+        <a id="u-fb-link" href="https://console.firebase.google.com/" target="_blank" rel="noopener" style="font-size:13.5px;color:var(--orange);">Open Firebase usage <i class="bi bi-box-arrow-up-right"></i></a></div>
       <div style="padding:0 18px 18px;">
         <div class="info-grid" id="u-counts" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr));margin-bottom:10px;"></div>
-        <p style="font-size:12.5px;color:var(--muted);line-height:1.5;">
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.5;">
           Firebase's free plan allows 50,000 reads and 20,000 writes a day and 1 GiB stored. Reads and writes per day
           can only be seen in the Firebase console; the counts above show how much is stored.
         </p>
@@ -58,14 +58,14 @@
       <div class="card-head"><span class="card-title">Limits used on this page</span>
         <button class="btn-ghost" onclick="resetLimits()">Reset to defaults</button></div>
       <div style="padding:0 18px 18px;">
-        <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Change these if your plan is different. They are saved in this browser only.</p>
+        <p style="font-size:13.5px;color:var(--muted);margin-bottom:12px;">Change these if your plan is different. They are saved in this browser only.</p>
         <div id="u-limits" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;"></div>
       </div>
     </div>
 
     <div class="card" style="margin-top:16px;">
       <div class="card-head"><span class="card-title">Not tracked here</span></div>
-      <div style="padding:0 18px 18px;font-size:13px;color:var(--muted);line-height:1.6;">
+      <div style="padding:0 18px 18px;font-size:14px;color:var(--muted);line-height:1.6;">
         <div><strong style="color:var(--text);">PayMongo</strong> has no usage limit; it charges a fee per payment.
           <a href="https://dashboard.paymongo.com/" target="_blank" rel="noopener" style="color:var(--orange);">Open PayMongo</a></div>
         <div><strong style="color:var(--text);">Snap Camera Kit</strong> (AR try-on) has no usage limit to watch.</div>
@@ -119,18 +119,18 @@
     const state = pct >= 90 ? ['Almost at the limit', '#FF4444'] : pct >= 70 ? ['Getting close', '#FFD600'] : ['OK', '#00E676'];
     return `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px;">
         <span style="font-size:22px;font-weight:800;">${usedText}</span>
-        <span style="font-size:12.5px;color:var(--muted);">of ${limitText}</span></div>
+        <span style="font-size:13.5px;color:var(--muted);">of ${limitText}</span></div>
       <div style="height:9px;border-radius:99px;background:var(--border);overflow:hidden;" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct.toFixed(0)}">
         <div style="height:100%;width:${pct}%;background:${state[1]};border-radius:99px;"></div></div>
-      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12.5px;">
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:13.5px;">
         <span style="color:${state[1]};font-weight:700;">${state[0]}</span>
         <span style="color:var(--muted);">${pct < 0.1 && used > 0 ? 'under 0.1' : pct.toFixed(1)}%</span></div>`;
   }
   function card(title, link, linkText, body, note){
     return `<div class="card"><div class="card-head"><span class="card-title">${title}</span>
-        <a href="${link}" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--orange);white-space:nowrap;">${linkText} <i class="bi bi-box-arrow-up-right"></i></a></div>
+        <a href="${link}" target="_blank" rel="noopener" style="font-size:13.5px;color:var(--orange);white-space:nowrap;">${linkText} <i class="bi bi-box-arrow-up-right"></i></a></div>
       <div style="padding:0 18px 18px;">${body}
-        <p style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:12px;">${note}</p></div></div>`;
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.5;margin-top:12px;">${note}</p></div></div>`;
   }
 
   function renderCards(){
@@ -148,7 +148,7 @@
          which this page can't see, so the real figure is higher.`) +
       card('Maps & address search', 'https://operations.osmfoundation.org/policies/', 'OpenStreetMap rules',
         `<div style="font-size:22px;font-weight:800;margin-bottom:6px;">${num((m.placesSearches||0) + (m.placesDetails||0))}</div>
-         <div style="font-size:12.5px;color:#00E676;font-weight:700;">Free · no key</div>`,
+         <div style="font-size:13.5px;color:#00E676;font-weight:700;">Free · no key</div>`,
         `Address searches and map lookups in ${monthName(key)}, plus ${num(m.mapLoads)} map views. They run on OpenStreetMap's free
          services, which ask apps to keep use light; a shop's checkout is well within that.`);
     document.getElementById('u-cards').insertAdjacentHTML('beforeend',
@@ -158,7 +158,7 @@
 
   function renderLimits(){
     document.getElementById('u-limits').innerHTML = Object.keys(DEFAULT_LIMITS).map(k =>
-      `<label style="font-size:12.5px;color:var(--muted);display:block;" for="lim-${k}">${LIMIT_LABELS[k]}
+      `<label style="font-size:13.5px;color:var(--muted);display:block;" for="lim-${k}">${LIMIT_LABELS[k]}
          <input type="number" id="lim-${k}" min="0" step="1" value="${limits[k]}" style="display:block;width:100%;margin-top:5px;" onchange="setLimit('${k}',this.value)"></label>`).join('');
   }
   function setLimit(k, v){ const n = parseFloat(v); if (!isNaN(n) && n >= 0) { limits[k] = n; saveLimits(); renderCards(); } }

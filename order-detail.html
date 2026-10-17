@@ -34,18 +34,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="js/firebase.js"></script>
+<script src="js/shop-map.js"></script>
 <script src="js/layout.js"></script>
 <script src="js/auth.js"></script>
 <script>
-  /** Link that opens the delivery address in Google Maps: the customer's exact pin when the order has one,
-   *  otherwise a search for the written address. */
-  function mapLink(o){
-    const hasPin=typeof o.addressLat==='number'&&typeof o.addressLng==='number';
-    const text=[o.streetAddress,o.barangay,o.city,o.zipCode].filter(Boolean).join(', ');
-    if(!hasPin&&!text)return '—';
-    const q=hasPin?`${o.addressLat},${o.addressLng}`:text;
-    return `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}" target="_blank" rel="noopener" style="color:var(--orange);"><i class="bi bi-geo-alt"></i> ${hasPin?'Open exact pin':'Search address'}</a>`;
-  }
   const oid = new URLSearchParams(location.search).get('id');
   if (!oid) location.href = 'orders.html';
 
@@ -76,6 +68,7 @@
     if (!doc.exists) return;
     order = { id: doc.id, ...doc.data() };
     renderStatusParts();
+    renderDriver();
   }
   function renderStatusParts() {
     const o = order, st = o.status || 'Pending';
@@ -84,13 +77,13 @@
     document.getElementById('stock-line').textContent = o.stockDeducted
       ? 'Deducted' + (o.stockDeductedAt ? ' on ' + fmtDate(o.stockDeductedAt) : '')
       : o.stockRestoredAt ? 'Returned on ' + fmtDate(o.stockRestoredAt) + ' (cancelled)'
-      : st === 'Cancelled' ? 'Not deducted' : 'Deducted once you move the order past Pending';
+      : st === 'Cancelled' ? 'Not deducted' : 'Comes off automatically in a moment';
     const bal = document.getElementById('bal-line');
     if (bal) bal.innerHTML = o.balancePaidAt
       ? `<span style="color:#00E676;"><i class="bi bi-check-circle"></i> Collected ${fmtDate(o.balancePaidAt)}${o.balancePaidBy ? ' by ' + esc(o.balancePaidBy) : ''}</span>
-         <button class="btn-ghost no-print" style="margin-left:8px;padding:3px 9px;font-size:12px;" onclick="markBalance(false)">Undo</button>`
+         <button class="btn-ghost no-print" style="margin-left:8px;padding:3px 9px;font-size:13px;" onclick="markBalance(false)">Undo</button>`
       : `<span style="color:var(--yellow);">${peso(o.remainingAmount)} still to collect</span>
-         <button class="btn-grad no-print" style="margin-left:8px;padding:4px 11px;font-size:12px;" onclick="markBalance(true)"><i class="bi bi-cash-coin"></i> Mark as collected</button>`;
+         <button class="btn-grad no-print" style="margin-left:8px;padding:4px 11px;font-size:13px;" onclick="markBalance(true)"><i class="bi bi-cash-coin"></i> Mark as collected</button>`;
     document.getElementById('upd-line').textContent = o.updatedAt ? fmtDate(o.updatedAt) : 'Not yet';
     const hist = (Array.isArray(o.statusHistory) ? o.statusHistory : []).slice()
       .sort((a, b) => (a.at && a.at.toMillis ? a.at.toMillis() : 0) - (b.at && b.at.toMillis ? b.at.toMillis() : 0));
@@ -99,7 +92,7 @@
       const key = String(h.status || '').toLowerCase();
       return `<li><span class="dot" style="color:var(--s-${key === 'placed' ? 'pending' : esc(key)},var(--muted));"></span>
         <div><strong>${esc(h.status === 'Ready' ? 'Ready for pickup' : h.status || '')}</strong>
-        <div style="font-size:12px;color:var(--muted);">${h.at ? fmtDate(h.at) : ''}${h.by ? ' · ' + esc(h.by) : ''}</div></div></li>`;
+        <div style="font-size:13px;color:var(--muted);">${h.at ? fmtDate(h.at) : ''}${h.by ? ' · ' + esc(h.by) : ''}</div></div></li>`;
     }).join('') + (hist.length ? '' : '<li class="note" style="display:block;">Status changes made from now on are listed here.</li>');
   }
 
@@ -128,7 +121,7 @@
     return `
       <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.03);">
         ${img ? `<a href="${img}" target="_blank" rel="noopener" title="Open the image"><img src="${img}" alt="${esc(side)} image" style="width:64px;height:64px;object-fit:contain;border-radius:6px;background:rgba(255,255,255,.08);"></a>` : ''}
-        <div style="font-size:12.5px;line-height:1.5;">
+        <div style="font-size:13.5px;line-height:1.5;">
           <div style="font-weight:700;">${esc(side)}</div>
           ${v.customText ? `<div>Text: "${esc(v.customText)}"<span style="color:var(--muted);"> · ${esc(v.fontStyle || 'Normal')}${v.fontSize ? ', size ' + Math.round(v.fontSize) : ''}${fontColor ? ` <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${fontColor};border:1px solid var(--border);vertical-align:middle;"></span> ${fontColor}` : ''}</span></div>` : ''}
           ${img ? `<div><a href="${img}" target="_blank" rel="noopener" style="color:var(--orange);">Open image</a></div>` : ''}
@@ -159,8 +152,8 @@
           <div class="item-name">${esc(it.productName||'Product')}</div>
           <div class="item-meta">Size: ${esc(it.size||'—')} · Qty: ${it.quantity||1}${style?` · Style: ${esc(style)}`:''}${color?` · Colour: <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${color};border:1px solid var(--border);vertical-align:middle;"></span> ${color}`:''}${it.customText?` · Text: "${esc(it.customText)}"`:''}</div>
           ${sides.length ? `<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">${sides.join('')}</div>` : ''}
-          ${customerNotes ? `<div style="font-size:12.5px;margin-top:8px;"><span style="color:var(--muted);">Notes:</span> ${esc(customerNotes)}</div>` : ''}
-          ${measurements ? `<div style="font-size:12.5px;margin-top:4px;"><span style="color:var(--muted);">Scanned measurements:</span> ${esc(measurements)}</div>` : ''}
+          ${customerNotes ? `<div style="font-size:13.5px;margin-top:8px;"><span style="color:var(--muted);">Notes:</span> ${esc(customerNotes)}</div>` : ''}
+          ${measurements ? `<div style="font-size:13.5px;margin-top:4px;"><span style="color:var(--muted);">Scanned measurements:</span> ${esc(measurements)}</div>` : ''}
         </div>
         <div class="item-price">${peso((it.price||0)*(it.quantity||1))}</div>
       </div>`;
@@ -179,7 +172,7 @@
 
           <div class="print-only" style="margin-bottom:12px;">
             <div style="font-size:20px;font-weight:800;">Job sheet · ${orderNo(oid)}</div>
-            <div style="font-size:12px;">Printed ${fmtDate(new Date())}</div>
+            <div style="font-size:13px;">Printed ${fmtDate(new Date())}</div>
           </div>
 
           <!-- Order Info -->
@@ -188,27 +181,35 @@
               <span class="card-title">Order Information</span>
               <div style="display:flex;align-items:center;gap:10px;">
                 <span id="sts-badge">${statusBadge(o.status||'Pending')}</span>
-                <select id="sts-sel" aria-label="Order status" style="background:var(--card-bg);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12.5px;outline:none;" onchange="updateStatus(this.value)">
+                <select id="sts-sel" aria-label="Order status" style="background:var(--card-bg);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:13.5px;outline:none;" onchange="updateStatus(this.value)">
                   ${ALL_STATUSES.map(s=>`<option value="${s}"${(o.status||'Pending')===s?' selected':''}>${s==='Ready'?'Ready for pickup':s}</option>`).join('')}
                 </select>
               </div>
             </div>
             <div class="info-grid">
               <div class="ii"><label>Order No.</label><span style="font-family:monospace;">${orderNo(oid)}</span></div>
-              ${o.payMongoSourceId?`<div class="ii"><label>PayMongo reference</label><span style="font-family:monospace;font-size:12px;word-break:break-all;">${esc(o.payMongoSourceId)}</span></div>`:''}
+              ${o.payMongoSourceId?`<div class="ii"><label>PayMongo reference</label><span style="font-family:monospace;font-size:13px;word-break:break-all;">${esc(o.payMongoSourceId)}</span></div>`:''}
               <div class="ii"><label>Ordered On</label><span>${fmtDate(o.orderedAt)}</span></div>
               <div class="ii"><label>Status last changed</label><span id="upd-line"></span></div>
               <div class="ii"><label>Stock</label><span id="stock-line"></span></div>
               <div class="ii"><label>Customer</label><span>${esc(o.fullName||'—')}${o.userId?` · <a class="no-print" href="customers.html?uid=${encodeURIComponent(o.userId)}" style="color:var(--orange);">Profile</a>`:''}</span></div>
-              <div class="ii"><label>Phone</label><span>${esc(o.phone||'—')}</span></div>
-              <div class="ii"><label>Address</label><span>${esc(o.streetAddress||'—')}</span></div>
-              <div class="ii"><label>Barangay</label><span>${esc(o.barangay||'—')}</span></div>
-              <div class="ii"><label>City / Zip</label><span>${esc(o.city||'—')}${o.zipCode?', '+esc(o.zipCode):''}</span></div>
-              ${o.landmark?`<div class="ii"><label>Landmark</label><span>${esc(o.landmark)}</span></div>`:''}
-              <div class="ii"><label>Map</label><span>${mapLink(o)}</span></div>
               <div class="ii"><label>Payment</label><span><i class="bi ${/cash on delivery|cod/i.test(o.paymentMethod||'')?'bi-cash-coin':'bi-phone'}" style="color:var(--orange);"></i> ${esc(o.paymentMethod||'GCash')}</span></div>
               <div class="ii"><label>Payment Type</label><span>${isDP?dpPct(o)+'% Downpayment':'Full Payment'}</span></div>
             </div>
+          </div>
+
+          <!-- Delivery: where it goes, how far, and who takes it -->
+          <div class="card" id="delivery-card">
+            <div class="card-head"><span class="card-title"><i class="bi bi-truck" style="color:var(--orange);margin-right:6px;"></i>Delivery</span><span id="drv-pill"></span></div>
+            <div class="dlv-grid">
+              <div>
+                <div class="dlv-addr" id="dlv-addr"></div>
+                <div class="dlv-btns no-print" id="dlv-btns"></div>
+                <div class="dlv-dist" id="dlv-dist"></div>
+              </div>
+              <div class="dlv-map no-print" id="dlv-map"></div>
+            </div>
+            <div class="drv-box" id="driver-box"></div>
           </div>
 
           <!-- Items -->
@@ -250,7 +251,7 @@
         <div class="card no-print" style="display:flex;flex-direction:column;height:fit-content;">
           <div class="card-head" style="margin-bottom:12px;">
             <span class="card-title"><i class="bi bi-chat-dots" style="color:var(--orange);"></i> Order Chat</span>
-            <span style="font-size:11.5px;color:var(--muted);">● Live</span>
+            <span style="font-size:13px;color:var(--muted);">● Live</span>
           </div>
           <div class="chat-wrap" id="chat-wrap"><div class="spinner" style="margin:20px auto;"></div></div>
           <div class="quick-replies" id="quick-replies"></div>
@@ -263,7 +264,124 @@
 
       </div>`;
     renderStatusParts();
+    renderDelivery();
+    renderDriver();
     renderQuickReplies('quick-replies', 'chat-in');
+  }
+
+  // ── Delivery: the address, the distance from the shop, and the driver ─────────────────────────────
+  function renderDelivery() {
+    const o = order, lines = orderAddressLines(o), phone = String(o.phone || '').trim();
+    document.getElementById('dlv-addr').innerHTML = lines.length || o.landmark
+      ? `<div class="dlv-name">${esc(o.fullName || 'Customer')}</div>${lines.map(l => `<div>${esc(l)}</div>`).join('')}
+         ${o.landmark ? `<div class="dlv-land"><i class="bi bi-signpost"></i> ${esc(o.landmark)}</div>` : ''}
+         ${phone ? `<div class="dlv-phone"><i class="bi bi-telephone"></i> ${esc(phone)}</div>` : ''}`
+      : '<div class="note">No delivery address on this order.</div>';
+    const tel = phone.replace(/[^\d+]/g, '');
+    document.getElementById('dlv-btns').innerHTML = (lines.length ? `<button class="btn-ghost" onclick="copyAddress()"><i class="bi bi-clipboard"></i> Copy address</button>` : '')
+      + (tel ? `<a class="btn-ghost" href="tel:${esc(tel)}"><i class="bi bi-telephone"></i> Call</a>` : '')
+      + (lines.length || orderPin(o) ? `<a class="btn-ghost" id="dlv-dir" href="${esc(directionsUrl(null, o))}" target="_blank" rel="noopener"><i class="bi bi-sign-turn-right"></i> Directions</a>` : '');
+    showDistance();
+  }
+  /** Name, phone, address and landmark, ready to paste into a courier app or a message. */
+  function copyAddress() {
+    const o = order;
+    const text = [o.fullName, String(o.phone || '').trim()].filter(Boolean).join(' · ') + '\n' + orderAddressLines(o).join('\n') + (o.landmark ? '\nLandmark: ' + o.landmark : '')
+      + (orderPin(o) ? `\nhttps://www.google.com/maps/search/?api=1&query=${orderPin(o).lat},${orderPin(o).lng}` : '');
+    navigator.clipboard.writeText(text.trim()).then(() => toast('Address copied', 'ok'), () => toast("Couldn't copy. Select the address and copy it instead.", 'warn'));
+  }
+  let distToken = 0;
+  async function showDistance() {
+    const token = ++distToken, box = document.getElementById('dlv-dist'), o = order;
+    box.innerHTML = '<span class="note"><i class="bi bi-hourglass-split"></i> Working out the distance…</span>';
+    const [shop, dest] = await Promise.all([loadShopLocation().catch(() => null), orderPoint(o)]);
+    if (token !== distToken) return;
+    const dir = document.getElementById('dlv-dir'); if (dir) dir.href = directionsUrl(shop, o);
+    const approx = dest && dest.approx ? `<div class="note" style="margin-top:4px;"><i class="bi bi-info-circle"></i> The customer didn't drop a pin, so this is ${dest.from === 'area' ? 'measured to their barangay' : 'found from the written address'} and may be off.</div>` : '';
+    const setBtn = `<button class="linkbtn" onclick="setShopLocation()">${shop ? 'Change your location' : 'Set your shop\'s location'}</button>`;
+    if (!shop) box.innerHTML = `<div class="dlv-km muted"><i class="bi bi-shop"></i> Set your shop's location to see how far this is.</div><div style="margin-top:4px;">${setBtn}</div>`;
+    else if (!dest) box.innerHTML = `<div class="dlv-km muted"><i class="bi bi-question-circle"></i> This address couldn't be found on the map.</div><div class="note" style="margin-top:4px;">Use Directions to search it in Google Maps. ${setBtn}</div>`;
+    else {
+      const straight = distanceKm(shop, dest);
+      box.innerHTML = `<div class="dlv-km"><i class="bi bi-signpost-split"></i> <b>${fmtKm(straight)}</b> from your shop <span class="note">(straight line)</span></div><div class="note" id="dlv-road">Checking the road distance…</div>${approx}<div class="note no-print" style="margin-top:4px;">${shop.mine ? 'From the location on your account · ' : ''}${setBtn}</div>`;
+    }
+    let route = null;
+    if (shop && dest) {
+      try { route = await roadRoute(shop, dest); } catch (e) { route = null; }
+      if (token !== distToken) return;
+      const road = document.getElementById('dlv-road');
+      if (road) road.innerHTML = route ? `By road: <b style="color:var(--text);">${fmtKm(route.km)}</b>, about ${fmtMinutes(route.minutes)} by car` : 'The road distance isn\'t available right now.';
+    }
+    const mapEl = document.getElementById('dlv-map');
+    if (!shop && !dest) { mapEl.hidden = true; return; }
+    mapEl.hidden = false;
+    drawDeliveryMap(mapEl, shop, dest, route).catch(e => { mapEl.innerHTML = `<div class="note" style="padding:14px;">${esc(e.message)}</div>`; });
+  }
+  async function setShopLocation() { if (await pickShopLocation()) showDistance(); }
+
+  const recentDrivers = () => { try { return JSON.parse(localStorage.getItem('recent-drivers') || '[]').filter(d => d && d.name); } catch (e) { return []; } };
+  function rememberDriver(d) {
+    try { const list = [d].concat(recentDrivers().filter(x => x.name.toLowerCase() !== d.name.toLowerCase())).slice(0, 8); localStorage.setItem('recent-drivers', JSON.stringify(list)); } catch (e) {}
+  }
+  let driverEditing = false;
+  function renderDriver() {
+    const d = order.driver && order.driver.name ? order.driver : null, st = order.status || 'Pending';
+    const pill = document.getElementById('drv-pill');
+    pill.innerHTML = d ? '<span class="pill ok"><i class="bi bi-person-check-fill"></i> Driver assigned</span>'
+      : st === 'Cancelled' ? '' : `<span class="pill ${st === 'Ready' ? 'warn' : ''}"><i class="bi bi-person-dash"></i> No driver yet</span>`;
+    const box = document.getElementById('driver-box');
+    if (d && !driverEditing) {
+      const tel = String(d.phone || '').replace(/[^\d+]/g, '');
+      box.innerHTML = `<div class="drv-head yes"><i class="bi bi-person-check-fill"></i> Driver assigned</div>
+        <div class="drv-who"><b>${esc(d.name)}</b>${d.phone ? ` · ${tel ? `<a href="tel:${esc(tel)}">${esc(d.phone)}</a>` : esc(d.phone)}` : ''}${d.vehicle ? ` · ${esc(d.vehicle)}` : ''}</div>
+        <div class="note">Assigned${d.assignedAt && d.assignedAt.toDate ? ' ' + fmtDate(d.assignedAt) : ''}${d.assignedBy ? ' by ' + esc(d.assignedBy) : ''}</div>
+        <div class="drv-btns no-print"><button class="btn-ghost" onclick="tellCustomer()"><i class="bi bi-chat-text"></i> Tell the customer</button>
+          <button class="btn-ghost" onclick="driverEditing=true;renderDriver()"><i class="bi bi-pencil"></i> Change</button>
+          <button class="btn-ghost" onclick="removeDriver()"><i class="bi bi-x-lg"></i> Remove</button></div>`;
+      return;
+    }
+    const recent = recentDrivers();
+    box.innerHTML = `<div class="drv-head ${d ? 'yes' : 'no'}"><i class="bi ${d ? 'bi-pencil' : 'bi-person-dash'}"></i> ${d ? 'Change the driver' : st === 'Cancelled' ? 'No driver (order cancelled)' : 'No driver assigned yet'}</div>
+      <div class="drv-form no-print">
+        <div class="fg"><label for="drv-name">Driver's name *</label><input id="drv-name" maxlength="60" list="drv-recent" placeholder="e.g. Mark Reyes" value="${esc(d ? d.name : '')}" autocomplete="off"></div>
+        <div class="fg"><label for="drv-phone">Phone</label><input id="drv-phone" maxlength="30" inputmode="tel" placeholder="09XX XXX XXXX" value="${esc(d ? d.phone || '' : '')}"></div>
+        <div class="fg"><label for="drv-vehicle">Plate or booking no. <span class="note">(optional)</span></label><input id="drv-vehicle" maxlength="60" placeholder="e.g. NAB 1234 or Lalamove #" value="${esc(d ? d.vehicle || '' : '')}"></div>
+        <datalist id="drv-recent">${recent.map(r => `<option value="${esc(r.name)}">`).join('')}</datalist>
+      </div>
+      <div class="drv-btns no-print"><button class="btn-grad" id="drv-save" onclick="saveDriver()"><i class="bi bi-person-check"></i> ${d ? 'Save driver' : 'Assign driver'}</button>
+        ${d ? '<button class="btn-ghost" onclick="driverEditing=false;renderDriver()">Cancel</button>' : ''}</div>`;
+    const nameIn = document.getElementById('drv-name');
+    nameIn.addEventListener('change', () => {
+      const r = recentDrivers().find(x => x.name.toLowerCase() === nameIn.value.trim().toLowerCase());
+      if (r) { if (!document.getElementById('drv-phone').value) document.getElementById('drv-phone').value = r.phone || ''; if (!document.getElementById('drv-vehicle').value) document.getElementById('drv-vehicle').value = r.vehicle || ''; }
+    });
+  }
+  async function saveDriver() {
+    const name = document.getElementById('drv-name').value.trim().replace(/\s+/g, ' ');
+    const phone = document.getElementById('drv-phone').value.trim(), vehicle = document.getElementById('drv-vehicle').value.trim();
+    if (!name) { toast("Type the driver's name", 'warn'); document.getElementById('drv-name').focus(); return; }
+    if (phone && !/^[\d\s()+-]{7,30}$/.test(phone)) { toast('Check the phone number', 'warn'); document.getElementById('drv-phone').focus(); return; }
+    const btn = document.getElementById('drv-save'); btn.disabled = true;
+    try {
+      await db.collection('orders').doc(oid).update({ driver: { name, phone, vehicle, assignedAt: firebase.firestore.FieldValue.serverTimestamp(), assignedBy: (auth.currentUser && auth.currentUser.email) || '' } });
+      rememberDriver({ name, phone, vehicle });
+      driverEditing = false;
+      toast('Driver assigned: ' + name, 'ok');
+      await refreshStatus();
+    } catch (e) { toast('Not saved: ' + e.message, 'err'); btn.disabled = false; }
+  }
+  async function removeDriver() {
+    if (!confirm('Remove the driver from this order?')) return;
+    try { await db.collection('orders').doc(oid).update({ driver: firebase.firestore.FieldValue.delete() }); toast('Driver removed', 'ok'); await refreshStatus(); }
+    catch (e) { toast('Not saved: ' + e.message, 'err'); }
+  }
+  /** Puts a message with the driver's details in the chat box, to check and send. */
+  function tellCustomer() {
+    const d = order.driver || {}, inp = document.getElementById('chat-in');
+    inp.value = `Your order ${orderNo(oid)} is on its way! Your driver is ${d.name}` + (d.phone ? ` (${d.phone})` : '') + (d.vehicle ? `, ${d.vehicle}` : '') + '.';
+    inp.style.height = 'auto'; inp.style.height = Math.min(120, inp.scrollHeight + 2) + 'px';
+    inp.focus(); inp.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    toast('Check the message, then press send', 'ok');
   }
 
   /** Share of the total paid up front, for orders placed with a downpayment. */
@@ -325,7 +443,7 @@
     const wrap = document.getElementById('chat-wrap');
     if (!wrap) return;
     if (!msgs.length) {
-      wrap.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:30px 0;">No messages yet — start the conversation!</div>';
+      wrap.innerHTML='<div style="text-align:center;color:var(--muted);font-size:14px;padding:30px 0;">No messages yet — start the conversation!</div>';
       return;
     }
     wrap.innerHTML = msgs.map(m=>{
@@ -336,10 +454,10 @@
           <div class="cavatar">C</div>
           <div>
             <div class="design-box">
-              <div style="color:#8B5CF6;font-weight:600;margin-bottom:6px;font-size:12.5px;"><i class="bi bi-image"></i> Design Submission</div>
+              <div style="color:#8B5CF6;font-weight:600;margin-bottom:6px;font-size:13.5px;"><i class="bi bi-image"></i> Design Submission</div>
               ${safeUrl(m.imageUrl)?`<a href="${safeUrl(m.imageUrl)}" target="_blank" rel="noopener"><img src="${safeUrl(m.imageUrl)}" alt="design"></a>`:''}
-              ${m.messageText?`<p style="font-size:13px;margin:5px 0;">${esc(m.messageText)}</p>`:''}
-              <div style="font-size:12px;color:var(--muted);margin-bottom:5px;">Status: <strong style="color:${m.approvalStatus==='Approved'?'#00E676':m.approvalStatus==='Rejected'?'#FF4444':'var(--yellow)'};">${m.approvalStatus||'Pending Approval'}</strong></div>
+              ${m.messageText?`<p style="font-size:14px;margin:5px 0;">${esc(m.messageText)}</p>`:''}
+              <div style="font-size:13px;color:var(--muted);margin-bottom:5px;">Status: <strong style="color:${m.approvalStatus==='Approved'?'#00E676':m.approvalStatus==='Rejected'?'#FF4444':'var(--yellow)'};">${m.approvalStatus||'Pending Approval'}</strong></div>
               ${!m.approvalStatus||m.approvalStatus==='Pending Approval'?`
                 <div style="display:flex;gap:7px;margin-top:7px;">
                   <button class="btn-ok" onclick="handleDesign('${m.id}',true)"><i class="bi bi-check-lg"></i> Approve</button>

@@ -31,7 +31,7 @@
   <div class="topbar">
     <div class="topbar-title">Dashboard <span>Overview</span></div>
     <div class="topbar-right">
-      <span style="font-size:13px;color:var(--muted);" id="today-date"></span>
+      <span style="font-size:14px;color:var(--muted);" id="today-date"></span>
     </div>
   </div>
 
@@ -43,8 +43,8 @@
         <div class="sa-banner-label"><i class="bi bi-shield-fill-check"></i> &nbsp;Super Admin</div>
         <div class="sa-banner-title">System Overview</div>
         <div style="margin-top:8px;display:flex;gap:18px;flex-wrap:wrap;">
-          <span style="font-size:13px;color:rgba(255,255,255,.6);">Admins: <strong id="sa-admin-count" style="color:#fff;">—</strong></span>
-          <span style="font-size:13px;color:rgba(255,255,255,.6);">Customers: <strong id="sa-cust-count" style="color:#fff;">—</strong></span>
+          <span style="font-size:14px;color:rgba(255,255,255,.6);">Admins: <strong id="sa-admin-count" style="color:#fff;">—</strong></span>
+          <span style="font-size:14px;color:rgba(255,255,255,.6);">Customers: <strong id="sa-cust-count" style="color:#fff;">—</strong></span>
         </div>
       </div>
       <div class="sa-banner-rev">
@@ -86,7 +86,7 @@
       <div class="card">
         <div class="card-head">
           <span class="card-title">Recent Orders</span>
-          <a href="orders.html" class="btn-ghost" style="font-size:12.5px;padding:6px 11px;">View All <i class="bi bi-arrow-right"></i></a>
+          <a href="orders.html" class="btn-ghost" style="font-size:13.5px;padding:6px 11px;">View All <i class="bi bi-arrow-right"></i></a>
         </div>
         <div class="tbl-wrap">
           <table class="tbl">
@@ -124,13 +124,13 @@
   .sales-col:hover .sales-bar, .sales-col:focus .sales-bar { opacity: .8; }
   .sales-col:focus { outline: 2px solid var(--orange); outline-offset: 2px; }
   .sales-x { display: flex; gap: 2px; margin-top: 6px; }
-  .sales-x span { flex: 1; text-align: center; font-size: 10.5px; color: var(--muted); min-width: 0; overflow: hidden; }
-  .sales-tip { position: absolute; top: 0; background: #111; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px; pointer-events: none; white-space: nowrap; z-index: 2; }
-  .att-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 13px; }
+  .sales-x span { flex: 1; text-align: center; font-size: 12px; color: var(--muted); min-width: 0; overflow: hidden; }
+  .sales-tip { position: absolute; top: 0; background: #111; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 13px; pointer-events: none; white-space: nowrap; z-index: 2; }
+  .att-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 14px; }
   .att-row:first-child { border-top: none; }
   .att-row i { font-size: 16px; width: 20px; text-align: center; }
-  .att-row a { margin-left: auto; color: var(--orange); font-size: 12.5px; white-space: nowrap; }
-  .best-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 13px; }
+  .att-row a { margin-left: auto; color: var(--orange); font-size: 13.5px; white-space: nowrap; }
+  .best-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 14px; }
   .best-row .bar { height: 6px; border-radius: 3px; background: var(--orange); }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -208,12 +208,12 @@
         : sorted.map(o => {
             const qty = (o.items||[]).reduce((s,i)=>s+(i.quantity||1),0);
             return `<tr class="row-link" onclick="location.href='order-detail.html?id=${o.id}'">
-              <td><span style="font-family:monospace;font-size:12px;color:var(--muted);">${orderNo(o.id)}</span></td>
-              <td><strong>${esc(o.fullName||'—')}</strong><br><span style="font-size:12px;color:var(--muted);">${esc(o.city||'')}</span></td>
+              <td><span style="font-family:monospace;font-size:13px;color:var(--muted);">${orderNo(o.id)}</span></td>
+              <td><strong>${esc(o.fullName||'—')}</strong><br><span style="font-size:13px;color:var(--muted);">${esc(o.city||'')}</span></td>
               <td style="text-align:center;">${qty}</td>
               <td style="color:var(--orange);font-weight:700;">${peso(o.totalAmount)}</td>
               <td>${statusBadge(o.status)}</td>
-              <td style="font-size:12px;color:var(--muted);">${fmtDate(o.orderedAt,false)}</td>
+              <td style="font-size:13px;color:var(--muted);">${fmtDate(o.orderedAt,false)}</td>
             </tr>`;
           }).join('');
 
@@ -231,7 +231,7 @@
         const cnt = sc[s.k] || 0;
         const pct = Math.round(cnt/total*100);
         return `<a href="orders.html?status=${s.k}" style="display:block;margin-bottom:12px;color:inherit;">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:14px;">
             <span>${s.k === 'Ready' ? 'Ready for pickup' : s.k}</span><span style="font-weight:700;">${cnt}</span>
           </div>
           <div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;">
@@ -318,15 +318,15 @@
         if (n <= 0) out.push(`${p.name} ${sz}`); else if (n <= shop.lowStockAt) low.push(`${p.name} ${sz} (${n})`);
       });
     });
-    if (out.length) rows.push(['bi-x-octagon', '#FF6B6B', `Out of stock: ${esc(out.slice(0, 4).join(', '))}${out.length > 4 ? ` and ${out.length - 4} more` : ''}`, 'products.html', 'Restock']);
-    if (low.length) rows.push(['bi-exclamation-triangle', '#FFD600', `Low stock: ${esc(low.slice(0, 4).join(', '))}${low.length > 4 ? ` and ${low.length - 4} more` : ''}`, 'products.html', 'Restock']);
+    if (out.length) rows.push(['bi-x-octagon', '#FF6B6B', `Out of stock: ${esc(out.slice(0, 4).join(', '))}${out.length > 4 ? ` and ${out.length - 4} more` : ''}`, 'products.html?view=stock&filter=out', 'Restock']);
+    if (low.length) rows.push(['bi-exclamation-triangle', '#FFD600', `Running low: ${esc(low.slice(0, 4).join(', '))}${low.length > 4 ? ` and ${low.length - 4} more` : ''}`, 'products.html?view=stock&filter=low', 'Restock']);
     // A shop that's just starting: point to the first things to set up
     if (!products.length) rows.unshift(['bi-rocket-takeoff', 'var(--orange)', 'No products yet. Add your first product so customers can order.', 'products.html', 'Add']);
     if (!products.length && (window.ADMIN_ROLE === 'super_admin')) rows.push(['bi-sliders', 'var(--muted)', 'Check the shipping fee and downpayment rules before taking orders.', 'settings.html', 'Settings']);
     const hidden = products.filter(p => p.isAvailable !== true).length;
     if (hidden) rows.push(['bi-eye-slash', 'var(--muted)', `${hidden} product${hidden === 1 ? ' is' : 's are'} switched off and not shown in the app`, 'products.html', 'Review']);
     document.getElementById('attention').innerHTML = rows.length
-      ? rows.map(([icon, color, text, href, act]) => `<div class="att-row"><i class="bi ${icon}" style="color:${color};" aria-hidden="true"></i><span>${text}</span><a href="${href}">${act} <i class="bi bi-arrow-right" style="font-size:12px;width:auto;"></i></a></div>`).join('')
+      ? rows.map(([icon, color, text, href, act]) => `<div class="att-row"><i class="bi ${icon}" style="color:${color};" aria-hidden="true"></i><span>${text}</span><a href="${href}">${act} <i class="bi bi-arrow-right" style="font-size:13px;width:auto;"></i></a></div>`).join('')
       : '<div class="att-row"><i class="bi bi-check-circle" style="color:#00E676;" aria-hidden="true"></i><span>All caught up.</span></div>';
   }
 </script>

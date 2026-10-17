@@ -13,14 +13,14 @@
     } }
   </script>
   <style>
-    .mo-intro { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+    .mo-intro { font-size: 14.5px; color: var(--muted); line-height: 1.6; }
     .mo-intro strong { color: var(--text); }
     details.mo-how { margin-top: 10px; }
-    details.mo-how > summary { cursor: pointer; color: var(--orange); font-size: 13px; font-weight: 600; list-style: none; }
+    details.mo-how > summary { cursor: pointer; color: var(--orange); font-size: 15.5px; font-weight: 600; list-style: none; }
     details.mo-how > summary::-webkit-details-marker { display: none; }
     .mo-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 14px; }
-    .mo-step { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
-    .mo-step b { display: block; color: var(--text); font-size: 13px; margin-bottom: 3px; }
+    .mo-step { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; font-size: 15px; color: #c4c4c4; line-height: 1.55; }
+    .mo-step b { display: block; color: var(--text); font-size: 16px; margin-bottom: 4px; }
     .mo-step b span { color: var(--orange); margin-right: 6px; }
 
     .mo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
@@ -32,9 +32,9 @@
     .mo-thumb i { font-size: 44px; color: #444; }
     .mo-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
     .mo-name { font-size: 14.5px; font-weight: 700; }
-    .mo-sub { font-size: 12px; color: var(--muted); }
+    .mo-sub { font-size: 13px; color: var(--muted); }
     .mo-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: auto; padding-top: 6px; }
-    .chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--border); white-space: nowrap; }
+    .chip { font-size: 12.5px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--border); white-space: nowrap; }
     .chip.ok { color: #00E676; background: rgba(0,230,118,.08); border-color: rgba(0,230,118,.25); }
     .chip.warn { color: var(--yellow); background: rgba(255,214,0,.08); border-color: rgba(255,214,0,.25); }
     .chip.bad { color: #FF6B6B; background: rgba(255,68,68,.08); border-color: rgba(255,68,68,.25); }
@@ -49,8 +49,8 @@
     .mo-warn { border-color: rgba(255,214,0,.35); background: rgba(255,214,0,.05); margin-bottom: 16px; }
     .mo-warn .card-title { color: var(--yellow); }
     .mo-block { position: relative; margin-top: 10px; }
-    .mo-block pre { background: #121212; border: 1px solid var(--border); border-radius: 9px; padding: 42px 16px 14px; font-family: Consolas, 'Cascadia Mono', Menlo, monospace; font-size: 12.5px; line-height: 1.55; color: #E6E6E6; overflow-x: auto; white-space: pre; }
-    .mo-block .btn-ghost { position: absolute; top: 8px; right: 8px; padding: 4px 10px; font-size: 12px; }
+    .mo-block pre { background: #121212; border: 1px solid var(--border); border-radius: 9px; padding: 42px 16px 14px; font-family: Consolas, 'Cascadia Mono', Menlo, monospace; font-size: 13.5px; line-height: 1.55; color: #E6E6E6; overflow-x: auto; white-space: pre; }
+    .mo-block .btn-ghost { position: absolute; top: 8px; right: 8px; padding: 4px 10px; font-size: 13px; }
 
     details.mo-guide > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px; }
     details.mo-guide > summary::-webkit-details-marker { display: none; }
@@ -58,13 +58,17 @@
     details.mo-guide[open] > summary .bi-chevron-down { transform: rotate(180deg); }
     .mo-guide-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 18px; margin-top: 16px; }
     @media (max-width: 1000px) { .mo-guide-grid { grid-template-columns: minmax(0,1fr); } }
-    .mo-guide h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 8px; }
-    .mo-guide ol, .mo-guide ul { padding-left: 20px; font-size: 13px; line-height: 1.6; }
+    .mo-guide h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 8px; }
+    .mo-guide ol, .mo-guide ul { padding-left: 20px; font-size: 15px; line-height: 1.6; }
     .mo-guide li { margin-bottom: 6px; }
     .mo-guide li::marker { color: var(--orange); }
-    .mo-guide code, .ed code { font-family: Consolas, 'Cascadia Mono', Menlo, monospace; font-size: 12px; background: rgba(255,255,255,.07); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; }
+    .mo-guide code, .ed code { font-family: Consolas, 'Cascadia Mono', Menlo, monospace; font-size: 13px; background: rgba(255,255,255,.07); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; }
     .mo-guide a { color: var(--orange); }
-    .mo-note { font-size: 12.5px; color: var(--muted); line-height: 1.55; border-left: 3px solid var(--yellow); padding: 4px 0 4px 12px; margin-top: 12px; }
+    .mo-plain { font-size: 15px; color: #d0d0d0; margin-bottom: 8px; font-style: italic; }
+    details.mo-dev { margin-top: 10px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+    details.mo-dev > summary { cursor: pointer; font-weight: 600; color: var(--orange); font-size: 14.5px; }
+    details.mo-dev ol { margin-top: 10px; }
+    .mo-note { font-size: 13.5px; color: var(--muted); line-height: 1.55; border-left: 3px solid var(--yellow); padding: 4px 0 4px 12px; margin-top: 12px; }
     .mo-note strong { color: var(--text); }
 
     /* ── Editor ── */
@@ -81,19 +85,19 @@
     .ed-viewbar .filter-bar { margin: 0; }
     .ed-empty { position: absolute; inset: 52px 0 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--muted); text-align: center; padding: 20px; pointer-events: none; }
     .ed-empty i { font-size: 46px; color: #3a3a3a; }
-    .ed-hint { position: absolute; left: 0; bottom: 0; right: 0; padding: 18px 14px 10px; font-size: 12px; color: #aaa; pointer-events: none; background: linear-gradient(transparent, rgba(16,16,16,.92)); }
+    .ed-hint { position: absolute; left: 0; bottom: 0; right: 0; padding: 18px 14px 10px; font-size: 13px; color: #aaa; pointer-events: none; background: linear-gradient(transparent, rgba(16,16,16,.92)); }
     .ed-side { overflow-y: auto; padding: 4px 20px 24px; }
     .ed-sec { border-bottom: 1px solid var(--border); padding: 16px 0; }
     .ed-sec:last-child { border-bottom: none; }
-    .ed-sec h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
-    .ed-sec h4 .num { width: 20px; height: 20px; border-radius: 50%; background: rgba(255,92,0,.15); color: var(--orange); font-size: 11px; display: inline-flex; align-items: center; justify-content: center; }
-    .ed-sec > p { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+    .ed-sec h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    .ed-sec h4 .num { width: 20px; height: 20px; border-radius: 50%; background: rgba(255,92,0,.15); color: var(--orange); font-size: 12.5px; display: inline-flex; align-items: center; justify-content: center; }
+    .ed-sec > p { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
     .ed .fg { margin-bottom: 12px; }
-    .ed .fg .hint { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.45; text-transform: none; letter-spacing: 0; font-weight: 400; }
-    .drop { border: 1.5px dashed var(--border); border-radius: 10px; padding: 16px; text-align: center; font-size: 13px; color: var(--muted); cursor: pointer; transition: border-color .15s, background .15s; }
+    .ed .fg .hint { font-size: 13px; color: var(--muted); margin-top: 4px; line-height: 1.45; text-transform: none; letter-spacing: 0; font-weight: 400; }
+    .drop { border: 1.5px dashed var(--border); border-radius: 10px; padding: 16px; text-align: center; font-size: 14px; color: var(--muted); cursor: pointer; transition: border-color .15s, background .15s; }
     .drop:hover, .drop.over { border-color: var(--orange); background: rgba(255,92,0,.05); }
     .drop i { font-size: 22px; color: var(--orange); display: block; margin-bottom: 4px; }
-    .checks { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-top: 10px; font-size: 12.5px; }
+    .checks { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-top: 10px; font-size: 13.5px; }
     .checks li { display: flex; gap: 8px; line-height: 1.45; }
     .checks li i { flex-shrink: 0; margin-top: 1px; }
     .checks .ok i { color: #00E676; } .checks .warn i { color: var(--yellow); } .checks .bad i { color: #FF6B6B; } .checks .info i { color: var(--muted); }
@@ -104,14 +108,14 @@
     .zone .h { position: absolute; width: 14px; height: 14px; background: #fff; border: 3px solid var(--orange); border-radius: 50%; }
     .zone .h.nw { left: -8px; top: -8px; cursor: nwse-resize; } .zone .h.ne { right: -8px; top: -8px; cursor: nesw-resize; }
     .zone .h.sw { left: -8px; bottom: -8px; cursor: nesw-resize; } .zone .h.se { right: -8px; bottom: -8px; cursor: nwse-resize; }
-    .zone span { position: absolute; left: 6px; top: 4px; font-size: 11px; font-weight: 700; color: var(--orange); pointer-events: none; }
+    .zone span { position: absolute; left: 6px; top: 4px; font-size: 12.5px; font-weight: 700; color: var(--orange); pointer-events: none; }
     .art-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-    .sl { display: grid; grid-template-columns: 82px minmax(0,1fr) 64px; gap: 10px; align-items: center; margin-bottom: 8px; font-size: 12.5px; }
+    .sl { display: grid; grid-template-columns: 82px minmax(0,1fr) 64px; gap: 10px; align-items: center; margin-bottom: 8px; font-size: 13.5px; }
     .sl input[type=range] { width: 100%; accent-color: var(--orange); }
-    .sl input[type=number] { width: 100%; padding: 5px 6px; border-radius: 6px; background: rgba(255,255,255,.04); border: 1px solid var(--border); color: var(--text); font-size: 12.5px; }
+    .sl input[type=number] { width: 100%; padding: 5px 6px; border-radius: 6px; background: rgba(255,255,255,.04); border: 1px solid var(--border); color: var(--text); font-size: 13.5px; }
     .ed-ft { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--border); }
-    .ed-ft .status { flex: 1; font-size: 12.5px; color: var(--muted); min-width: 0; }
-    .ed .readonly-note { font-size: 12.5px; color: var(--muted); background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; line-height: 1.5; }
+    .ed-ft .status { flex: 1; font-size: 13.5px; color: var(--muted); min-width: 0; }
+    .ed .readonly-note { font-size: 13.5px; color: var(--muted); background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -155,17 +159,18 @@
     </div>
 
     <div class="card" style="margin-bottom:16px;">
-      <p class="mo-intro">
-        The items customers can design and try on in the app. The five shirts are built in.
-        To sell something else, like a cap or a tote, add its 3D model here, then add a product for it on <a href="products.html" style="color:var(--orange);">Products</a>.
+      <p class="mo-intro" style="color:#d0d0d0;font-size:15.5px;">
+        These are the things customers can design and try on in the app. The five shirts are built in.
+        To sell something new, like a cap or a tote bag, add its 3D file here, then add it as a product on <a href="products.html" style="color:var(--orange);">Products &amp; Stock</a>.
       </p>
       <details class="mo-how">
-        <summary><i class="bi bi-question-circle"></i> How do I add a model?</summary>
+        <summary><i class="bi bi-question-circle"></i> How to add something new</summary>
         <div class="mo-steps">
-          <div class="mo-step"><b><span>1</span>Upload a .glb</b>The 3D file of the item. The page checks it and builds the designer's front and back pictures from it.</div>
-          <div class="mo-step"><b><span>2</span>Mark the print area</b>Found automatically when the model has a part named <code>PrintFront</code>; otherwise drag the box.</div>
-          <div class="mo-step"><b><span>3</span>Fit it for try-on</b>Choose where it's worn and line it up on the mannequin. Then check it in the app's Try On.</div>
-          <div class="mo-step"><b><span>4</span>Sell it</b>On <a href="products.html" style="color:var(--orange);">Products</a>, add a product and pick this model. Presets for it are made in the <a href="design.html" style="color:var(--orange);">Design Studio</a>.</div>
+          <div class="mo-step"><b><span>1</span>Get the 3D file</b>Ask a 3D artist for a <strong>.glb</strong> file of the item, or buy one online. Send them the notes under <strong>For your 3D artist</strong> at the bottom of this page.</div>
+          <div class="mo-step"><b><span>2</span>Upload it</b>Press <strong>Add model</strong> and choose the file. The page makes the pictures for the designer by itself.</div>
+          <div class="mo-step"><b><span>3</span>Check the print area</b>The orange box is where customers can put their design. Drag it or its corners if it's off.</div>
+          <div class="mo-step"><b><span>4</span>Line it up for try-on</b>Pick where it's worn (head, neck, chest…) and move it until it sits right on the dummy. Then try it in the app.</div>
+          <div class="mo-step"><b><span>5</span>Sell it</b>On <a href="products.html" style="color:var(--orange);">Products &amp; Stock</a>, press <strong>Add Product</strong>, and under Advanced pick this model.</div>
         </div>
       </details>
     </div>
@@ -182,39 +187,36 @@
     <div class="mo-grid" id="mo-grid"><div class="card"><div class="spinner"></div></div></div>
 
     <details class="card mo-guide" id="guide" style="margin-top:16px;">
-      <summary><span class="card-title"><i class="bi bi-journal-text" style="color:var(--orange);margin-right:6px;"></i>Preparing a model, and when Lens Studio is needed</span><i class="bi bi-chevron-down"></i></summary>
+      <summary><span class="card-title"><i class="bi bi-journal-text" style="color:var(--orange);margin-right:6px;"></i>For your 3D artist and developer</span><i class="bi bi-chevron-down"></i></summary>
       <div class="mo-guide-grid">
         <div>
-          <h4>The .glb file</h4>
-          <ol>
-            <li>Make or buy the item in Blender (or any 3D tool) and export it as <strong>glTF Binary (.glb)</strong>.</li>
-            <li><strong>Size in metres</strong>, <strong>Y up</strong>, and the <strong>front facing +Z</strong> (Blender's glTF export does this when the front faces −Y in Blender).</li>
-            <li>Put the <strong>origin where it meets the body</strong>: the centre of a cap's band, the bridge of a pair of glasses, the middle of a strap.</li>
-            <li>For prints, make the printable surface a <strong>separate part named <code>PrintFront</code></strong> (and <code>PrintBack</code> if the back is printable), lifted about 1 mm off the surface and
-              UV-mapped from the front so it fills the 0–1 square. The app and the try-on put the customer's design on exactly that part.</li>
-            <li>If customers choose a colour, make the main material <strong>white or light grey</strong>: the colour is multiplied over it.</li>
-            <li>Keep it light: under <strong>60,000 triangles</strong>, textures up to 2048 px, the file under <strong>8 MB</strong> (the app and try-on download it).</li>
-          </ol>
-          <p class="mo-note">A sample with the right setup is in the project at <code>lens-studio/models/SampleCap.glb</code>. Upload it here to see the whole flow.</p>
+          <h4>Send this to your 3D artist</h4>
+          <p class="mo-plain">"Please make a 3D model of our [item] that we can upload to our shop's app. It needs to be:"</p>
+          <ul>
+            <li>a <strong>.glb</strong> file (glTF Binary), under <strong>8 MB</strong> and under 60,000 triangles, textures up to 2048 px;</li>
+            <li>real size in <strong>metres</strong>, <strong>Y up</strong>, front facing <strong>+Z</strong>;</li>
+            <li>with its origin where it touches the body (the middle of a cap's band, the bridge of glasses, the middle of a strap);</li>
+            <li>with the printable surface as its own part named <code>PrintFront</code> (and <code>PrintBack</code> if the back can be printed), about 1 mm off the surface and UV-mapped to fill the whole 0–1 square;</li>
+            <li>in <strong>white or light grey</strong> if customers can pick its colour.</li>
+          </ul>
+          <p class="mo-note">A sample set up this way is in the project at <code>lens-studio/models/SampleCap.glb</code>.</p>
         </div>
         <div>
-          <h4>What works without Lens Studio</h4>
+          <h4>What works straight away, and what needs your developer</h4>
           <ul>
-            <li><strong>Rigid items</strong> (caps, hats, glasses, necklaces, bags, watches): uploaded here, they work in the app's 3D view and designer straight away. The try-on Lens downloads the model and attaches it to the head or body.</li>
-            <li>They follow the head or body as one piece; they don't bend.</li>
-            <li>The try-on part needs the Lens published <strong>once</strong> with the script that downloads models (<code>lens-studio/FitFusionShirts</code>). After that, turn on <strong>Try-on for added models</strong> above; until then the app hides AR Try-On for them.</li>
+            <li><strong>Things that don't bend</strong> (caps, hats, glasses, necklaces, bags, watches) work as soon as they're uploaded: in the app's 3D view, the designer and AR try-on.</li>
+            <li>AR try-on for added models needs the try-on Lens published once with model downloads, then <strong>Try-on for added models</strong> turned on above. Until then the app hides AR try-on for them.</li>
+            <li><strong>Clothes that bend with the body</strong>, like the five shirts, also work in the 3D view and designer once uploaded. For the try-on to wrap around the wearer, your developer adds them in Lens Studio:</li>
           </ul>
-          <h4 style="margin-top:14px;">What needs Lens Studio</h4>
-          <ul>
-            <li><strong>Fitted clothes that bend with the body</strong>, like the five shirts. A new shirt or jacket can still be added here (3D preview, designer and a rigid try-on), but for it to wrap around the wearer it must be added to the Lens:</li>
-          </ul>
-          <ol>
-            <li>Open <code>lens-studio/FitFusionShirts/FitFusionShirts.esproj</code> in Lens Studio.</li>
-            <li>Import the garment as an <strong>External Mesh</strong> on a Body Mesh (copy the setup of one of the objects under <strong>Shirts</strong>): one object with <strong>Shirt</strong>, <strong>Print Front</strong> and <strong>Print Back</strong> children.</li>
-            <li>Give the object a name with no spaces (for example <code>DenimJacket</code>) and put it under <strong>Shirts</strong>.</li>
-            <li>Publish the Lens and add it to the Camera Kit Lens group (see <a href="keys.html">App Keys</a>).</li>
-            <li>Here, open the model and type that name in <strong>Built into the Lens as</strong>. The app then asks the Lens for that object instead of the downloaded one.</li>
-          </ol>
+          <details class="mo-dev"><summary>Steps for your developer (Lens Studio)</summary>
+            <ol>
+              <li>Open <code>lens-studio/FitFusionShirts/FitFusionShirts.esproj</code> in Lens Studio.</li>
+              <li>Import the garment as an <strong>External Mesh</strong> on a Body Mesh, set up like the objects under <strong>Shirts</strong>: one object with <strong>Shirt</strong>, <strong>Print Front</strong> and <strong>Print Back</strong> children.</li>
+              <li>Name it with no spaces (for example <code>DenimJacket</code>) and put it under <strong>Shirts</strong>.</li>
+              <li>Publish the Lens and add it to the Camera Kit Lens Group (see <a href="keys.html#snap">App Keys</a>).</li>
+              <li>Here, open the model and type that name in <strong>Built into the Lens as</strong>.</li>
+            </ol>
+          </details>
         </div>
       </div>
     </details>
@@ -236,7 +238,7 @@
             <button class="f-tab active" data-mode="model">3D model</button>
             <button class="f-tab" data-mode="fit">Try-on fit</button>
           </div>
-          <span style="font-size:12px;color:var(--muted);" id="ed-viewinfo"></span>
+          <span style="font-size:13px;color:var(--muted);" id="ed-viewinfo"></span>
         </div>
         <canvas id="ed-canvas"></canvas>
         <div class="ed-empty" id="ed-empty"><i class="bi bi-badge-3d"></i><div>Upload a .glb to see the model here.</div></div>
@@ -281,7 +283,7 @@
               <button class="f-tab active" data-side="front">Front</button>
               <button class="f-tab" data-side="back">Back</button>
             </div>
-            <label class="fg-check" style="font-size:12.5px;"><input type="checkbox" id="f-hasback"> The back can be printed too</label>
+            <label class="fg-check" style="font-size:13.5px;"><input type="checkbox" id="f-hasback"> The back can be printed too</label>
           </div>
           <div id="art-area"></div>
           <div class="art-actions">
@@ -290,7 +292,7 @@
             <button class="btn-ghost" type="button" id="btn-zone-auto" onclick="autoZone()"><i class="bi bi-magic"></i> Find print area</button>
           </div>
           <input type="file" id="art-file" accept="image/png,image/webp,image/jpeg" hidden>
-          <div class="hint" style="font-size:12px;color:var(--muted);margin-top:8px;" id="art-hint"></div>
+          <div class="hint" style="font-size:13px;color:var(--muted);margin-top:8px;" id="art-hint"></div>
         </div>
 
         <!-- 4. Try-on fit -->
@@ -305,7 +307,7 @@
         <div class="ed-sec" id="sec-finish">
           <h4><span class="num" id="finish-num">5</span>Finish</h4>
           <div class="sl"><span>Shine</span><input type="range" id="f-rough" min="0" max="1" step="0.05"><span id="f-rough-v" style="color:var(--muted);"></span></div>
-          <div class="hint" style="font-size:12px;color:var(--muted);">Matte cotton is about 0.9; leather or plastic 0.4–0.6. Used by the try-on.</div>
+          <div class="hint" style="font-size:13px;color:var(--muted);">Matte cotton is about 0.9; leather or plastic 0.4–0.6. Used by the try-on.</div>
           <div class="fg" style="margin-top:12px;"><label for="f-pscale">Size in the app's 3D preview</label>
             <div class="sl" style="margin:0;"><span>Scale</span><input type="range" id="f-pscale" min="0.3" max="2" step="0.05"><span id="f-pscale-v" style="color:var(--muted);"></span></div>
           </div>
@@ -315,9 +317,9 @@
         <div class="ed-sec" id="sec-adv">
           <h4><span class="num">6</span>Advanced</h4>
           <div class="fg"><label for="f-lensobj">Built into the Lens as</label><input type="text" id="f-lensobj" maxlength="40" placeholder="Leave empty (the Lens downloads the .glb)">
-            <div class="hint">Only for fitted clothes added to the Lens in Lens Studio (see the guide below the models). The name of its object under <strong>Shirts</strong>.</div>
+            <div class="hint">Only for fitted clothes added to the Lens in Lens Studio (see <strong>For your 3D artist and developer</strong> at the bottom of the page). The name of its object under <strong>Shirts</strong>.</div>
           </div>
-          <div id="ed-usage" style="font-size:12.5px;color:var(--muted);"></div>
+          <div id="ed-usage" style="font-size:13.5px;color:var(--muted);"></div>
           <button class="btn-ghost" type="button" id="btn-delete" style="margin-top:12px;color:#FF6B6B;" onclick="deleteModel()"><i class="bi bi-trash3"></i> Delete this model</button>
         </div>
       </div>
@@ -379,7 +381,7 @@
     $('mo-lens-chip').className = 'chip ' + (on ? 'ok' : 'warn');
     $('mo-lens-sub').innerHTML = on
       ? 'The app offers AR Try-On for models added here; the try-on Lens downloads them. Turn this off if the Lens in your Lens group is an older version.'
-      : 'Turn on once the try-on Lens has been published with the script that downloads models (see the guide below). Until then the app hides AR Try-On for models added here. The shirts, and models built into the Lens, always work.';
+      : 'Turn on once the try-on Lens has been published with the script that downloads models (your developer does this; see the bottom of this page). Until then the app hides AR Try-On for models added here. The shirts, and models built into the Lens, always work.';
   }
   $('mo-lens-on').addEventListener('change', async e => {
     const on = e.target.checked;

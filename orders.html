@@ -23,8 +23,8 @@
   <div class="topbar">
     <div class="topbar-title">Orders <span>Management</span></div>
     <div class="topbar-right">
-      <div class="search-wrap"><i class="bi bi-search"></i><input type="text" id="q" placeholder="Search name, city, ID…"></div>
-      <select id="period" aria-label="Orders from" style="padding:8px 10px;border-radius:8px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);font-size:13px;">
+      <div class="search-wrap"><i class="bi bi-search"></i><input type="text" id="q" placeholder="Search name, phone, city, order no.…" aria-label="Search orders"></div>
+      <select id="period" aria-label="Orders from" style="padding:8px 10px;border-radius:8px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);font-size:14px;">
         <option value="all">Any time</option><option value="1">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option>
       </select>
       <button class="btn-ghost" onclick="exportCsv()" title="Download the orders shown as a spreadsheet"><i class="bi bi-filetype-csv"></i> Export</button>
@@ -40,17 +40,18 @@
       <button class="f-tab" data-s="Ready">Ready</button>
       <button class="f-tab" data-s="Delivered">Delivered</button>
       <button class="f-tab" data-s="Cancelled">Cancelled</button>
+      <button class="f-tab" data-s="nodriver" title="Orders not delivered or cancelled that have no driver yet" style="margin-left:auto;"><i class="bi bi-person-dash"></i> No driver yet</button>
     </div>
 
     <div class="card">
       <div class="card-head">
-        <span class="card-title">Orders <span id="count" style="color:var(--muted);font-weight:400;font-size:13px;"></span></span>
-        <span style="font-size:12px;color:var(--muted);">Click a row for full details</span>
+        <span class="card-title">Orders <span id="count" style="color:var(--muted);font-weight:400;font-size:14px;"></span></span>
+        <span style="font-size:13px;color:var(--muted);">Click a row for full details</span>
       </div>
       <div class="tbl-wrap">
         <table class="tbl">
           <thead><tr>
-            <th>Order ID</th><th>Customer</th><th>Contact</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Date</th><th>Update</th>
+            <th>Order</th><th>Customer &amp; address</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Driver</th><th>Date</th><th>Update</th>
           </tr></thead>
           <tbody id="tbody"><tr><td colspan="9"><div class="spinner"></div></td></tr></tbody>
         </table>
@@ -64,7 +65,7 @@
   <div class="modal" style="max-width:360px;">
     <div class="modal-hd"><h3>Update Status</h3><button class="modal-x" onclick="closeStatus()">&times;</button></div>
     <div class="modal-bd">
-      <p style="font-size:13.5px;color:var(--muted);margin-bottom:14px;">Order: <strong id="m-oid" style="color:var(--text);font-family:monospace;"></strong></p>
+      <p style="font-size:14.5px;color:var(--muted);margin-bottom:14px;">Order: <strong id="m-oid" style="color:var(--text);font-family:monospace;"></strong></p>
       <div class="fg"><label>New Status</label>
         <select id="m-sel" style="border-radius:8px;padding:9px 13px;">
           <option>Pending</option><option>Processing</option><option>Printing</option>
@@ -84,13 +85,15 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="js/firebase.js"></script>
+<script src="js/shop-map.js"></script>
 <script src="js/layout.js"></script>
 <script src="js/auth.js"></script>
 <script>
-  let all = [], filter = 'all', editId = null;
+  let all = [], filter = 'all', editId = null, shopLoc = null;
 
   auth.onAuthStateChanged(u => {
     if (!u) return;
+    loadShopLocation().then(l => { shopLoc = l; if (all.length) render(); }).catch(() => {});
     db.collection('orders').orderBy('orderedAt','desc').onSnapshot(snap => {
       all = snap.docs.map(d=>({id:d.id,...d.data()}));
       render();
@@ -105,20 +108,24 @@
     const from = new Date(); from.setHours(0, 0, 0, 0); from.setDate(from.getDate() - (Number(days) - 1));
     return o.orderedAt.toDate() >= from;
   }
+  /** A status tab, or "nodriver": orders still to be delivered that have no driver. */
+  const matchesTab = (o, tab) => tab === 'nodriver'
+    ? !['Delivered', 'Cancelled'].includes(o.status || 'Pending') && !(o.driver && o.driver.name)
+    : (o.status || 'Pending') === tab;
   let shown = [];
   function render() {
     const q = document.getElementById('q').value.trim().toLowerCase();
     const timed = all.filter(inPeriod);
     // How many orders each tab holds (in the chosen period)
     document.querySelectorAll('.f-tab').forEach(b => {
-      const n = b.dataset.s === 'all' ? timed.length : timed.filter(o => (o.status || 'Pending') === b.dataset.s).length;
+      const n = b.dataset.s === 'all' ? timed.length : timed.filter(o => matchesTab(o, b.dataset.s)).length;
       let c = b.querySelector('.cnt'); if (!c) { c = document.createElement('span'); c.className = 'cnt'; b.appendChild(c); }
       c.textContent = n;
     });
-    let rows = filter === 'all' ? timed : timed.filter(o=>(o.status||'Pending')===filter);
+    let rows = filter === 'all' ? timed : timed.filter(o => matchesTab(o, filter));
     // The app shows customers "KI-" + the last 5 characters of the id; accept that form (older "FF-" and "#…") too
     const idQ = q.replace(/^(ki-|ff-|#)/,'');
-    if (q) rows = rows.filter(o=>(o.fullName||'').toLowerCase().includes(q)||(o.city||'').toLowerCase().includes(q)||(o.barangay||'').toLowerCase().includes(q)||o.id.toLowerCase().includes(q)||(idQ&&o.id.toLowerCase().endsWith(idQ))||(o.payMongoSourceId||'').toLowerCase().includes(q));
+    if (q) rows = rows.filter(o=>(o.fullName||'').toLowerCase().includes(q)||(o.city||'').toLowerCase().includes(q)||(o.barangay||'').toLowerCase().includes(q)||o.id.toLowerCase().includes(q)||(idQ&&o.id.toLowerCase().endsWith(idQ))||(o.payMongoSourceId||'').toLowerCase().includes(q)||(o.phone||'').replace(/\s/g,'').includes(q.replace(/\s/g,''))||((o.driver&&o.driver.name)||'').toLowerCase().includes(q));
     shown = rows;
     document.getElementById('count').textContent = `(${rows.length})`;
 
@@ -129,18 +136,22 @@
       const qty = (o.items||[]).reduce((s,i)=>s+(i.quantity||1),0);
       const pay = o.isDownpayment
         ? (o.balancePaidAt
-          ? `<span style="color:#00E676;font-size:12px;"><i class="bi bi-check-circle"></i> Paid in full</span>`
-          : `<span style="color:var(--yellow);font-size:12px;"><i class="bi bi-wallet2"></i> Balance due ${peso(o.remainingAmount)}</span>`)
-        : `<span style="font-size:12.5px;"><i class="bi ${/cash on delivery|cod/i.test(o.paymentMethod||'')?'bi-cash-coin':'bi-phone'}" style="color:var(--orange);"></i> ${esc(o.paymentMethod||'GCash')}</span>`;
+          ? `<span style="color:#00E676;font-size:13px;"><i class="bi bi-check-circle"></i> Paid in full</span>`
+          : `<span style="color:var(--yellow);font-size:13px;"><i class="bi bi-wallet2"></i> Balance due ${peso(o.remainingAmount)}</span>`)
+        : `<span style="font-size:13.5px;"><i class="bi ${/cash on delivery|cod/i.test(o.paymentMethod||'')?'bi-cash-coin':'bi-phone'}" style="color:var(--orange);"></i> ${esc(o.paymentMethod||'GCash')}</span>`;
+      const pin = orderPin(o), km = shopLoc && pin ? distanceKm(shopLoc, pin) : null, st = o.status || 'Pending';
+      const drv = o.driver && o.driver.name
+        ? `<span class="pill ok" title="${esc(o.driver.name)}${o.driver.phone ? ' · ' + esc(o.driver.phone) : ''}"><i class="bi bi-person-check-fill"></i> ${esc(o.driver.name.length > 14 ? o.driver.name.slice(0, 13) + '…' : o.driver.name)}</span>`
+        : st === 'Cancelled' || st === 'Delivered' ? '<span class="note">—</span>' : `<span class="pill${st === 'Ready' ? ' warn' : ''}"><i class="bi bi-person-dash"></i> Not yet</span>`;
       return `<tr class="row-link" onclick="location.href='order-detail.html?id=${o.id}'">
-        <td><span style="font-family:monospace;font-size:12px;color:var(--muted);">${orderNo(o.id)}</span></td>
-        <td><strong>${esc(o.fullName||'—')}</strong><br><span style="font-size:12px;color:var(--muted);">${esc([o.barangay,o.city].filter(Boolean).join(', '))}</span></td>
-        <td style="font-size:12.5px;color:var(--muted);">${esc(o.phone||'—')}</td>
+        <td><span style="font-family:monospace;font-size:14px;color:var(--muted);">${orderNo(o.id)}</span></td>
+        <td><strong>${esc(o.fullName||'—')}</strong><div class="o-sub">${esc([o.barangay,o.city].filter(Boolean).join(', ')||'No address')}${km !== null ? ` · <span title="Straight line from your shop">${fmtKm(km)} away</span>` : ''}</div></td>
         <td style="text-align:center;font-weight:600;">${qty}</td>
         <td style="color:var(--orange);font-weight:700;">${peso(o.totalAmount)}</td>
         <td>${pay}</td>
         <td>${statusBadge(o.status||'Pending')}</td>
-        <td style="font-size:12px;color:var(--muted);white-space:nowrap;">${fmtDate(o.orderedAt,false)}</td>
+        <td>${drv}</td>
+        <td style="font-size:14px;color:var(--muted);white-space:nowrap;">${fmtDate(o.orderedAt,false)}</td>
         <td><button class="btn-icon" title="Update status" aria-label="Update the status of ${orderNo(o.id)}" onclick="event.stopPropagation();openStatus('${o.id}')"><i class="bi bi-pencil-square"></i></button></td>
       </tr>`;
     }).join('');
@@ -160,11 +171,12 @@
   /** The orders shown, as a spreadsheet: one row per item so quantities and sizes can be totalled. */
   function exportCsv() {
     if (!shown.length) { toast('No orders to export', 'warn'); return; }
-    const rows = [['Order No.', 'Order ID', 'Ordered', 'Status', 'Customer', 'Phone', 'Address', 'Barangay', 'City', 'Payment', 'Downpayment', 'Balance collected',
+    const rows = [['Order No.', 'Order ID', 'Ordered', 'Status', 'Customer', 'Phone', 'Address', 'Barangay', 'City', 'Landmark', 'Driver', 'Driver phone', 'Payment', 'Downpayment', 'Balance collected',
       'Subtotal', 'Shipping', 'Total', 'Item', 'Size', 'Qty', 'Item price']];
     shown.forEach(o => {
       const base = [orderNo(o.id), o.id, o.orderedAt && o.orderedAt.toDate ? localStamp(o.orderedAt.toDate()) : '',
-        o.status || 'Pending', o.fullName || '', o.phone || '', o.streetAddress || '', o.barangay || '', o.city || '',
+        o.status || 'Pending', o.fullName || '', o.phone || '', o.streetAddress || '', o.barangay || '', o.city || '', o.landmark || '',
+        (o.driver && o.driver.name) || '', (o.driver && o.driver.phone) || '',
         o.paymentMethod || 'GCash', o.isDownpayment ? (o.downpaymentAmount || 0) : '', o.isDownpayment ? (o.balancePaidAt ? 'Yes' : 'No') : '', o.subtotal || 0, o.shippingFee || 0, o.totalAmount || 0];
       const items = o.items && o.items.length ? o.items : [{}];
       items.forEach(it => rows.push(base.concat([it.productName || '', it.size || '', it.quantity || '', it.price || ''])));

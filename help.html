@@ -17,10 +17,10 @@
     details.task > summary .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: rgba(255,92,0,.12); color: var(--orange); font-size: 17px; flex-shrink: 0; }
     details.task > summary .chev { margin-left: auto; color: var(--muted); transition: transform .18s; }
     details.task[open] > summary .chev { transform: rotate(180deg); }
-    details.task ol { margin: 0 18px 16px 64px; padding: 0; display: grid; gap: 7px; font-size: 13.5px; line-height: 1.55; color: #d6d6d6; }
-    details.task p.tip { margin: 0 18px 16px 64px; font-size: 12.5px; color: var(--muted); border-left: 3px solid var(--yellow); padding-left: 10px; }
+    details.task ol { margin: 0 18px 16px 64px; padding: 0; display: grid; gap: 7px; font-size: 14.5px; line-height: 1.55; color: #d6d6d6; }
+    details.task p.tip { margin: 0 18px 16px 64px; font-size: 13.5px; color: var(--muted); border-left: 3px solid var(--yellow); padding-left: 10px; }
     details.task a { color: var(--orange); }
-    .help-sec { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #6a6a6a; margin: 14px 0 2px; }
+    .help-sec { font-size: 12.5px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #6a6a6a; margin: 14px 0 2px; }
     @media (max-width: 600px) { details.task ol, details.task p.tip { margin-left: 18px; } }
   </style>
 </head>
@@ -42,7 +42,7 @@
   </div>
   <div class="page-content">
     <div class="help-wrap">
-      <p class="help-lead">Click a task to see the steps.</p>
+      <p class="help-lead">Click a task to see the steps. Setting up the shop for the first time? Start with <a href="getting-started.html" style="color:var(--orange);font-weight:600;">Getting Started</a>.</p>
 
       <div class="help-sec">Every day</div>
 
@@ -55,7 +55,18 @@
           <li>Change the status with the box at the top as you work: <strong>Processing</strong> → <strong>Printing</strong> → <strong>Ready for pickup</strong> → <strong>Delivered</strong>. The customer sees each change in the app.</li>
           <li>Press <strong>Print</strong> for a job sheet to keep with the order.</li>
         </ol>
-        <p class="tip">Stock comes off automatically when an order leaves Pending, and goes back if you cancel it.</p>
+        <p class="tip">Stock comes off by itself as soon as an order comes in, and goes back if you cancel it.</p>
+      </details>
+
+      <details class="task">
+        <summary><span class="ic"><i class="bi bi-truck"></i></span>Send an order out with a driver<i class="bi bi-chevron-down chev"></i></summary>
+        <ol>
+          <li>Open the order. The <strong>Delivery</strong> box shows the address, the phone number, how far it is from your shop and a map.</li>
+          <li>Press <strong>Copy address</strong> to paste it into a courier app or a message, or <strong>Directions</strong> to open the route in Google Maps.</li>
+          <li>Type the driver's name and phone (and the plate or booking number if you have it), then press <strong>Assign driver</strong>.</li>
+          <li>Press <strong>Tell the customer</strong> to put the driver's details in the chat, check it, and send.</li>
+        </ol>
+        <p class="tip">The Orders list shows who has a driver. The <strong>No driver yet</strong> tab lists the orders still waiting for one.</p>
       </details>
 
       <details class="task">
@@ -91,10 +102,12 @@
       <details class="task">
         <summary><span class="ic"><i class="bi bi-box-seam"></i></span>Add or change a product<i class="bi bi-chevron-down chev"></i></summary>
         <ol>
-          <li>Open <a href="products.html">Products</a> and press <strong>Add Product</strong>, or the pencil on an existing one.</li>
-          <li>Fill in the name, category, price (at least ₱20) and sizes. Add the stock for each size if you track it.</li>
-          <li>To put it on sale, type a <strong>Discount (%)</strong>. The <strong>Customers pay</strong> box beside it shows the new price as you type, and the app shows the old price crossed out with the discount badge.</li>
-          <li>Pick the 3D model so customers can design it and try it on.</li>
+          <li>Open <a href="products.html">Products &amp; Stock</a> and press <strong>Add Product</strong>, or <strong>Edit</strong> on a product. <strong>Duplicate</strong> makes a copy to change, like a new colour.</li>
+          <li>Fill in the name, category, price (at least ₱20) and sizes.</li>
+          <li>To put it on sale, type a <strong>Discount (%)</strong>. The <strong>Customers pay</strong> box shows the new price as you type.</li>
+          <li>For the photo, upload one or click a ready-made design made on the same shirt.</li>
+          <li>Turn on <strong>Count how many are in storage</strong> and set each size with <strong>−</strong> and <strong>+</strong>.</li>
+          <li>Rarely needed, under <strong>Advanced</strong>: the 3D model, a tag on the photo, and the measurements per size customers see in the app.</li>
           <li>Press Save. Use the <strong>For sale</strong> switch to hide a product from the app without deleting it.</li>
         </ol>
       </details>
@@ -102,10 +115,21 @@
       <details class="task">
         <summary><span class="ic"><i class="bi bi-tags"></i></span>Organise products into categories<i class="bi bi-chevron-down chev"></i></summary>
         <ol>
-          <li>Open <a href="categories.html">Categories</a>, type a name and press <strong>Add</strong>.</li>
-          <li>Use the arrows to set the order they appear in the app.</li>
-          <li>Pick each product's category on the Products page.</li>
+          <li>Open <a href="products.html?categories=1">Products &amp; Stock</a> and press <strong>Categories</strong> at the top.</li>
+          <li>Type a name and press <strong>Add</strong>. Use the arrows to set the order they appear in the app.</li>
+          <li>Pick each product's category when you add or edit it.</li>
         </ol>
+      </details>
+
+      <details class="task">
+        <summary><span class="ic"><i class="bi bi-boxes"></i></span>Add stock when a delivery arrives, or check what's in storage<i class="bi bi-chevron-down chev"></i></summary>
+        <ol>
+          <li>Open <a href="products.html?view=stock">Products &amp; Stock</a> and choose <strong>In storage</strong>.</li>
+          <li>For a delivery, press <strong>Add a delivery</strong> on the product, type how many of each size came in, and press <strong>Add to storage</strong>.</li>
+          <li>For one or two pieces, use <strong>−</strong> and <strong>+</strong>. After counting the shelf, click a number and type what you counted.</li>
+          <li>The boxes at the top show what's running low or out of stock; click one to see only those. <strong>Count sheet</strong> downloads a list to check the shelves with.</li>
+        </ol>
+        <p class="tip">Orders take stock off by themselves as they come in; cancelling an order puts it back. When a size is out of stock the app stops selling it.</p>
       </details>
 
       <details class="task">
@@ -135,6 +159,15 @@
           <li>Change the amounts. The box "What customers see" shows the result.</li>
           <li>Press <strong>Save settings</strong>. The app uses them within a few seconds; orders already placed keep their amounts.</li>
         </ol>
+      </details>
+
+      <details class="task">
+        <summary><span class="ic"><i class="bi bi-shop"></i></span>Set the shop's location<i class="bi bi-chevron-down chev"></i></summary>
+        <ol>
+          <li>Open <a href="settings.html">Shop Settings</a> and press <strong>Set the location</strong> under Shop location.</li>
+          <li>Search your address or press <strong>Use where I am</strong>, drag the pin onto your door, and press <strong>Save location</strong>.</li>
+        </ol>
+        <p class="tip">Every order then shows the distance from the shop. An admin who isn't a Super Admin can set one from an order page; it's saved for their account only.</p>
       </details>
 
       <details class="task">

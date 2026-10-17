@@ -42,10 +42,10 @@
   .ds-shape-btn { width:46px; height:46px; border-radius:9px; background:var(--dark); border:1px solid var(--border); cursor:pointer; padding:7px; }
   .ds-shape-btn:hover { border-color:var(--orange); }
   .ds-shape-btn svg { width:100%; height:100%; display:block; }
-  .ds-panel label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); display:block; margin:12px 0 5px; }
-  .ds-panel input[type=text], .ds-panel textarea, .ds-panel select { width:100%; box-sizing:border-box; padding:8px 9px; border-radius:8px; background:var(--dark); color:var(--text); border:1px solid var(--border); font-size:13px; }
+  .ds-panel label { font-size:12.5px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); display:block; margin:12px 0 5px; }
+  .ds-panel input[type=text], .ds-panel textarea, .ds-panel select { width:100%; box-sizing:border-box; padding:8px 9px; border-radius:8px; background:var(--dark); color:var(--text); border:1px solid var(--border); font-size:14px; }
   .ds-panel input[type=range] { width:100%; accent-color:var(--orange); }
-  .ds-layer { display:flex; align-items:center; gap:8px; padding:7px 9px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; font-size:13px; cursor:pointer; }
+  .ds-layer { display:flex; align-items:center; gap:8px; padding:7px 9px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; font-size:14px; cursor:pointer; }
   .ds-layer.on { border-color:var(--orange); background:rgba(255,92,0,.1); }
   .ds-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; align-items:end; }
   .ds-row .fg { margin:0; }
@@ -56,7 +56,7 @@
   <div class="topbar">
     <div class="topbar-title">Design Studio <span>Starting designs &amp; presets</span></div>
     <div class="topbar-right">
-      <span id="ds-dirty" style="font-size:12.5px;color:var(--yellow);" hidden>Unsaved changes</span>
+      <span id="ds-dirty" style="font-size:13.5px;color:var(--yellow);" hidden>Unsaved changes</span>
       <button class="btn-ghost" id="ds-remove" onclick="removeTarget()" hidden><i class="bi bi-trash3"></i> <span id="ds-remove-text">Remove starting design</span></button>
       <button class="btn-grad" id="ds-save" onclick="saveTarget()"><i class="bi bi-check-lg"></i> <span id="ds-save-text">Save to product</span></button>
     </div>
@@ -70,7 +70,7 @@
             <button class="f-tab active" data-mode="product" role="tab"><i class="bi bi-box-seam"></i> Product starting design</button>
             <button class="f-tab" data-mode="preset" role="tab"><i class="bi bi-stars"></i> Presets</button>
           </div>
-          <span id="ds-mode-help" style="font-size:12.5px;color:var(--muted);flex:1;min-width:240px;line-height:1.5;"></span>
+          <span id="ds-mode-help" style="font-size:13.5px;color:var(--muted);flex:1;min-width:240px;line-height:1.5;"></span>
         </div>
         <div id="ds-product-row" class="ds-row">
           <div class="fg"><label for="ds-product">Product</label><select id="ds-product"></select></div>
@@ -81,7 +81,7 @@
           <div class="fg"><label for="ds-pname">Name *</label><input type="text" id="ds-pname" maxlength="30" placeholder="e.g. Summer Vibes"></div>
           <div class="fg"><label for="ds-pdesc">Short description</label><input type="text" id="ds-pdesc" maxlength="80" placeholder="Optional"></div>
           <div class="fg"><label for="ds-pfor">Shown for</label><select id="ds-pfor"><option value="all">Every model</option><option value="this">Only the model it's designed on</option></select></div>
-          <div class="fg" style="display:flex;align-items:flex-end;"><label class="fg-check" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);margin:0 0 9px;"><input type="checkbox" id="ds-pactive" checked> Customers can see it</label></div>
+          <div class="fg" style="display:flex;align-items:flex-end;"><label class="fg-check" style="text-transform:none;letter-spacing:0;font-size:14px;color:var(--text);margin:0 0 9px;"><input type="checkbox" id="ds-pactive" checked> Customers can see it</label></div>
         </div>
         <div class="filter-bar" style="margin:0;" id="ds-sides">
           <button class="f-tab active" data-side="Front">Front</button>
@@ -94,7 +94,7 @@
       <div class="card">
         <div class="card-head">
           <span class="card-title" id="ds-stage-title">Shirt</span>
-          <span style="font-size:12.5px;color:var(--muted);">Drag to move · drag the white dot to resize · drop an image file on the picture to add it</span>
+          <span style="font-size:13.5px;color:var(--muted);">Drag to move · drag the white dot to resize · drop an image file on the picture to add it</span>
         </div>
         <div class="ds-stage-scroll"><div class="ds-stage" id="ds-stage"></div></div>
       </div>
@@ -107,7 +107,7 @@
             <button class="btn-ghost" id="ds-upload-btn" onclick="document.getElementById('ds-file').click()"><i class="bi bi-upload"></i> Upload image</button>
             <input type="file" id="ds-file" accept="image/*" hidden>
           </div>
-          <div id="ds-upload-status" style="font-size:12.5px;color:var(--muted);margin-top:8px;" role="status"></div>
+          <div id="ds-upload-status" style="font-size:13.5px;color:var(--muted);margin-top:8px;" role="status"></div>
           <label>Shapes</label>
           <div id="ds-shapes" style="display:flex;gap:7px;flex-wrap:wrap;"></div>
           <div id="ds-color-box"><label>Color</label>
@@ -118,7 +118,7 @@
         <div style="padding:0 18px 12px;" id="ds-layers"></div>
 
         <div class="card-head" style="border-top:1px solid var(--border);"><span class="card-title" id="ds-sel-title">Selected</span></div>
-        <div style="padding:0 18px 18px;" id="ds-sel"><p style="font-size:13px;color:var(--muted);">Click something on the picture to edit it.</p></div>
+        <div style="padding:0 18px 18px;" id="ds-sel"><p style="font-size:14px;color:var(--muted);">Click something on the picture to edit it.</p></div>
       </div>
     </div>
   </div>
@@ -286,7 +286,7 @@
          <button class="btn-icon" title="Bring forward" aria-label="Bring forward" onclick="event.stopPropagation();moveLayer('${k}',1)"><i class="bi bi-arrow-up"></i></button>
          <button class="btn-icon" title="Send back" aria-label="Send back" onclick="event.stopPropagation();moveLayer('${k}',-1)"><i class="bi bi-arrow-down"></i></button>
        </div>`).join('')
-      : '<p style="font-size:13px;color:var(--muted);">Nothing on this side yet. Top of the list is on top.</p>';
+      : '<p style="font-size:14px;color:var(--muted);">Nothing on this side yet. Top of the list is on top.</p>';
   }
   const swatches = (cur, fn) => `<div class="ds-swatches">${INK_COLORS.map(c => `<button class="ds-sw ${c === cur ? 'on' : ''}" style="background:${c};" title="${c}" aria-label="Color ${c}" onclick="${fn}('${c}')"></button>`).join('')}</div>`;
   function renderSel() {
@@ -304,12 +304,12 @@
         <button class="btn-ghost" style="margin-top:14px;" onclick="document.getElementById('ds-file').click()"><i class="bi bi-arrow-repeat"></i> Replace image</button><br>${del}`;
     } else {
       const sh = v.shapes.find(s => 'shape:' + s.id === sel);
-      if (!sh) { $('ds-sel-title').textContent = 'Selected'; box.innerHTML = '<p style="font-size:13px;color:var(--muted);">Click something on the picture to edit it.</p>'; return; }
+      if (!sh) { $('ds-sel-title').textContent = 'Selected'; box.innerHTML = '<p style="font-size:14px;color:var(--muted);">Click something on the picture to edit it.</p>'; return; }
       $('ds-sel-title').textContent = sh.name || 'Shape';
       box.innerHTML = `<label for="s-sscale">Size</label><input type="range" id="s-sscale" min="0.25" max="4" step="0.01" value="${num(sh.scale,1)}" oninput="setShape('scale',+this.value)">
         <label for="s-rot">Turn</label><input type="range" id="s-rot" min="-180" max="180" step="1" value="${num(sh.rotation,0)}" oninput="setShape('rotation',+this.value)">
         <label for="s-rep">Repeat as a pattern</label><select id="s-rep" onchange="setShape('repeat',+this.value)">${[1,2,3,4].map(n => `<option value="${n}" ${n === (sh.repeat||1) ? 'selected' : ''}>${n === 1 ? 'No' : n + ' × ' + n}</option>`).join('')}</select>
-        <label class="fg-check" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);"><input type="checkbox" ${sh.outline ? 'checked' : ''} onchange="setShape('outline',this.checked)"> Outline only</label>
+        <label class="fg-check" style="text-transform:none;letter-spacing:0;font-size:14px;color:var(--text);"><input type="checkbox" ${sh.outline ? 'checked' : ''} onchange="setShape('outline',this.checked)"> Outline only</label>
         <label>Color</label>${swatches(sh.colorHex, 'setShapeColor')}${del}`;
     }
   }

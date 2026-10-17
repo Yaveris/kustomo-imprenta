@@ -29,8 +29,8 @@
 
   <div class="page-content">
     <div class="card">
-      <div class="card-head"><span class="card-title">All Customers <span id="count" style="color:var(--muted);font-weight:400;font-size:13px;"></span></span>
-        <select id="sort" aria-label="Sort customers" style="padding:6px 10px;border-radius:8px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);font-size:12.5px;">
+      <div class="card-head"><span class="card-title">All Customers <span id="count" style="color:var(--muted);font-weight:400;font-size:14px;"></span></span>
+        <select id="sort" aria-label="Sort customers" style="padding:6px 10px;border-radius:8px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);font-size:13.5px;">
           <option value="new">Newest first</option><option value="orders">Most orders</option><option value="spent">Highest order value</option><option value="recent">Ordered most recently</option><option value="name">Name A–Z</option>
         </select></div>
       <div class="tbl-wrap">
@@ -90,20 +90,20 @@
     tbody.innerHTML=rows.map(c=>{
       const name=`${c.firstName||''} ${c.lastName||''}`.trim()||'Unknown';
       const oc=orderCounts[c.id]||0;
-      const off=c.status==='Disabled'?' <span style="font-size:11px;color:#FF4444;font-weight:700;">DISABLED</span>':'';
+      const off=c.status==='Disabled'?' <span style="font-size:12.5px;color:#FF4444;font-weight:700;">DISABLED</span>':'';
       return `<tr class="row-link" onclick="viewCust('${c.id}')">
         <td><div style="display:flex;align-items:center;gap:9px;">
-          ${safeUrl(c.photoUrl)?`<img src="${safeUrl(c.photoUrl)}" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;" onerror="this.remove()">`:`<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--pink));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;">${esc(name.charAt(0).toUpperCase())}</div>`}
-          <strong style="font-size:13.5px;">${esc(name)}</strong>${off}
+          ${safeUrl(c.photoUrl)?`<img src="${safeUrl(c.photoUrl)}" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;" onerror="this.remove()">`:`<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--pink));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;">${esc(name.charAt(0).toUpperCase())}</div>`}
+          <strong style="font-size:14.5px;">${esc(name)}</strong>${off}
         </div></td>
-        <td style="font-size:13px;color:var(--muted);">${esc(c.email||'—')}</td>
-        <td style="font-size:13px;">${esc(c.phone||'—')}</td>
-        <td style="font-size:13px;">${esc(c.city||'—')}</td>
-        <td style="text-align:center;">${c.recommendedSize?`<span style="background:rgba(255,92,0,.1);color:var(--orange);padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700;">${esc(c.recommendedSize)}</span>`:'—'}</td>
-        <td style="font-size:12px;color:var(--muted);">${fmtDate(c.createdAt,false)}</td>
+        <td style="font-size:14px;color:var(--muted);">${esc(c.email||'—')}</td>
+        <td style="font-size:14px;">${esc(c.phone||'—')}</td>
+        <td style="font-size:14px;">${esc(c.city||'—')}</td>
+        <td style="text-align:center;">${c.recommendedSize?`<span style="background:rgba(255,92,0,.1);color:var(--orange);padding:2px 8px;border-radius:4px;font-size:13px;font-weight:700;">${esc(c.recommendedSize)}</span>`:'—'}</td>
+        <td style="font-size:13px;color:var(--muted);">${fmtDate(c.createdAt,false)}</td>
         <td style="text-align:center;font-weight:700;color:${oc>0?'var(--orange)':'var(--muted)'};">${oc}</td>
-        <td style="font-size:13px;font-weight:600;">${spent[c.id]?peso(spent[c.id]):'—'}</td>
-        <td style="font-size:12px;color:var(--muted);">${lastOrder[c.id]?fmtDate(lastOrder[c.id],false):'—'}</td>
+        <td style="font-size:14px;font-weight:600;">${spent[c.id]?peso(spent[c.id]):'—'}</td>
+        <td style="font-size:13px;color:var(--muted);">${lastOrder[c.id]?fmtDate(lastOrder[c.id],false):'—'}</td>
         <td><button class="btn-icon" aria-label="View ${esc(name)}" onclick="event.stopPropagation();viewCust('${c.id}')"><i class="bi bi-eye"></i></button></td>
       </tr>`;
     }).join('');
@@ -133,7 +133,7 @@
     document.getElementById('cust-body').innerHTML=`
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
         ${safeUrl(c.photoUrl)?`<img src="${safeUrl(c.photoUrl)}" alt="" style="width:60px;height:60px;border-radius:50%;object-fit:cover;">`:`<div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--pink));display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;">${esc(name.charAt(0))}</div>`}
-        <div><div style="font-size:17px;font-weight:700;">${esc(name)}</div><div style="color:var(--muted);font-size:13px;">${esc(c.email||'—')}</div></div>
+        <div><div style="font-size:17px;font-weight:700;">${esc(name)}</div><div style="color:var(--muted);font-size:14px;">${esc(c.email||'—')}</div></div>
       </div>
       <div class="info-grid" style="margin-bottom:18px;">
         <div class="ii"><label>Phone</label><span>${esc(c.phone||'—')}</span></div>
@@ -153,13 +153,13 @@
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
         <button class="btn-ghost" id="acct-btn" onclick="setDisabled('${uid}',${c.status==='Disabled'?'false':'true'})">
           <i class="bi ${c.status==='Disabled'?'bi-unlock':'bi-slash-circle'}"></i> ${c.status==='Disabled'?'Enable this account':'Disable this account'}</button>
-        <span style="font-size:12.5px;color:var(--muted);">${c.status==='Disabled'?'This customer is signed out of the app and can\'t sign back in.':'A disabled customer is signed out of the app and can\'t sign in or order.'}</span>
+        <span style="font-size:13.5px;color:var(--muted);">${c.status==='Disabled'?'This customer is signed out of the app and can\'t sign back in.':'A disabled customer is signed out of the app and can\'t sign in or order.'}</span>
       </div>
       <hr class="divider">
       <div style="font-weight:700;font-size:14px;margin-bottom:12px;">Order History (${orders.length})</div>
-      ${orders.length===0?'<p style="color:var(--muted);font-size:13px;">No orders yet</p>':orders.map(o=>`
+      ${orders.length===0?'<p style="color:var(--muted);font-size:14px;">No orders yet</p>':orders.map(o=>`
         <div style="display:flex;align-items:center;justify-content:space-between;padding:11px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;margin-bottom:7px;cursor:pointer;" onclick="window.open('order-detail.html?id=${o.id}','_blank')">
-          <div><div style="font-family:monospace;font-size:13px;font-weight:600;">${orderNo(o.id)}</div><div style="font-size:12px;color:var(--muted);">${fmtDate(o.orderedAt,false)}</div></div>
+          <div><div style="font-family:monospace;font-size:14px;font-weight:600;">${orderNo(o.id)}</div><div style="font-size:13px;color:var(--muted);">${fmtDate(o.orderedAt,false)}</div></div>
           <div style="text-align:right;"><div style="font-weight:700;color:var(--orange);">${peso(o.totalAmount)}</div>${statusBadge(o.status)}</div>
         </div>`).join('')}`;
   }

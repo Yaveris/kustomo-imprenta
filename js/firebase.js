@@ -106,8 +106,6 @@ function esc(str) {
 const STATUSES = ['Pending', 'Processing', 'Printing', 'Ready', 'Delivered'];
 const ALL_STATUSES = STATUSES.concat(['Cancelled']);
 
-/** Moves an order to `status`: records who changed it and when (statusHistory, shown on the order page), then takes
- *  stock off when it leaves Pending, or puts it back when it is cancelled. Throws when the status can't be saved. */
 /** What to ask before a status change that's easy to get wrong, or '' when no question is needed. */
 function statusChangeQuestion(no, from, to) {
   from = from || 'Pending';
@@ -128,6 +126,8 @@ async function setBalanceCollected(orderId, collected) {
     : { balancePaidAt: firebase.firestore.FieldValue.delete(), balancePaidBy: firebase.firestore.FieldValue.delete() });
 }
 
+/** Moves an order to `status`: records who changed it and when (statusHistory, shown on the order page), then takes
+ *  its stock off if it is still on, or puts it back when it is cancelled. Throws when the status can't be saved. */
 async function setOrderStatus(orderId, status) {
   const who = (auth.currentUser && auth.currentUser.email) || '';
   await db.collection('orders').doc(orderId).update({
@@ -203,19 +203,19 @@ function productShirtStyle(p) {
 //  published; until then the app keeps AR try-on off for added models (ids never start with "_").
 // ─────────────────────────────────────────────
 
-/** Each built-in cut's front/back picture and where its print area is in it (fractions: left, top, right, bottom).
- *  The same pictures and numbers as the app's 2D editor (styleArt in CustomizerScreen.kt). */
+/** Each built-in cut's front/back picture and where its print area is in it (fractions: left, top, right, bottom):
+ *  nearly the whole front and back. The same pictures and numbers as the app's 2D editor (styleArt in CustomizerScreen.kt). */
 const BUILTIN_ART = {
-  MaleClassicShirt:   { Front: { img: 'img/shirt_art_male_classic_front.png', zone: [0.328, 0.2415, 0.6717, 0.6919], w: 782, h: 760 },
-                        Back:  { img: 'img/shirt_art_male_classic_back.png',  zone: [0.3283, 0.2162, 0.672, 0.6635], w: 782, h: 760 } },
-  MaleVNeckShirt:     { Front: { img: 'img/shirt_art_male_vneck_front.png',   zone: [0.328, 0.3392, 0.6717, 0.7896], w: 782, h: 760 },
-                        Back:  { img: 'img/shirt_art_male_vneck_back.png',    zone: [0.3283, 0.2162, 0.672, 0.6635], w: 782, h: 760 } },
-  FemaleClassicShirt: { Front: { img: 'img/shirt_art_female_classic_front.png', zone: [0.326, 0.2749, 0.6763, 0.6929], w: 712, h: 760 },
-                        Back:  { img: 'img/shirt_art_female_classic_back.png',  zone: [0.3237, 0.2147, 0.674, 0.6297], w: 712, h: 760 } },
-  FemaleVNeckShirt:   { Front: { img: 'img/shirt_art_female_vneck_front.png', zone: [0.326, 0.3646, 0.6763, 0.7825], w: 712, h: 760 },
-                        Back:  { img: 'img/shirt_art_female_vneck_back.png',  zone: [0.3237, 0.2147, 0.674, 0.6297], w: 712, h: 760 } },
-  LongSleeveShirt:    { Front: { img: 'img/shirt_art_long_sleeve_front.png', zone: [0.3778, 0.2413, 0.623, 0.692], w: 1097, h: 760 },
-                        Back:  { img: 'img/shirt_art_long_sleeve_back.png',  zone: [0.377, 0.216, 0.6222, 0.6635], w: 1097, h: 760 } }
+  MaleClassicShirt:   { Front: { img: 'img/shirt_art_male_classic_front.png', zone: [0.3158, 0.1973, 0.684, 0.8671], w: 782, h: 760 },
+                        Back:  { img: 'img/shirt_art_male_classic_back.png',  zone: [0.316, 0.1467, 0.6842, 0.905], w: 782, h: 760 } },
+  MaleVNeckShirt:     { Front: { img: 'img/shirt_art_male_vneck_front.png',   zone: [0.3158, 0.2794, 0.684, 0.8671], w: 782, h: 760 },
+                        Back:  { img: 'img/shirt_art_male_vneck_back.png',    zone: [0.316, 0.1467, 0.6842, 0.905], w: 782, h: 760 } },
+  FemaleClassicShirt: { Front: { img: 'img/shirt_art_female_classic_front.png', zone: [0.3049, 0.2344, 0.6973, 0.8583], w: 712, h: 760 },
+                        Back:  { img: 'img/shirt_art_female_classic_back.png',  zone: [0.3027, 0.149, 0.6951, 0.9042], w: 712, h: 760 } },
+  FemaleVNeckShirt:   { Front: { img: 'img/shirt_art_female_vneck_front.png', zone: [0.3049, 0.3067, 0.6973, 0.8583], w: 712, h: 760 },
+                        Back:  { img: 'img/shirt_art_female_vneck_back.png',  zone: [0.3027, 0.149, 0.6951, 0.9042], w: 712, h: 760 } },
+  LongSleeveShirt:    { Front: { img: 'img/shirt_art_long_sleeve_front.png', zone: [0.369, 0.197, 0.6318, 0.8673], w: 1097, h: 760 },
+                        Back:  { img: 'img/shirt_art_long_sleeve_back.png',  zone: [0.3682, 0.1464, 0.631, 0.9051], w: 1097, h: 760 } }
 };
 
 const MODEL_KINDS = [
@@ -327,11 +327,52 @@ function productModel(p, models) {
 
 // ─────────────────────────────────────────────
 //  STOCK
-//  The app can't change products (customers have no write access to them), so stock comes off here, once per
-//  order, the first time the shop moves it past "Pending". Only products that have "Stock per size" filled in
-//  are counted; made-to-order products are left alone. The order is marked `stockDeducted` so it never happens
-//  twice.
+//  A product's `inventory` holds how many of each size are in storage ({S: 4, M: 12}); a product without it is
+//  made to order and never counted. The app can't change products (customers have no write access to them), so
+//  stock comes off here: every admin page watches for new orders (js/layout.js → deductNewOrders) and takes their
+//  items off as soon as they arrive. An order that still has its stock on when its status is changed is counted
+//  then. The order is marked `stockDeducted` so it never happens twice; cancelling puts the stock back.
 // ─────────────────────────────────────────────
+
+/** Adds `delta` pieces (negative to remove) to one size in storage. An increment, so it can't undo an order that
+ *  comes in at the same moment. */
+async function changeStock(productId, size, delta) {
+  await db.collection('products').doc(productId).update({ ['inventory.' + size]: firebase.firestore.FieldValue.increment(delta) });
+}
+/** Sets one size's count outright, after counting what is on the shelf. */
+async function setStockCount(productId, size, n) {
+  await db.collection('products').doc(productId).update({ ['inventory.' + size]: Math.max(0, Math.round(n)) });
+}
+/** Whether the product's stock is counted (it has an `inventory`); the others are made to order. */
+function tracksStock(p) { return !!(p && p.inventory && typeof p.inventory === 'object'); }
+/** How many of `size` are in storage (never below 0), or null for a made-to-order product. */
+function stockOf(p, size) {
+  if (!tracksStock(p)) return null;
+  const n = Number(p.inventory[size]);
+  return isFinite(n) && n > 0 ? Math.floor(n) : 0;
+}
+
+/** Takes stock off for new orders the moment they arrive: called with the "Pending" orders by every admin page
+ *  that is open (js/layout.js). Each order is counted once, even with several pages open, because
+ *  deductStockForOrder checks the order's `stockDeducted` mark inside a transaction. An order whose stock was put
+ *  back (cancelled, or cleared by Clean Up) is left to the status change that reopens it. */
+const _stockTried = new Set();
+async function deductNewOrders(docs) {
+  for (const d of docs) {
+    const o = d.data() || {};
+    if (o.stockDeducted || o.stockRestoredAt || (o.status || 'Pending') !== 'Pending' || _stockTried.has(d.id)) continue;
+    _stockTried.add(d.id);
+    try {
+      const r = await deductStockForOrder(d.id);
+      if (!r.done) continue;
+      if (r.short.length) toast(`New order ${orderNo(d.id)}: not enough in storage for ${r.short.join('; ')}`, 'warn');
+      else if (r.lines.length) toast(`New order ${orderNo(d.id)}: taken from storage (${r.lines.join('; ')})`, 'ok');
+    } catch (e) {
+      console.warn('Stock for order', d.id, e);
+      _stockTried.delete(d.id);           // tried again the next time the orders change
+    }
+  }
+}
 
 /** Takes an order's items off their products' stock. Returns what happened, for a toast:
  *  {done:false} when it was already taken off, else {done:true, lines:[…], short:[…]} */
@@ -411,9 +452,10 @@ async function restockIfCancelled(orderId) {
   }
 }
 
-/** Call after an order's status is saved: takes stock off when it has just left "Pending". Never throws. */
+/** Call after an order's status is saved: takes its stock off if that hasn't happened yet (an order reopened after
+ *  being cancelled, or one that arrived while no admin page was open). Never throws. */
 async function deductStockIfAccepted(orderId, newStatus) {
-  if (newStatus === 'Pending' || newStatus === 'Cancelled') return;
+  if (newStatus === 'Cancelled') return;
   try {
     const r = await deductStockForOrder(orderId);
     if (!r.done) return;

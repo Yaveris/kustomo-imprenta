@@ -10,6 +10,7 @@
   const NAV = [
     ['', [
       ['dashboard.html', 'bi-speedometer2', 'Dashboard'],
+      ['getting-started.html', 'bi-flag', 'Getting Started'],
       ['help.html', 'bi-question-circle', 'Help']
     ]],
     ['Shop', [
@@ -18,8 +19,7 @@
       ['customers.html', 'bi-people', 'Customers']
     ]],
     ['Catalog', [
-      ['products.html', 'bi-box-seam', 'Products'],
-      ['categories.html', 'bi-tags', 'Categories'],
+      ['products.html', 'bi-box-seam', 'Products &amp; Stock'],
       ['design.html', 'bi-palette', 'Design Studio'],
       ['models.html', 'bi-badge-3d', '3D Models']
     ]],
@@ -35,8 +35,9 @@
       ['cleanup.html', 'bi-trash3', 'Clean Up', true]
     ], true]
   ];
-  // Pages that belong under another page's link (order-detail.html is part of Orders)
-  const PARENT = { 'order-detail.html': 'orders.html' };
+  // Pages that belong under another page's link (order-detail.html is part of Orders; Categories is a pop-up on
+  // Products now, and categories.html only forwards there)
+  const PARENT = { 'order-detail.html': 'orders.html', 'categories.html': 'products.html' };
 
   const page = location.pathname.split('/').pop() || 'index.html';
   const here = PARENT[page] || page;
@@ -67,6 +68,7 @@
 
   // Live counts beside Orders (waiting in Pending) and Messages (conversations with something new since staff last
   // opened them; see chatIsUnread). Only for signed-in staff; a read the rules refuse just leaves the badge off.
+  // The same Pending list takes each new order's items out of storage as it arrives (deductNewOrders).
   function setBadge(id, n, title) {
     const b = document.getElementById(id);
     if (!b) return;
@@ -79,8 +81,10 @@
     auth.onAuthStateChanged(u => {
       stops.forEach(f => f()); stops = [];
       if (!u) return;
-      stops.push(db.collection('orders').where('status', '==', 'Pending').onSnapshot(
-        s => setBadge('nb-orders', s.size, s.size + ' waiting in Pending'), () => setBadge('nb-orders', 0, '')));
+      stops.push(db.collection('orders').where('status', '==', 'Pending').onSnapshot(s => {
+        setBadge('nb-orders', s.size, s.size + ' waiting in Pending');
+        if (typeof deductNewOrders === 'function') deductNewOrders(s.docs);
+      }, () => setBadge('nb-orders', 0, '')));
       stops.push(db.collection('chats').onSnapshot(s => {
         const n = s.docs.filter(d => chatIsUnread(d.data())).length;
         setBadge('nb-chats', n, n + ' conversation' + (n === 1 ? '' : 's') + ' with something new');

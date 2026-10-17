@@ -30,7 +30,7 @@
 
   <div class="page-content">
     <div class="card" style="margin-bottom:16px;">
-      <div style="padding:14px 18px;font-size:13px;color:var(--muted);line-height:1.55;">
+      <div style="padding:14px 18px;font-size:14px;color:var(--muted);line-height:1.55;">
         <strong style="color:var(--yellow);"><i class="bi bi-exclamation-triangle"></i> Changes here are live.</strong>
         This edits the same data the app and the other admin pages use, with no undo. For everyday work, use Orders,
         Products and Customers; use this page for fixes those pages can't make. Take an
@@ -42,19 +42,19 @@
 
     <div class="card" style="margin-bottom:16px;">
       <div style="padding:12px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
-        <span id="d-crumb" style="font-size:13px;font-family:monospace;word-break:break-all;"></span>
+        <span id="d-crumb" style="font-size:14px;font-family:monospace;word-break:break-all;"></span>
         <span style="flex:1;"></span>
-        <label for="d-field" style="font-size:12.5px;color:var(--muted);">Only where</label>
-        <input type="text" id="d-field" placeholder="field, e.g. status" style="width:150px;padding:7px 9px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:13px;">
-        <span style="font-size:12.5px;color:var(--muted);">is</span>
-        <input type="text" id="d-value" placeholder="value, e.g. Pending" style="width:150px;padding:7px 9px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:13px;">
+        <label for="d-field" style="font-size:13.5px;color:var(--muted);">Only where</label>
+        <input type="text" id="d-field" placeholder="field, e.g. status" style="width:150px;padding:7px 9px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:14px;">
+        <span style="font-size:13.5px;color:var(--muted);">is</span>
+        <input type="text" id="d-value" placeholder="value, e.g. Pending" style="width:150px;padding:7px 9px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:14px;">
         <button class="btn-ghost" onclick="reload()">Apply</button>
         <button class="btn-ghost" onclick="clearFilter()">Clear</button>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-head"><span class="card-title">Records <span id="d-count" style="color:var(--muted);font-weight:400;font-size:13px;"></span></span></div>
+      <div class="card-head"><span class="card-title">Records <span id="d-count" style="color:var(--muted);font-weight:400;font-size:14px;"></span></span></div>
       <div class="tbl-wrap">
         <table class="tbl">
           <thead><tr id="d-head"><th>ID</th></tr></thead>
@@ -72,15 +72,15 @@
     <div class="modal-hd"><h3 id="d-modal-title">Record</h3><button class="modal-x" onclick="closeDoc()">&times;</button></div>
     <div class="modal-bd">
       <div class="fg" id="d-id-wrap"><label for="d-new-id">Record ID (leave empty for an automatic one)</label><input type="text" id="d-new-id" placeholder="automatic"></div>
-      <div id="d-doc-path" style="font-size:12px;font-family:monospace;color:var(--muted);word-break:break-all;margin-bottom:12px;"></div>
-      <div id="d-notice" style="font-size:12.5px;color:var(--yellow);margin-bottom:12px;" hidden></div>
+      <div id="d-doc-path" style="font-size:13px;font-family:monospace;color:var(--muted);word-break:break-all;margin-bottom:12px;"></div>
+      <div id="d-notice" style="font-size:13.5px;color:var(--yellow);margin-bottom:12px;" hidden></div>
       <div id="d-subs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
       <div id="d-fields"></div>
       <button class="btn-ghost" onclick="addFieldRow()"><i class="bi bi-plus-lg"></i> Add field</button>
-      <div id="d-error" style="font-size:13px;color:#FF4444;margin-top:12px;white-space:pre-line;" role="alert"></div>
+      <div id="d-error" style="font-size:14px;color:#FF4444;margin-top:12px;white-space:pre-line;" role="alert"></div>
     </div>
     <div class="modal-ft" style="justify-content:space-between;flex-wrap:wrap;">
-      <button id="d-del-btn" style="padding:8px 16px;border-radius:8px;background:rgba(255,68,68,.13);color:#FF4444;border:1px solid rgba(255,68,68,.26);font-size:13.5px;font-weight:600;" onclick="askDelete()"><i class="bi bi-trash3"></i> Delete record</button>
+      <button id="d-del-btn" style="padding:8px 16px;border-radius:8px;background:rgba(255,68,68,.13);color:#FF4444;border:1px solid rgba(255,68,68,.26);font-size:14.5px;font-weight:600;" onclick="askDelete()"><i class="bi bi-trash3"></i> Delete record</button>
       <div style="display:flex;gap:9px;">
         <button class="btn-ghost" onclick="closeDoc()">Cancel</button>
         <button class="btn-grad" id="d-save-btn" onclick="saveDoc()"><i class="bi bi-check-lg"></i> Save changes</button>
@@ -94,12 +94,12 @@
   <div class="modal" style="max-width:420px;">
     <div class="modal-hd"><h3 style="color:#FF4444;">Delete this record?</h3><button class="modal-x" onclick="closeDelete()">&times;</button></div>
     <div class="modal-bd">
-      <p style="font-size:13.5px;color:var(--muted);margin-bottom:12px;">This removes it for good from the app and the admin site. Anything stored under it (such as a chat's messages) is left behind and has to be deleted separately.</p>
+      <p style="font-size:14.5px;color:var(--muted);margin-bottom:12px;">This removes it for good from the app and the admin site. Anything stored under it (such as a chat's messages) is left behind and has to be deleted separately.</p>
       <div class="fg"><label for="d-del-type">Type <strong id="d-del-word" style="color:var(--text);font-family:monospace;"></strong> to confirm</label><input type="text" id="d-del-type" autocomplete="off"></div>
     </div>
     <div class="modal-ft">
       <button class="btn-ghost" onclick="closeDelete()">Keep it</button>
-      <button id="d-del-go" style="padding:8px 16px;border-radius:8px;background:rgba(255,68,68,.13);color:#FF4444;border:1px solid rgba(255,68,68,.26);font-size:13.5px;font-weight:600;" onclick="doDelete()" disabled><i class="bi bi-trash3"></i> Delete</button>
+      <button id="d-del-go" style="padding:8px 16px;border-radius:8px;background:rgba(255,68,68,.13);color:#FF4444;border:1px solid rgba(255,68,68,.26);font-size:14.5px;font-weight:600;" onclick="doDelete()" disabled><i class="bi bi-trash3"></i> Delete</button>
     </div>
   </div>
 </div>
@@ -247,9 +247,9 @@
     $('d-more').hidden = !hasMore;
     if (!rows.length) { $('d-body').innerHTML = `<tr><td colspan="${cols.length+3}"><div class="empty"><i class="bi bi-inbox"></i><p>No records${q || $('d-field').value ? ' match' : ' here yet'}</p></div></td></tr>`; return; }
     $('d-body').innerHTML = rows.map(d => `<tr class="row-link" onclick="openDoc('${d.id.replace(/'/g,"\\'")}')">
-      <td style="font-family:monospace;font-size:12px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(d.id)}">${esc(d.id)}</td>
-      ${cols.map(c => `<td style="font-size:13px;">${short(d.data[c])}</td>`).join('')}
-      <td style="font-size:12.5px;color:var(--muted);">${Object.keys(d.data).length}</td>
+      <td style="font-family:monospace;font-size:13px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(d.id)}">${esc(d.id)}</td>
+      ${cols.map(c => `<td style="font-size:14px;">${short(d.data[c])}</td>`).join('')}
+      <td style="font-size:13.5px;color:var(--muted);">${Object.keys(d.data).length}</td>
       <td><button class="btn-icon" aria-label="Edit"><i class="bi bi-pencil"></i></button></td></tr>`).join('');
   }
   $('d-q').addEventListener('input', render);
@@ -260,13 +260,13 @@
     const n = ++rowSeq, t = typeOf(value);
     const types = [['text','Text'],['number','Number'],['yesno','Yes / No'],['date','Date & time'],['json','List or group'],['empty','Empty']];
     return `<div class="d-row" data-n="${n}" style="display:grid;grid-template-columns:minmax(110px,1fr) 128px minmax(0,2fr) 34px;gap:8px;align-items:start;margin-bottom:10px;">
-      <input type="text" class="d-name" value="${esc(name)}" placeholder="field name" aria-label="Field name" style="padding:8px 9px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:13px;font-family:monospace;min-width:0;">
-      <select class="d-type" aria-label="Type" onchange="retype(${n})" style="padding:8px 6px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:12.5px;">
+      <input type="text" class="d-name" value="${esc(name)}" placeholder="field name" aria-label="Field name" style="padding:8px 9px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:14px;font-family:monospace;min-width:0;">
+      <select class="d-type" aria-label="Type" onchange="retype(${n})" style="padding:8px 6px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:13.5px;">
         ${types.map(x => `<option value="${x[0]}" ${x[0]===t?'selected':''}>${x[1]}</option>`).join('')}</select>
       <div class="d-val" style="min-width:0;">${valueInput(t, value)}</div>
       <button class="btn-icon del" aria-label="Remove field" title="Remove field" onclick="this.closest('.d-row').remove()"><i class="bi bi-x-lg"></i></button></div>`;
   }
-  const VS = 'width:100%;padding:8px 9px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:13px;box-sizing:border-box;';
+  const VS = 'width:100%;padding:8px 9px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:14px;box-sizing:border-box;';
   function valueInput(t, v){
     if (t === 'text') { const s = typeof v === 'string' ? v : ''; return s.length > 60 || s.includes('\n')
         ? `<textarea class="d-in" rows="3" style="${VS}resize:vertical;">${esc(s)}</textarea>`
@@ -275,8 +275,8 @@
     if (t === 'yesno') return `<select class="d-in" style="${VS}"><option value="true" ${v===true?'selected':''}>Yes</option><option value="false" ${v===true?'':'selected'}>No</option></select>`;
     if (t === 'date') return `<input type="datetime-local" class="d-in" step="1" value="${isTime(v) ? localInput(v.toDate()) : localInput(new Date())}" style="${VS}">`;
     if (t === 'json') { const j = (v !== null && typeof v === 'object' && !isTime(v)) ? JSON.stringify(toPlain(v), null, 2) : '{}';
-      return `<textarea class="d-in" rows="${Math.min(12, Math.max(3, j.split('\n').length))}" spellcheck="false" style="${VS}font-family:monospace;font-size:12px;resize:vertical;">${esc(j)}</textarea>`; }
-    return `<div style="padding:8px 0;font-size:12.5px;color:var(--muted);">no value (null)</div>`;
+      return `<textarea class="d-in" rows="${Math.min(12, Math.max(3, j.split('\n').length))}" spellcheck="false" style="${VS}font-family:monospace;font-size:13px;resize:vertical;">${esc(j)}</textarea>`; }
+    return `<div style="padding:8px 0;font-size:13.5px;color:var(--muted);">no value (null)</div>`;
   }
   function retype(n){
     const row = document.querySelector(`.d-row[data-n="${n}"]`);
@@ -314,7 +314,7 @@
     $('d-error').textContent = '';
     $('d-del-btn').hidden = isNew;
     const keys = Object.keys(data).sort();
-    $('d-fields').innerHTML = keys.map(k => fieldRow(k, data[k])).join('') || '<p style="font-size:13px;color:var(--muted);margin-bottom:10px;">No fields yet.</p>';
+    $('d-fields').innerHTML = keys.map(k => fieldRow(k, data[k])).join('') || '<p style="font-size:14px;color:var(--muted);margin-bottom:10px;">No fields yet.</p>';
     // Collections kept under this record
     const subs = isNew ? [] : ((confOf(path) || {}).subs || []);
     $('d-subs').innerHTML = subs.map(s => `<button class="btn-ghost" onclick="closeDoc();openPath('${path}/${id}/${s}')"><i class="bi bi-folder2-open"></i> Open its ${esc(s)}</button>`).join('');

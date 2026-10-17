@@ -3,9 +3,174 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Products — KustomoImprenta Admin</title>
+  <title>Products &amp; Stock — KustomoImprenta Admin</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    /* ── Products / In storage switch ── */
+    .view-tabs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid var(--border); margin-bottom: 16px; }
+    .view-tabs button { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 9px; border: 0; background: transparent; color: var(--muted); font-size: 15px; font-weight: 600; }
+    .view-tabs button:hover { color: var(--text); }
+    .view-tabs button.on { background: var(--card-bg); color: var(--text); box-shadow: 0 1px 0 rgba(255,255,255,.04), 0 2px 8px rgba(0,0,0,.35); }
+    .view-tabs button.on i { color: var(--orange); }
+    .view-tabs .cnt { font-size: 12px; font-weight: 700; min-width: 22px; padding: 1px 7px; border-radius: 10px; background: rgba(255,255,255,.08); color: var(--muted); }
+    .view-tabs .cnt.warn { background: rgba(255,214,0,.16); color: var(--yellow); }
+
+    /* ── Product cards ── */
+    .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .pcard { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .pcard.off { border-style: dashed; }
+    .pc-media { position: relative; height: 200px; background: rgba(255,255,255,.035); display: grid; place-items: center; overflow: hidden; }
+    .pc-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .pc-media img.contain { object-fit: contain; padding: 10px; }
+    .pc-media .pc-ico { font-size: 52px; opacity: .35; }
+    .pc-badges { position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+    .pc-badge { font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 20px; background: var(--pink); color: #fff; letter-spacing: .3px; }
+    .pc-badge.tag { background: rgba(10,10,10,.82); color: var(--yellow); border: 1px solid rgba(255,214,0,.35); }
+    .pc-hidden { position: absolute; left: 0; right: 0; bottom: 0; padding: 7px 12px; background: rgba(10,10,10,.85); color: var(--yellow); font-size: 13px; font-weight: 600; }
+    .pc-body { padding: 14px 16px 6px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .pc-name { font-size: 17px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+    .pc-cat { font-size: 13.5px; color: var(--muted); margin-top: 2px; }
+    .pc-cat .bad { color: #FF6B6B; }
+    .pc-price { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .pc-price b { font-size: 20px; color: var(--orange); }
+    .pc-price s { font-size: 14px; color: var(--muted); }
+    .pc-stock { font-size: 14px; }
+    .pc-stock .lbl { color: var(--muted); }
+    .pc-sizes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .pc-sz { font-size: 13px; padding: 3px 9px; border-radius: 7px; background: rgba(255,255,255,.06); border: 1px solid var(--border); white-space: nowrap; }
+    .pc-sz b { margin-left: 5px; }
+    .pc-sz.low { border-color: rgba(255,214,0,.45); color: var(--yellow); }
+    .pc-sz.out { border-color: rgba(255,68,68,.45); color: #FF6B6B; }
+    .pc-design { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 10px; background: rgba(255,255,255,.03); border: 1px solid var(--border); }
+    .pc-dthumb { width: 66px; height: 66px; flex-shrink: 0; border-radius: 8px; background: rgba(255,255,255,.05); display: grid; place-items: center; color: var(--muted); overflow: hidden; }
+    .pc-dthumb canvas, .pc-dthumb img { max-width: 100%; max-height: 100%; }
+    .pc-dthumb.none { border: 1px dashed #3a3a3a; background: transparent; font-size: 20px; }
+    .pc-dlbl { font-size: 13px; color: var(--muted); }
+    .pc-dlinks { font-size: 14px; display: flex; gap: 14px; flex-wrap: wrap; margin-top: 2px; }
+    .pc-dlinks a, .linkbtn { color: var(--orange); font-weight: 600; background: none; border: 0; padding: 0; font-size: 14px; }
+    .linkbtn.muted { color: var(--muted); font-weight: 500; }
+    .linkbtn.muted:hover { color: #FF6B6B; }
+    .pc-sale { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; padding: 2px 0; }
+    .pc-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px 16px; }
+    .pa { flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 10px; border-radius: 9px; font-size: 14.5px; font-weight: 600;
+      background: rgba(255,255,255,.06); color: var(--text); border: 1px solid #3a3a3a; white-space: nowrap; }
+    .pa:hover { border-color: var(--orange); color: var(--orange); }
+    .pa.primary { background: rgba(255,92,0,.14); border-color: rgba(255,92,0,.55); color: var(--orange); }
+    .pa.primary:hover { background: rgba(255,92,0,.24); }
+    .pa-del { flex: 0 0 auto; width: 42px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 16px; }
+    .pa-del:hover { color: #FF4444; border-color: #FF4444; }
+    .add-tile { border: 2px dashed #333; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 260px; background: transparent; color: var(--muted); font-size: 16px; font-weight: 600; }
+    .add-tile i { font-size: 34px; color: var(--orange); }
+    .add-tile:hover { border-color: var(--orange); color: var(--text); }
+
+    /* ── In storage ── */
+    .st-sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .st-tile { text-align: left; padding: 16px 18px; border-radius: 12px; background: var(--card-bg); border: 1px solid var(--border); color: var(--text); }
+    .st-tile .v { font-size: 28px; font-weight: 800; line-height: 1.1; }
+    .st-tile .l { font-size: 14px; color: var(--muted); margin-top: 4px; }
+    .st-tile.on { border-color: var(--orange); box-shadow: inset 0 0 0 1px var(--orange); }
+    .st-tile.low .v { color: var(--yellow); }
+    .st-tile.out .v { color: #FF6B6B; }
+    .st-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .st-bar .note { flex: 1; min-width: 220px; }
+    .st-list { display: grid; gap: 14px; }
+    .st-row { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+    .st-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+    .st-head img, .st-head .st-ph { width: 52px; height: 52px; border-radius: 9px; object-fit: cover; background: rgba(255,255,255,.05); flex-shrink: 0; display: grid; place-items: center; }
+    .st-head img.contain { object-fit: contain; }
+    .st-name { font-size: 17px; font-weight: 700; }
+    .st-meta { font-size: 14px; color: var(--muted); }
+    .st-head .grow { flex: 1; min-width: 160px; }
+    .st-cells { display: flex; flex-wrap: wrap; gap: 10px; }
+    .scc { width: 132px; padding: 10px; border-radius: 11px; background: rgba(255,255,255,.035); border: 1px solid var(--border); text-align: center; }
+    .scc.low { border-color: rgba(255,214,0,.45); }
+    .scc.out { border-color: rgba(255,68,68,.45); }
+    .scc-size { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+    .scc-row { display: flex; align-items: center; gap: 4px; }
+    .scc-b { width: 34px; height: 36px; flex-shrink: 0; border-radius: 8px; border: 1px solid #3a3a3a; background: rgba(255,255,255,.06); color: var(--text); font-size: 15px; display: grid; place-items: center; }
+    .scc-b:hover:not(:disabled) { border-color: var(--orange); color: var(--orange); }
+    .scc-b:disabled { opacity: .35; cursor: default; }
+    .scc-n { width: 100%; min-width: 0; height: 36px; text-align: center; font-size: 18px; font-weight: 800; color: var(--text); background: transparent; border: 1px solid transparent; border-radius: 8px; outline: none; -moz-appearance: textfield; font-family: inherit; }
+    .scc-n::-webkit-outer-spin-button, .scc-n::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .scc-n:hover { border-color: var(--border); }
+    .scc-n:focus { border-color: var(--orange); background: rgba(255,255,255,.04); }
+    .scc-note { font-size: 12.5px; color: var(--muted); margin-top: 5px; min-height: 18px; }
+    .scc.low .scc-note { color: var(--yellow); }
+    .scc.out .scc-note { color: #FF6B6B; }
+    .st-mto { margin-top: 18px; }
+    .st-mto-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 15px; flex-wrap: wrap; }
+    .st-mto-row:first-of-type { border-top: 0; }
+    .st-mto-row span { flex: 1; min-width: 160px; }
+
+    /* ── Stock pop-up ── */
+    .sm-sec { font-size: 15px; font-weight: 700; margin: 4px 0 10px; }
+    .sm-add { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+    .sm-add label { display: flex; flex-direction: column; gap: 5px; font-size: 14px; font-weight: 700; width: 92px; }
+    .sm-add input { width: 100%; padding: 9px 10px; font-size: 16px; text-align: center; border-radius: 8px; background: rgba(255,255,255,.04); border: 1px solid var(--border); color: var(--text); outline: none; font-family: inherit; }
+    .sm-add input:focus { border-color: var(--orange); }
+    .switch-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; background: rgba(255,255,255,.03); border: 1px solid var(--border); cursor: pointer; font-size: 15px; }
+    .switch-row .avail { flex-shrink: 0; }
+    .switch-row small { display: block; color: var(--muted); font-size: 13px; }
+
+    /* ── Add / Edit form ── */
+    .f-sec { font-size: 13px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: var(--orange); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; }
+    .f-sec.first { margin-top: 0; }
+    .f-sec::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .qs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 14px; border-radius: 10px; background: rgba(255,92,0,.06); border: 1px solid rgba(255,92,0,.2); margin-bottom: 18px; font-size: 14px; }
+    .qs .btn-ghost { padding: 6px 12px; }
+    .fst-rows { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .fst { width: 132px; padding: 10px; border-radius: 11px; background: rgba(255,255,255,.035); border: 1px solid var(--border); text-align: center; }
+    .fst .scc-n { border-color: var(--border); }
+    .fg-help { font-size: 13.5px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+    .fg-help.warn { color: var(--yellow); }
+    details.adv { margin-top: 24px; border: 1px solid var(--border); border-radius: 12px; }
+    details.adv > summary { list-style: none; cursor: pointer; padding: 14px 16px; display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; flex-wrap: wrap; }
+    details.adv > summary::-webkit-details-marker { display: none; }
+    details.adv > summary small { font-weight: 400; color: var(--muted); font-size: 13.5px; }
+    details.adv > summary .bi-chevron-down { margin-left: auto; color: var(--muted); transition: transform .18s; }
+    details.adv[open] > summary .bi-chevron-down { transform: rotate(180deg); }
+    details.adv > .adv-body { padding: 4px 16px 16px; }
+    .model-line { font-size: 14px; color: var(--muted); margin-top: 8px; }
+    .model-line b { color: var(--text); }
+
+    /* ── Categories pop-up ── */
+    .cat-add { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+    .cat-add input[type=text] { flex: 1; min-width: 180px; }
+    .cat-list { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .cat-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+    .cat-row:first-child { border-top: 0; }
+    .cat-row .ord { display: flex; gap: 4px; }
+    .cat-row .ord .btn-icon:disabled { opacity: .3; cursor: default; }
+    .cat-row .nm { flex: 1; min-width: 140px; }
+    .cat-row .nm b { font-size: 15.5px; }
+    .cat-row .nm div { font-size: 13px; color: var(--muted); }
+    .cat-row .nm .hint { color: var(--yellow); }
+    .cat-row .show { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--muted); cursor: pointer; }
+    .cat-row .btns { display: flex; gap: 6px; }
+    .cat-row.editing, .cat-row.deleting { background: rgba(255,92,0,.05); }
+    .cat-edit { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.3fr); gap: 8px; flex: 1 1 100%; }
+    .cat-edit input { min-width: 0; }
+    .cat-foot { display: flex; gap: 8px; flex: 1 1 100%; justify-content: flex-end; flex-wrap: wrap; align-items: center; }
+    .cat-foot .note { margin-right: auto; }
+    .loose { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid var(--border); }
+    .loose:first-of-type { border-top: none; }
+    .loose strong { margin-right: auto; }
+    .btn-danger { padding: 9px 16px; border-radius: 8px; background: rgba(255,68,68,.13); color: #FF4444; border: 1px solid rgba(255,68,68,.3); font-size: 14.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; }
+    .btn-danger:disabled { opacity: .45; cursor: default; }
+
+    @media (max-width: 768px) {
+      .view-tabs { display: flex; }
+      .view-tabs button { flex: 1; justify-content: center; padding: 9px 10px; font-size: 14.5px; }
+      .pgrid { grid-template-columns: minmax(0, 1fr); }
+      .st-sum { gap: 8px; }
+      .st-tile { padding: 12px; }
+      .st-tile .v { font-size: 22px; }
+      .st-tile .l { font-size: 12.5px; }
+      .scc, .fst { width: calc(50% - 5px); }
+      .cat-edit { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
 </head>
 <body>
 <div id="toast-box"></div>
@@ -21,51 +186,48 @@
 
 <div id="main">
   <div class="topbar">
-    <div class="topbar-title">Products <span>Catalog</span></div>
+    <div class="topbar-title">Products <span>&amp; Stock</span></div>
     <div class="topbar-right">
-      <div class="search-wrap"><i class="bi bi-search"></i><input type="text" id="q" placeholder="Search products…"></div>
+      <div class="search-wrap"><i class="bi bi-search"></i><input type="text" id="q" placeholder="Search products…" aria-label="Search products"></div>
+      <button class="btn-ghost" onclick="openCats()"><i class="bi bi-tags"></i> Categories</button>
       <button class="btn-grad" onclick="openAdd()"><i class="bi bi-plus-lg"></i> Add Product</button>
     </div>
   </div>
 
   <div class="page-content">
+    <div class="view-tabs" role="tablist" aria-label="Show">
+      <button type="button" role="tab" data-v="list"><i class="bi bi-grid-3x2-gap"></i> Products <span class="cnt" id="n-prod"></span></button>
+      <button type="button" role="tab" data-v="stock"><i class="bi bi-boxes"></i> In storage <span class="cnt warn" id="n-alert" hidden></span></button>
+    </div>
     <div class="filter-bar" id="cat-tabs"></div>
-    <!-- Models the app can show that no available product uses yet -->
-    <div class="card" id="missing-styles" style="display:none;margin-bottom:16px;">
-      <div class="card-head"><span class="card-title">Shirts not for sale yet</span></div>
-      <div style="padding:0 18px 16px;">
-        <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Customers can't buy these yet. Click one to add it as a product.</p>
-        <div id="missing-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
-        <div id="bulk-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);">
-          <span style="font-size:13px;">Or add them all at ₱</span>
-          <input type="number" id="bulk-price" min="20" step="0.01" placeholder="e.g. 350" style="width:110px;" aria-label="Price for each">
-          <span style="font-size:13px;">each</span>
-          <button class="btn-grad" id="bulk-btn" onclick="addAllMissing()"><i class="bi bi-plus-lg"></i> Add all</button>
-        </div>
+
+    <section id="view-list">
+      <div class="pgrid" id="grid"><div class="spinner"></div></div>
+    </section>
+
+    <section id="view-stock" hidden>
+      <div class="st-sum" id="st-sum"></div>
+      <div class="st-bar">
+        <p class="note">Stock comes off by itself when an order comes in, and goes back if the order is cancelled. Use <strong>−</strong> and <strong>+</strong>, or click a number and type what you counted. Changes save right away.</p>
+        <button class="btn-ghost" onclick="downloadCountSheet()" title="A spreadsheet of every size and its count, for checking the shelves"><i class="bi bi-file-earmark-spreadsheet"></i> Count sheet</button>
       </div>
-    </div>
-    <div class="card">
-      <div class="card-head">
-        <span class="card-title">Products <span id="count" style="color:var(--muted);font-weight:400;font-size:13px;"></span></span>
-      </div>
-      <div class="tbl-wrap">
-        <table class="tbl">
-          <thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Sizes &amp; stock</th><th title="The design customers see first when they open this product in the app's designer">Starting design</th><th title="Shown in the app when on">For sale</th><th>Actions</th></tr></thead>
-          <tbody id="tbody"><tr><td colspan="8"><div class="spinner"></div></td></tr></tbody>
-        </table>
-      </div>
-    </div>
+      <div class="st-list" id="st-list"></div>
+      <div class="card st-mto" id="st-mto" hidden></div>
+    </section>
   </div>
 </div>
 
-<!-- Add/Edit Modal -->
+<!-- Add / Edit -->
 <div class="overlay" id="prod-overlay">
-  <div class="modal wide">
-    <div class="modal-hd"><h3 id="modal-title">Add Product</h3><button class="modal-x" onclick="closeModal()">&times;</button></div>
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-hd"><h3 id="modal-title">Add Product</h3><button class="modal-x" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-bd">
       <input type="hidden" id="edit-id">
+      <div class="qs" id="quick-start" hidden></div>
+
+      <div class="f-sec first">Basics</div>
       <div class="fg-row">
-        <div class="fg"><label>Name *</label><input type="text" id="p-name" placeholder="e.g. Classic Cotton Tee" maxlength="80"></div>
+        <div class="fg"><label for="p-name">Name *</label><input type="text" id="p-name" placeholder="e.g. Classic Cotton Tee" maxlength="80"></div>
         <div class="fg"><label for="p-cat">Category *</label>
           <select id="p-cat"></select>
           <div id="p-newcat-row" hidden style="display:flex;gap:6px;margin-top:6px;">
@@ -74,47 +236,71 @@
           </div>
         </div>
       </div>
-      <div class="fg"><label for="p-style">Model</label>
-        <select id="p-style"><option value="">Auto: a shirt is read from the name; anything else has none</option></select>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px;">What the app shows for this product in the 3D preview, the designer and the AR try-on. Add new ones on <a href="models.html" style="color:var(--orange);">Models &amp; Try-On</a>.</div>
-      </div>
       <div class="fg-row price-row">
         <div class="fg"><label for="p-price">Price (₱) *</label><input type="number" id="p-price" placeholder="499" min="20" step="0.01"></div>
-        <div class="fg"><label for="p-disc">Discount (%)</label><input type="number" id="p-disc" placeholder="0 = no discount" min="0" max="90" step="1" inputmode="numeric"></div>
+        <div class="fg"><label for="p-disc">Discount (%)</label><input type="number" id="p-disc" placeholder="0 = none" min="0" max="90" step="1" inputmode="numeric"></div>
         <div class="fg"><label id="p-pay-lbl">Customers pay</label><div class="price-tag empty" id="p-pay" role="status" aria-live="polite" aria-labelledby="p-pay-lbl">Enter a price</div></div>
       </div>
       <div class="price-note" id="p-pay-note"></div>
-      <div class="fg"><label>Description</label><textarea id="p-desc" placeholder="Short product description…"></textarea></div>
-      <div class="fg"><label for="p-img">Photo</label>
+      <div class="fg"><label for="p-desc">Description</label><textarea id="p-desc" placeholder="A short line about the product…" rows="2"></textarea></div>
+      <label class="switch-row" for="p-avail">
+        <span class="avail"><input type="checkbox" id="p-avail" checked><span class="avail-sl"></span></span>
+        <span>For sale in the app<small>Turn off to hide it from customers without deleting it.</small></span>
+      </label>
+
+      <div class="f-sec">Photo</div>
+      <div class="fg">
         <div style="display:flex;gap:8px;align-items:center;">
-          <input type="url" id="p-img" placeholder="https://… or upload one" style="flex:1;min-width:0;">
+          <input type="url" id="p-img" placeholder="https://… or upload one" style="flex:1;min-width:0;" aria-label="Photo link">
           <label class="btn-ghost" style="white-space:nowrap;cursor:pointer;margin:0;" id="p-upload-lbl"><i class="bi bi-upload"></i> Upload<input type="file" id="p-file" accept="image/png,image/jpeg,image/webp" hidden></label>
         </div>
-        <img id="p-prev" alt="" style="display:none;margin-top:8px;max-height:110px;max-width:100%;border-radius:8px;border:1px solid var(--border);">
-        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Leave it empty to show the model's picture in the app.</div>
-      </div>
-      <div class="fg-row">
-        <div class="fg"><label>Tag</label>
-          <select id="p-tag"><option value="">None</option><option value="New">New</option><option value="Sale">Sale</option><option value="Hot">Hot</option></select>
-        </div>
-        <div class="fg" style="display:flex;align-items:center;padding-top:26px;">
-          <label class="fg-check"><input type="checkbox" id="p-avail" checked> Available for sale</label>
+        <img id="p-prev" alt="" style="display:none;margin-top:10px;max-height:130px;max-width:100%;border-radius:8px;border:1px solid var(--border);">
+        <div class="fg-help">No photo? The app shows the 3D model's picture instead.</div>
+        <div class="pp-box">
+          <div class="pp-head">Or click a ready-made design to use it as the photo <span id="pp-for"></span></div>
+          <div class="pp-list" id="pp-list"></div>
         </div>
       </div>
+
+      <div class="f-sec">Sizes &amp; stock</div>
       <div class="fg">
-        <label>Available Sizes</label>
-        <div class="size-pills">
-          <span class="sz" data-v="XS">XS</span><span class="sz" data-v="S">S</span>
-          <span class="sz" data-v="M">M</span><span class="sz" data-v="L">L</span>
-          <span class="sz" data-v="XL">XL</span><span class="sz" data-v="XXL">XXL</span>
-          <span class="sz" data-v="One Size">One Size</span>
+        <label>Sizes customers can pick *</label>
+        <div class="size-pills" id="size-pills">
+          <button type="button" class="sz" data-v="XS">XS</button><button type="button" class="sz" data-v="S">S</button>
+          <button type="button" class="sz" data-v="M">M</button><button type="button" class="sz" data-v="L">L</button>
+          <button type="button" class="sz" data-v="XL">XL</button><button type="button" class="sz" data-v="XXL">XXL</button>
+          <button type="button" class="sz" data-v="One Size">One Size</button>
         </div>
       </div>
-      <div class="fg">
-        <label>Stock per size (optional)</label>
-        <div id="stock-row" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Leave every box empty for made-to-order (the app shows "Available"). Once any box is filled, the app shows each size's count, and a size left empty or at 0 shows "Out of Stock". The app does not lower these numbers when orders come in.</div>
+      <label class="switch-row" for="p-track">
+        <span class="avail"><input type="checkbox" id="p-track"><span class="avail-sl"></span></span>
+        <span>Count how many are in storage<small id="p-track-sub">Off: made to order, every size shows as available.</small></span>
+      </label>
+      <div id="p-stock-wrap">
+        <div class="fst-rows" id="p-stock"></div>
+        <div class="fg-help" id="p-stock-help"></div>
       </div>
+
+      <details class="adv" id="adv">
+        <summary><i class="bi bi-gear"></i> Advanced <small>3D model, tag, measurements</small><i class="bi bi-chevron-down"></i></summary>
+        <div class="adv-body">
+          <div class="fg"><label for="p-style">3D model</label>
+            <select id="p-style"><option value="">Automatic (a shirt is read from the name)</option></select>
+            <div class="fg-help">What the app shows in the 3D preview, the designer and AR try-on. New ones are added on <a href="models.html" style="color:var(--orange);">3D Models</a>.</div>
+          </div>
+          <div class="fg"><label for="p-tag">Tag on the photo</label>
+            <select id="p-tag"><option value="">None</option><option value="New">New</option><option value="Sale">Sale</option><option value="Hot">Hot</option></select>
+          </div>
+          <div class="fg" style="margin-bottom:0;">
+            <div class="sc-top">
+              <label style="margin:0;">Measurements per size</label>
+              <div class="sc-unit" role="group" aria-label="Unit"><button type="button" data-u="in" class="on">Inches</button><button type="button" data-u="cm">cm</button></div>
+            </div>
+            <div class="sc-wrap" id="sc-wrap"></div>
+            <div class="fg-help">Measure the item laid flat (chest is armpit to armpit). Rename a column by typing over its name; an empty column is hidden. Customers see this chart when they pick a size.</div>
+          </div>
+        </div>
+      </details>
     </div>
     <div class="modal-ft">
       <button class="btn-ghost" onclick="closeModal()">Cancel</button>
@@ -123,14 +309,32 @@
   </div>
 </div>
 
+<!-- Stock of one product -->
+<div class="overlay" id="stock-overlay">
+  <div class="modal" style="max-width:640px;" role="dialog" aria-modal="true" aria-labelledby="sm-title">
+    <div class="modal-hd"><h3 id="sm-title">Stock</h3><button class="modal-x" onclick="closeStock()" aria-label="Close">&times;</button></div>
+    <div class="modal-bd" id="sm-body"></div>
+    <div class="modal-ft"><button class="btn-grad" onclick="closeStock()"><i class="bi bi-check-lg"></i> Done</button></div>
+  </div>
+</div>
+
+<!-- Categories -->
+<div class="overlay" id="cat-overlay">
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="cat-title">
+    <div class="modal-hd"><h3 id="cat-title"><i class="bi bi-tags" style="color:var(--orange);margin-right:6px;"></i>Categories</h3><button class="modal-x" onclick="closeCats()" aria-label="Close">&times;</button></div>
+    <div class="modal-bd" id="cat-body"></div>
+    <div class="modal-ft"><button class="btn-grad" onclick="closeCats()"><i class="bi bi-check-lg"></i> Done</button></div>
+  </div>
+</div>
+
 <!-- Delete Confirm -->
 <div class="overlay" id="del-overlay">
-  <div class="modal" style="max-width:360px;">
-    <div class="modal-hd"><h3 style="color:#FF4444;">Delete Product</h3><button class="modal-x" onclick="closeDel()">&times;</button></div>
-    <div class="modal-bd"><p style="font-size:14px;color:var(--muted);">Delete <strong id="del-name" style="color:var(--text);"></strong>? This cannot be undone.</p></div>
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-hd"><h3 style="color:#FF4444;">Delete Product</h3><button class="modal-x" onclick="closeDel()" aria-label="Close">&times;</button></div>
+    <div class="modal-bd"><p style="font-size:15px;color:var(--muted);">Delete <strong id="del-name" style="color:var(--text);"></strong>? This cannot be undone. To only hide it from the app, turn off <strong>For sale</strong> instead.</p></div>
     <div class="modal-ft">
       <button class="btn-ghost" onclick="closeDel()">Cancel</button>
-      <button style="padding:8px 16px;border-radius:8px;background:rgba(255,68,68,.13);color:#FF4444;border:1px solid rgba(255,68,68,.26);font-size:13.5px;font-weight:600;" onclick="confirmDel()"><i class="bi bi-trash3"></i> Delete</button>
+      <button class="btn-danger" onclick="confirmDel()"><i class="bi bi-trash3"></i> Delete</button>
     </div>
   </div>
 </div>
@@ -139,337 +343,885 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="js/firebase.js"></script>
+<script src="js/design-render.js"></script>
 <script src="js/layout.js"></script>
 <script src="js/auth.js"></script>
 <script>
-  let loaded=false, all=[], cat=new URLSearchParams(location.search).get('cat')||'all', delId=null, models=[], shop=SHOP_DEFAULTS, catsDenied=false;
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
+  let loaded = false, all = [], models = [], shop = SHOP_DEFAULTS, cats = [], catsDenied = false, catsLoaded = false, delId = null;
+  let cat = params.get('cat') || 'all';
+  let view = params.get('view') === 'stock' ? 'stock' : 'list';
+  let stFilter = ['low', 'out'].includes(params.get('filter')) ? params.get('filter') : 'all';
+  const sameName = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+  const modelOf = p => productModel(p, models);
+  const sizeRank = s => { const i = ALL_SIZES.indexOf(s); return i < 0 ? 99 : i; };
+  /** The sizes a product offers, in the usual order (its stock's sizes for an older product without a list). */
+  const sizesOf = p => ((Array.isArray(p.sizes) && p.sizes.length) ? p.sizes.slice() : Object.keys(p.inventory || {})).sort((a, b) => sizeRank(a) - sizeRank(b));
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
-  auth.onAuthStateChanged(async u=>{
-    if(!u)return;
-    [models]=await Promise.all([loadModels(),loadCategories()]);
-    catsDenied=categoriesError()==='permission-denied';
-    loadShopSettings().then(s=>{shop=s;render();});
-    // Model choices in the Add/Edit form: every model in the catalog
-    document.getElementById('p-style').insertAdjacentHTML('beforeend',
-      models.map(m=>`<option value="${esc(m.id)}">${esc(m.label)}${m.builtIn?'':' ('+esc(MODEL_KINDS.find(k=>k.id===m.kind)?.label.split(' (')[0]||'Custom')+')'}${m.enabled?'':' (hidden)'}</option>`).join(''));
-    let first=true;
-    db.collection('products').orderBy('name').onSnapshot(snap=>{
-      all=snap.docs.map(d=>({id:d.id,...d.data()})); loaded=true; render();
-      if(first){first=false;const want=new URLSearchParams(location.search).get('addModel');if(want)openAddForStyle(want);}
+  auth.onAuthStateChanged(async u => {
+    if (!u) return;
+    models = await loadModels();
+    $('p-style').insertAdjacentHTML('beforeend', models.map(m => `<option value="${esc(m.id)}">${esc(m.label)}${m.enabled ? '' : ' (hidden)'}</option>`).join(''));
+    loadShopSettings().then(s => { shop = s; render(); });
+    // Categories, live: the filter tabs, the Category picker and the Categories pop-up all follow them
+    db.collection('categories').onSnapshot(snap => {
+      catsDenied = false; catsLoaded = true;
+      cats = snap.docs.map(d => normalizeCategory(d.id, d.data())).filter(c => c.name).sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
+      _categoryList = cats; _categories = Promise.resolve(cats);
+      render(); renderCats();
+    }, e => {
+      catsDenied = e && e.code === 'permission-denied'; catsLoaded = true;
+      cats = []; _categoryList = []; _categories = Promise.resolve([]);
+      if (!catsDenied) toast("Couldn't load the categories: " + e.message, 'err');
+      render(); renderCats();
+    });
+    let first = true;
+    db.collection('products').orderBy('name').onSnapshot(snap => {
+      all = snap.docs.map(d => ({ id: d.id, ...d.data() })); loaded = true;
+      render(); renderCats(); if (stockPid) renderStockModal();
+      if (first) {
+        first = false;
+        const want = params.get('addModel'); if (want) openAddForStyle(want);
+        if (params.get('categories')) openCats();
+        if (params.get('stock')) openStock(params.get('stock'));
+      }
     });
   });
 
-  const modelOf=p=>productModel(p,models);
-  /** Filter tabs: the categories in the Categories page's order (those with products), with how many are in each. */
-  function renderCatTabs(){
-    const present=new Set(all.map(productCategory).filter(Boolean));
-    const cats=categoryChoices(all).filter(c=>present.has(c));
-    // A category asked for in the link (products.html?cat=…) is kept until the products have loaded
-    if(cat!=='all'&&!cats.includes(cat)&&loaded)cat='all';
-    const n=c=>c==='all'?all.length:all.filter(p=>productCategory(p)===c).length;
-    document.getElementById('cat-tabs').innerHTML=[['all','All']].concat(cats.map(c=>[c,c])).map(([c,l])=>
-      `<button class="f-tab${c===cat?' active':''}" data-c="${esc(c)}">${esc(l)}<span class="cnt">${n(c)}</span></button>`).join('')+
-      `<a href="categories.html" class="f-tab" style="margin-left:auto;"><i class="bi bi-tags"></i> Manage categories</a>`;
-    document.querySelectorAll('#cat-tabs .f-tab[data-c]').forEach(b=>b.addEventListener('click',()=>{cat=b.dataset.c;render();}));
-  }
-  /** The Category picker: every category, the product's own one kept even when it isn't in the list. */
-  function fillCatSelect(current){
-    const names=categoryChoices(all);
-    if(current&&!names.includes(current))names.push(current);
-    document.getElementById('p-cat').innerHTML='<option value="">Select…</option>'+
-      names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'<option value="__new">＋ New category…</option>';
-    document.getElementById('p-cat').value=current||'';
-    document.getElementById('p-newcat-row').hidden=true;
-  }
-  document.getElementById('p-cat').addEventListener('change',e=>{
-    const isNew=e.target.value==='__new';
-    document.getElementById('p-newcat-row').hidden=!isNew;
-    if(isNew)setTimeout(()=>document.getElementById('p-newcat').focus(),30);
-  });
-  /** Adds the typed category to the Categories list (when Firestore allows it) and picks it. */
-  async function addNewCat(){
-    const name=document.getElementById('p-newcat').value.trim().replace(/\s+/g,' ');
-    if(!name){toast('Type the new category\'s name','warn');return;}
-    const existing=categoryChoices(all).find(n=>n.toLowerCase()===name.toLowerCase());
-    if(!existing&&!catsDenied){
-      try{
-        const list=_categoryList||[];
-        let id=categoryId(name),k=2;while(list.some(c=>c.id===id))id=categoryId(name)+'-'+k++;
-        await db.collection('categories').doc(id).set({name,description:'',showInApp:true,order:list.reduce((m,c)=>Math.max(m,c.order),0)+10,
-          createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:auth.currentUser.email||''});
-        await loadCategories(true);
-        toast(`"${name}" added to Categories`,'ok');
-      }catch(e){toast('Saved on this product only; it couldn\'t be added to Categories: '+e.message,'warn');}
-    }
-    fillCatSelect(existing||name);
-  }
-
-  /** Lists the models no available product uses; each button opens the Add form filled in for that model. */
-  function renderMissingStyles(){
-    const used=new Set(all.filter(p=>p.isAvailable===true).map(modelOf).filter(Boolean).map(m=>m.id));
-    const missing=models.filter(m=>m.enabled&&!used.has(m.id));
-    missingStyles=SHIRT_STYLES.filter(s=>missing.some(m=>m.id===s.id));
-    const priceBox=document.getElementById('bulk-price');
-    if(!priceBox.value){const tee=all.find(p=>productCategory(p)==='Tees'&&p.price>0);if(tee)priceBox.value=tee.price;}
-    document.getElementById('missing-styles').style.display=missing.length?'':'none';
-    document.getElementById('bulk-row').style.display=missingStyles.length>1?'':'none';
-    document.getElementById('missing-list').innerHTML=missing.map(m=>
-      `<button class="btn-ghost" onclick="openAddForStyle('${esc(m.id)}')"><i class="bi bi-plus-lg"></i> ${esc(m.label)}</button>`).join('');
-  }
-
-  let missingStyles=[];
-  /** One product per missing style, all at the price typed in the box. Ids are fixed ("style-MaleVNeckShirt"),
-   *  so pressing it twice cannot make duplicates. */
-  async function addAllMissing(){
-    const price=parseFloat(document.getElementById('bulk-price').value);
-    if(isNaN(price)||price<20){toast('Enter a price of at least ₱20 first','warn');document.getElementById('bulk-price').focus();return;}
-    if(!missingStyles.length)return;
-    const btn=document.getElementById('bulk-btn'); btn.disabled=true;
-    try{
-      const batch=db.batch();
-      missingStyles.forEach(s=>batch.set(db.collection('products').doc('style-'+s.id),{
-        name:s.suggestedName,category:productCategory({category:'Tees'})||'Tees',shirtStyle:s.id,price,originalPrice:null,
-        description:s.description,imageUrl:null,tag:'New',isAvailable:true,sizes:['XS','S','M','L','XL','XXL'],
-        createdAt:firebase.firestore.FieldValue.serverTimestamp()}));
-      const n=missingStyles.length;
-      await batch.commit();
-      toast(n+' product'+(n===1?'':'s')+' added','ok');
-    }catch(e){toast('Could not add them: '+e.message,'err');}
-    finally{btn.disabled=false;}
-  }
-
-  function render(){
+  // ── Page parts ───────────────────────────────────────────────────────────────────────────────────
+  /** Re-drawing replaces the stock boxes, so it waits while someone is typing a count in one. */
+  let renderWaiting = false;
+  function render() {
+    const a = document.activeElement;
+    if (a && a.classList && a.classList.contains('scc-n') && !a.closest('#prod-overlay')) { renderWaiting = true; return; }
+    renderWaiting = false;
+    document.querySelectorAll('.view-tabs button').forEach(b => { b.classList.toggle('on', b.dataset.v === view); b.setAttribute('aria-selected', b.dataset.v === view); });
+    $('view-list').hidden = view !== 'list'; $('view-stock').hidden = view !== 'stock';
+    $('n-prod').textContent = loaded ? all.length : '';
+    const alerts = stockAlerts(all);
+    $('n-alert').hidden = !(alerts.low + alerts.out);
+    $('n-alert').textContent = alerts.low + alerts.out;
+    $('n-alert').title = `${plural(alerts.low, 'size')} running low, ${alerts.out} out of stock`;
     renderCatTabs();
-    renderMissingStyles();
-    const q=document.getElementById('q').value.trim().toLowerCase();
-    let rows=cat==='all'?all:all.filter(p=>productCategory(p)===cat);
-    if(q)rows=rows.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.description||'').toLowerCase().includes(q)||(p.category||'').toLowerCase().includes(q));
-    document.getElementById('count').textContent=`(${rows.length})`;
-    const tbody=document.getElementById('tbody');
-    if(!rows.length){tbody.innerHTML=all.length?'<tr><td colspan="8"><div class="empty"><i class="bi bi-search"></i><p>No products match</p></div></td></tr>':'<tr><td colspan="8"><div class="empty"><i class="bi bi-box-seam"></i><p>No products yet. Press <strong>Add Product</strong> to add your first one.</p></div></td></tr>';return;}
-    tbody.innerHTML=rows.map(p=>{
-      // Stock per size, flagged when low (Shop Settings) or gone
-      const hasInv=p.inventory&&typeof p.inventory==='object';
-      const szs=((p.sizes||[]).map(v=>{if(!hasInv)return esc(v);const n=p.inventory[v]||0;
-        return `<span class="${n<=0?'stock-out':n<=shop.lowStockAt?'stock-low':''}" title="${n<=0?'Out of stock':n<=shop.lowStockAt?'Low stock':''}">${esc(v)} (${n})</span>`;}).join(', '))||'—';
-      return `<tr>
-        <td>${safeUrl(p.imageUrl)?`<img src="${safeUrl(p.imageUrl)}" class="prod-thumb" alt="" onerror="this.style.display='none'">`:(modelOf(p)&&modelOf(p).thumbUrl?`<img src="${esc(modelOf(p).thumbUrl)}" class="prod-thumb" alt="" style="object-fit:contain;background:rgba(255,255,255,.04);">`:'<div style="width:40px;height:40px;border-radius:7px;background:rgba(255,92,0,.1);display:flex;align-items:center;justify-content:center;font-size:19px;">🛍️</div>')}</td>
-        <td><strong>${esc(p.name||'—')}</strong>${p.tag?` <span class="tag tag-${esc(p.tag.toLowerCase())}">${esc(p.tag)}</span>`:''}${p.description?`<div style="font-size:12px;color:var(--muted);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.description)}</div>`:''}</td>
-        <td style="font-size:13px;">${esc(p.category||'—')}${p.category&&productCategory(p)!==p.category?`<div style="font-size:11.5px;color:var(--muted);">shown as ${esc(productCategory(p))}</div>`:''}</td>
-        <td style="color:var(--orange);font-weight:700;white-space:nowrap;">${peso(p.price)}${p.originalPrice>p.price?`<div style="font-size:12px;font-weight:400;"><span style="color:var(--muted);text-decoration:line-through;">${peso(p.originalPrice)}</span> <span style="color:var(--pink);font-weight:600;">-${Number.isInteger(p.discountPercent)&&p.discountPercent>0?p.discountPercent:Math.max(1,Math.round((1-p.price/p.originalPrice)*100))}%</span></div>`:''}${(()=>{const m=modelOf(p);return !m&&p.shirtStyle?`<div style="color:#FF6B6B;font-size:11.5px;font-weight:400;">3D model missing</div>`:'';})()}</td>
-        <td style="font-size:12px;color:var(--muted);">${szs}</td>
-        <td style="font-size:12.5px;">${modelOf(p)?`<a href="design.html?product=${p.id}" style="color:var(--orange);">${p.defaultCustomization?'Edit':'Create'}</a>`:'<span style="color:var(--muted);" title="Only products with a model can be designed">—</span>'}${p.defaultCustomization?` <button class="btn-icon del" title="Remove the starting design" aria-label="Remove the starting design" onclick="clearDefaultDesign('${p.id}')" style="margin-left:4px;"><i class="bi bi-x-lg"></i></button>`:''}</td>
-        <td><label class="avail" title="Shown in the app when on"><input type="checkbox" ${p.isAvailable===true?'checked':''} onchange="toggleAvail('${p.id}',this.checked)" aria-label="${esc(p.name||'Product')} for sale"><span class="avail-sl"></span></label></td>
-        <td><div style="display:flex;gap:5px;">
-          <button class="btn-icon" title="Edit" aria-label="Edit ${esc(p.name||'product')}" onclick="openEdit('${p.id}')"><i class="bi bi-pencil"></i></button>
-          <button class="btn-icon" title="Duplicate" aria-label="Duplicate ${esc(p.name||'product')}" onclick="openDuplicate('${p.id}')"><i class="bi bi-copy"></i></button>
-          <button class="btn-icon del" title="Delete" aria-label="Delete ${esc(p.name||'product')}" onclick="openDel('${p.id}')"><i class="bi bi-trash3"></i></button>
-        </div></td>
-      </tr>`;
+    if (view === 'list') renderGrid(); else renderStockView();
+  }
+  document.addEventListener('focusout', e => { if (e.target.classList && e.target.classList.contains('scc-n')) setTimeout(() => { if (renderWaiting) render(); }, 0); });
+  document.querySelectorAll('.view-tabs button').forEach(b => b.addEventListener('click', () => {
+    view = b.dataset.v; render();
+    const u = new URL(location.href); if (view === 'stock') u.searchParams.set('view', 'stock'); else u.searchParams.delete('view');
+    u.searchParams.delete('filter');
+    history.replaceState(null, '', u);
+  }));
+  $('q').addEventListener('input', render);
+
+  /** Products in the chosen category that match the search. */
+  function shownProducts() {
+    const q = $('q').value.trim().toLowerCase();
+    let rows = cat === 'all' ? all : all.filter(p => productCategory(p) === cat);
+    if (q) rows = rows.filter(p => [p.name, p.description, p.category].some(t => String(t || '').toLowerCase().includes(q)));
+    return rows;
+  }
+  /** Filter tabs: the categories in their set order (those with products), with how many are in each. */
+  function renderCatTabs() {
+    const present = new Set(all.map(productCategory).filter(Boolean));
+    const list = categoryChoices(all).filter(c => present.has(c));
+    if (cat !== 'all' && !list.includes(cat) && loaded) cat = 'all';
+    const n = c => c === 'all' ? all.length : all.filter(p => productCategory(p) === c).length;
+    $('cat-tabs').innerHTML = [['all', 'All']].concat(list.map(c => [c, c])).map(([c, l]) =>
+      `<button class="f-tab${c === cat ? ' active' : ''}" data-c="${esc(c)}">${esc(l)}<span class="cnt">${n(c)}</span></button>`).join('');
+    $('cat-tabs').querySelectorAll('.f-tab').forEach(b => b.addEventListener('click', () => { cat = b.dataset.c; render(); }));
+  }
+
+  /** The product's photo: its own, else its model's picture, else '' (the caller shows an icon). */
+  function photoHtml(p) {
+    const m = modelOf(p);
+    if (safeUrl(p.imageUrl)) return `<img src="${safeUrl(p.imageUrl)}" alt="" onerror="this.style.display='none'">`;
+    if (m && m.thumbUrl) return `<img src="${esc(m.thumbUrl)}" alt="" class="contain">`;
+    if (m && m.front && m.front.img) return `<img src="${esc(m.front.img)}" alt="" class="contain">`;
+    return '';
+  }
+  function discountOf(p) {
+    if (!(p.originalPrice > p.price)) return 0;
+    return Number.isInteger(p.discountPercent) && p.discountPercent > 0 ? p.discountPercent : Math.max(1, Math.round((1 - p.price / p.originalPrice) * 100));
+  }
+
+  function renderGrid() {
+    const grid = $('grid');
+    if (!loaded) { grid.innerHTML = '<div class="spinner"></div>'; return; }
+    const rows = shownProducts();
+    if (!rows.length) {
+      grid.innerHTML = all.length
+        ? '<div class="card" style="grid-column:1/-1;"><div class="empty"><i class="bi bi-search"></i><p>No products match.</p></div></div>'
+        : `<button class="add-tile" onclick="openAdd()"><i class="bi bi-plus-circle"></i>Add your first product</button>`;
+      return;
+    }
+    grid.innerHTML = rows.map(p => {
+      const m = modelOf(p), d = discountOf(p), sizes = sizesOf(p), photo = photoHtml(p);
+      let stock;
+      if (tracksStock(p)) {
+        const total = sizes.reduce((s, z) => s + shownStock(p, z), 0);
+        stock = `<div class="pc-stock"><span class="lbl">In storage:</span> <b>${total}</b></div><div class="pc-sizes">${sizes.map(z => {
+          const n = shownStock(p, z); return `<span class="pc-sz ${n <= 0 ? 'out' : n <= shop.lowStockAt ? 'low' : ''}" title="${n <= 0 ? 'Out of stock' : n <= shop.lowStockAt ? 'Running low' : ''}">${esc(z)}<b>${n}</b></span>`; }).join('')}</div>`;
+      } else {
+        stock = `<div class="pc-stock"><span class="lbl">Made to order</span>${sizes.length ? ' · ' + esc(sizes.join(', ')) : ' · <span style="color:#FF6B6B;">no sizes</span>'}</div>`;
+      }
+      const design = m ? (p.defaultCustomization
+        ? `<div class="pc-design"><div class="pc-dthumb" data-dp="${esc(p.id)}"><i class="bi bi-hourglass-split"></i></div>
+             <div><div class="pc-dlbl">Starting design</div><div class="pc-dlinks"><a href="design.html?product=${encodeURIComponent(p.id)}">Change</a><button type="button" class="linkbtn muted" data-cleardesign="${esc(p.id)}">Remove</button></div></div></div>`
+        : `<div class="pc-design"><div class="pc-dthumb none"><i class="bi bi-plus-lg"></i></div>
+             <div><div class="pc-dlbl">No starting design</div><div class="pc-dlinks"><a href="design.html?product=${encodeURIComponent(p.id)}">Create one</a></div></div></div>`) : '';
+      return `<article class="pcard${p.isAvailable === true ? '' : ' off'}">
+        <div class="pc-media">${photo || '<i class="bi bi-bag pc-ico"></i>'}
+          <div class="pc-badges">${d ? `<span class="pc-badge">-${d}%</span>` : ''}${p.tag ? `<span class="pc-badge tag">${esc(p.tag)}</span>` : ''}</div>
+          ${p.isAvailable === true ? '' : '<div class="pc-hidden"><i class="bi bi-eye-slash"></i> Hidden from the app</div>'}
+        </div>
+        <div class="pc-body">
+          <div><div class="pc-name">${esc(p.name || 'Untitled')}</div>
+            <div class="pc-cat">${esc(productCategory(p) || 'No category')}${m ? ' · ' + esc(m.label) : (p.shirtStyle ? ' · <span class="bad">3D model missing</span>' : '')}</div></div>
+          <div class="pc-price"><b>${peso(p.price)}</b>${d ? `<s>${peso(p.originalPrice)}</s>` : ''}</div>
+          <div>${stock}</div>
+          ${design}
+          <label class="pc-sale"><span class="avail"><input type="checkbox" data-avail="${esc(p.id)}" ${p.isAvailable === true ? 'checked' : ''} aria-label="${esc(p.name || 'Product')} for sale"><span class="avail-sl"></span></span>${p.isAvailable === true ? 'For sale in the app' : 'Not for sale'}</label>
+        </div>
+        <div class="pc-actions">
+          <button class="pa primary" data-act="edit" data-id="${esc(p.id)}"><i class="bi bi-pencil-square"></i> Edit</button>
+          <button class="pa" data-act="dup" data-id="${esc(p.id)}" title="Make a copy to change, like a new colour"><i class="bi bi-copy"></i> Duplicate</button>
+          <button class="pa" data-act="stock" data-id="${esc(p.id)}"><i class="bi bi-boxes"></i> Stock</button>
+          <button class="pa-del" data-act="del" data-id="${esc(p.id)}" title="Delete" aria-label="Delete ${esc(p.name || 'product')}"><i class="bi bi-trash3"></i></button>
+        </div>
+      </article>`;
     }).join('');
+    drawDesignThumbs();
+  }
+  $('grid').addEventListener('click', e => {
+    const b = e.target.closest('[data-act]');
+    if (b) { const id = b.dataset.id; ({ edit: openEdit, dup: openDuplicate, stock: openStock, del: openDel })[b.dataset.act](id); return; }
+    const c = e.target.closest('[data-cleardesign]'); if (c) clearDefaultDesign(c.dataset.cleardesign);
+  });
+  $('grid').addEventListener('change', e => { const t = e.target.closest('[data-avail]'); if (t) toggleAvail(t.dataset.avail, t.checked); });
+
+  /** Draws each product's starting design (small) into its card. Pictures are kept, so a refresh doesn't redraw. */
+  const thumbCache = {};
+  async function drawDesignThumbs() {
+    for (const slot of [...document.querySelectorAll('.pc-dthumb[data-dp]')]) {
+      const p = all.find(x => x.id === slot.dataset.dp), m = p && modelOf(p);
+      if (!p || !m || !p.defaultCustomization) continue;
+      const key = p.id + '|' + m.id + '|' + JSON.stringify(p.defaultCustomization);
+      try {
+        if (!thumbCache[key]) thumbCache[key] = renderDesignCanvas(m, p.defaultCustomization, 132);
+        const src = await thumbCache[key];
+        if (!slot.isConnected) continue;
+        const cv = document.createElement('canvas'); cv.width = src.width; cv.height = src.height;
+        cv.getContext('2d').drawImage(src, 0, 0);
+        slot.innerHTML = ''; slot.appendChild(cv); slot.title = 'Starting design';
+      } catch (err) { delete thumbCache[key]; if (slot.isConnected) slot.innerHTML = `<i class="bi bi-exclamation-triangle" title="${esc(err.message || String(err))}"></i>`; }
+    }
   }
 
-  document.getElementById('q').addEventListener('input',render);
-
-  document.querySelectorAll('.sz').forEach(s=>s.addEventListener('click',()=>s.classList.toggle('on')));
-  // Stock boxes, one per size (saved as the product's `inventory` map, which the app's size picker reads)
-  const ALL_SIZES=[...document.querySelectorAll('.sz')].map(s=>s.dataset.v);
-  document.getElementById('stock-row').innerHTML=ALL_SIZES.map(v=>
-    `<label style="display:flex;align-items:center;gap:5px;font-size:12.5px;">${v}<input type="number" class="stock-in" data-v="${v}" min="0" step="1" placeholder="—" style="width:64px;"></label>`).join('');
-  const setStock=inv=>document.querySelectorAll('.stock-in').forEach(i=>{const n=(inv||{})[i.dataset.v];i.value=(typeof n==='number')?n:'';});
-  /** The inventory map to save, or null when no box is filled (made-to-order). Only offered sizes are kept. */
-  function getStock(sizes){
-    const filled={};
-    document.querySelectorAll('.stock-in').forEach(i=>{const n=parseInt(i.value,10);if(i.value!==''&&!isNaN(n)&&n>=0)filled[i.dataset.v]=n;});
-    if(!Object.keys(filled).length)return null;
-    const inv={};
-    (sizes.length?sizes:ALL_SIZES).forEach(v=>{inv[v]=filled[v]||0;});
-    return inv;
+  // ── Stock: counts, − / + and typed counts ───────────────────────────────────────────────────────────
+  // Clicks are gathered for a moment and saved as one change (an increment, so an order arriving at the same
+  // time is never undone). What's shown = what's saved + the clicks not sent yet.
+  const pend = {}; let flushTimer = null;
+  const keyOf = (pid, size) => pid + '\u0000' + size;
+  function shownStock(p, size) { return Math.max(0, (stockOf(p, size) || 0) + (pend[keyOf(p.id, size)] || 0)); }
+  function stockAlerts(list) {
+    let low = 0, out = 0, total = 0;
+    list.filter(tracksStock).forEach(p => sizesOf(p).forEach(z => { const n = shownStock(p, z); total += n; if (n <= 0) out++; else if (n <= shop.lowStockAt) low++; }));
+    return { low, out, total };
   }
-  const getSizes=()=>[...document.querySelectorAll('.sz.on')].map(s=>s.dataset.v);
-  const setSizes=arr=>document.querySelectorAll('.sz').forEach(s=>s.classList.toggle('on',arr.includes(s.dataset.v)));
+  const stateOf = n => n <= 0 ? 'out' : n <= shop.lowStockAt ? 'low' : '';
+  const noteOf = st => st === 'out' ? 'Out of stock' : st === 'low' ? 'Running low' : '&nbsp;';
+  function stockCell(p, size) {
+    const n = shownStock(p, size), st = stateOf(n);
+    return `<div class="scc ${st}" data-p="${esc(p.id)}" data-s="${esc(size)}">
+      <div class="scc-size">${esc(size)}</div>
+      <div class="scc-row">
+        <button type="button" class="scc-b" data-d="-1" aria-label="One less ${esc(size)}" ${n <= 0 ? 'disabled' : ''}><i class="bi bi-dash-lg"></i></button>
+        <input class="scc-n" type="number" inputmode="numeric" min="0" max="100000" step="1" value="${n}" aria-label="${esc(size)} in storage" title="Click to type the count">
+        <button type="button" class="scc-b" data-d="1" aria-label="One more ${esc(size)}"><i class="bi bi-plus-lg"></i></button>
+      </div>
+      <div class="scc-note">${noteOf(st)}</div>
+    </div>`;
+  }
+  /** Brings every box showing this product's size (list and pop-up) up to date without redrawing the page. */
+  function refreshCells(pid, size) {
+    const p = all.find(x => x.id === pid); if (!p) return;
+    const n = shownStock(p, size), st = stateOf(n);
+    document.querySelectorAll('.scc').forEach(c => {
+      if (c.dataset.p !== pid || c.dataset.s !== size) return;
+      c.className = 'scc ' + st;
+      const inp = c.querySelector('.scc-n'); if (document.activeElement !== inp) inp.value = n;
+      c.querySelector('.scc-b[data-d="-1"]').disabled = n <= 0;
+      c.querySelector('.scc-note').innerHTML = noteOf(st);
+    });
+    document.querySelectorAll('[data-total]').forEach(t => { if (t.dataset.total === pid) t.textContent = sizesOf(p).reduce((s, z) => s + shownStock(p, z), 0); });
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.scc-b'); if (!b || !b.closest('.scc')) return;
+    const c = b.closest('.scc'), pid = c.dataset.p, size = c.dataset.s, p = all.find(x => x.id === pid); if (!p) return;
+    const d = Number(b.dataset.d);
+    if (shownStock(p, size) + d < 0) return;
+    const k = keyOf(pid, size); pend[k] = (pend[k] || 0) + d;
+    refreshCells(pid, size);
+    clearTimeout(flushTimer); flushTimer = setTimeout(flushStock, 700);
+  });
+  function flushStock() {
+    clearTimeout(flushTimer);
+    Object.keys(pend).forEach(k => {
+      const d = pend[k]; delete pend[k];
+      if (!d) return;
+      const [pid, size] = k.split('\u0000');
+      changeStock(pid, size, d).catch(err => { toast('Stock not saved: ' + err.message, 'err'); render(); });
+    });
+  }
+  window.addEventListener('pagehide', flushStock);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) flushStock(); });
+  // A typed count replaces the number (after counting the shelf)
+  document.addEventListener('change', e => {
+    const inp = e.target.closest('.scc .scc-n'); if (!inp) return;
+    const c = inp.closest('.scc'), pid = c.dataset.p, size = c.dataset.s, p = all.find(x => x.id === pid); if (!p) return;
+    const v = inp.value.trim();
+    if (!/^\d+$/.test(v) || Number(v) > 100000) { toast('Type a whole number, like 12', 'warn'); inp.value = shownStock(p, size); return; }
+    delete pend[keyOf(pid, size)];
+    if (Number(v) === shownStock(p, size)) return;
+    setStockCount(pid, size, Number(v)).then(() => toast(`${p.name || 'Product'} ${size}: ${v} in storage`, 'ok'))
+      .catch(err => { toast('Not saved: ' + err.message, 'err'); inp.value = shownStock(p, size); });
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.closest && e.target.closest('.scc .scc-n')) e.target.blur(); });
 
-  function openAdd(){
-    document.getElementById('modal-title').textContent='Add Product';
-    document.getElementById('edit-id').value='';
-    ['p-name','p-desc','p-img'].forEach(i=>document.getElementById(i).value='');
-    fillCatSelect(cat!=='all'?cat:'');
-    showPreview();
-    document.getElementById('p-price').value='';
-    document.getElementById('p-disc').value='';
-    loadedPrice=null; tagTouched=false;
-    updatePriceTag();
-    document.getElementById('p-tag').value='';
-    document.getElementById('p-style').value='';
-    document.getElementById('p-avail').checked=true;
-    setSizes([]);
-    setStock(null);
-    document.getElementById('prod-overlay').classList.add('show');
+  function renderStockView() {
+    if (!loaded) { $('st-list').innerHTML = '<div class="spinner"></div>'; return; }
+    const rows = shownProducts(), counted = rows.filter(tracksStock), a = stockAlerts(counted);
+    $('st-sum').innerHTML = [['all', a.total, 'pieces in storage', ''], ['low', a.low, a.low === 1 ? 'size running low' : 'sizes running low', 'low'], ['out', a.out, a.out === 1 ? 'size out of stock' : 'sizes out of stock', 'out']]
+      .map(([f, v, l, cls]) => `<button type="button" class="st-tile ${cls}${stFilter === f ? ' on' : ''}" data-f="${f}" aria-pressed="${stFilter === f}" title="${f === 'all' ? 'Show everything' : 'Show only these'}"><div class="v">${v}</div><div class="l">${l}</div></button>`).join('');
+    $('st-sum').querySelectorAll('.st-tile').forEach(t => t.addEventListener('click', () => { stFilter = stFilter === t.dataset.f ? 'all' : t.dataset.f; render(); }));
+    const wanted = p => stFilter === 'all' || sizesOf(p).some(z => stateOf(shownStock(p, z)) === stFilter);
+    const list = counted.filter(wanted);
+    $('st-list').innerHTML = list.length ? list.map(p => {
+      const sizes = sizesOf(p), ph = photoHtml(p);
+      return `<div class="st-row">
+        <div class="st-head">${ph || '<div class="st-ph"><i class="bi bi-bag"></i></div>'}
+          <div class="grow"><div class="st-name">${esc(p.name || 'Untitled')}</div><div class="st-meta">${esc(productCategory(p) || 'No category')} · <b data-total="${esc(p.id)}">${sizes.reduce((s, z) => s + shownStock(p, z), 0)}</b> in storage${p.isAvailable === true ? '' : ' · hidden from the app'}</div></div>
+          <button class="btn-ghost" data-stock="${esc(p.id)}"><i class="bi bi-truck"></i> Add a delivery</button>
+        </div>
+        <div class="st-cells">${sizes.length ? sizes.map(z => stockCell(p, z)).join('') : '<p class="note">No sizes picked yet. Edit the product to add them.</p>'}</div>
+      </div>`;
+    }).join('') : `<div class="card"><div class="empty"><i class="bi bi-boxes"></i><p>${counted.length ? (stFilter === 'out' ? 'Nothing is out of stock.' : 'Nothing is running low.') : 'No product has its stock counted yet. Turn it on below, or press Stock on a product.'}</p></div></div>`;
+    const mto = rows.filter(p => !tracksStock(p));
+    $('st-mto').hidden = !mto.length || stFilter !== 'all';
+    $('st-mto').innerHTML = `<div class="card-head" style="margin-bottom:8px;"><span class="card-title">Made to order (not counted)</span></div>
+      <p class="note" style="margin-bottom:6px;">The app shows every size of these as available. Count their stock to have orders take it off.</p>
+      ${mto.map(p => `<div class="st-mto-row"><span>${esc(p.name || 'Untitled')} <span style="color:var(--muted);font-size:13.5px;">· ${esc(sizesOf(p).join(', ') || 'no sizes')}</span></span>
+        <button class="btn-ghost" data-track="${esc(p.id)}"><i class="bi bi-123"></i> Count its stock</button></div>`).join('')}`;
+  }
+  $('view-stock').addEventListener('click', e => {
+    const s = e.target.closest('[data-stock]'); if (s) { openStock(s.dataset.stock, true); return; }
+    const t = e.target.closest('[data-track]'); if (t) startTracking(t.dataset.track);
+  });
+
+  /** Starts counting a made-to-order product: every size at 0, then the pop-up to type what's there. */
+  async function startTracking(pid) {
+    const p = all.find(x => x.id === pid); if (!p) return;
+    const sizes = sizesOf(p);
+    if (!sizes.length) { toast('Pick its sizes first', 'warn'); openEdit(pid); return; }
+    try {
+      const inv = Object.fromEntries(sizes.map(z => [z, 0]));
+      await db.collection('products').doc(pid).update({ inventory: inv });
+      if (!tracksStock(p)) p.inventory = inv;
+      openStock(pid, true);
+    } catch (e) { toast('Not changed: ' + e.message, 'err'); }
+  }
+  async function stopTracking(pid) {
+    const p = all.find(x => x.id === pid); if (!p) return false;
+    if (!confirm(`Stop counting stock for "${p.name}"? The counts are removed and the app shows every size as available.`)) return false;
+    try { await db.collection('products').doc(pid).update({ inventory: firebase.firestore.FieldValue.delete() }); delete p.inventory; toast('Now made to order', 'ok'); return true; }
+    catch (e) { toast('Not changed: ' + e.message, 'err'); return false; }
+  }
+
+  /** A spreadsheet of every counted size, to check the shelves against. */
+  function downloadCountSheet() {
+    const rows = [['Product', 'Category', 'Size', 'In storage', 'Status', 'Counted on the shelf']];
+    shownProducts().filter(tracksStock).forEach(p => sizesOf(p).forEach(z => {
+      const n = shownStock(p, z), st = stateOf(n); rows.push([p.name || '', productCategory(p), z, n, st === 'out' ? 'Out of stock' : st === 'low' ? 'Running low' : 'OK', '']);
+    }));
+    if (rows.length === 1) { toast('No counted stock to put on a sheet yet', 'warn'); return; }
+    const d = new Date();
+    downloadCsv(`stock-count-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.csv`, rows);
+  }
+
+  // ── Stock pop-up for one product ──────────────────────────────────────────────────────────────────
+  let stockPid = null;
+  function openStock(pid, focusAdd) {
+    if (!all.some(x => x.id === pid)) return;
+    stockPid = pid; renderStockModal(true);
+    $('stock-overlay').classList.add('show');
+    if (focusAdd) setTimeout(() => { const f = document.querySelector('#sm-body .sm-add input'); if (f) f.focus(); }, 80);
+  }
+  function closeStock() { flushStock(); $('stock-overlay').classList.remove('show'); stockPid = null; }
+  function renderStockModal(force) {
+    const p = all.find(x => x.id === stockPid);
+    if (!p) { closeStock(); return; }
+    const a = document.activeElement;
+    if (!force && a && a.closest && a.closest('#sm-body') && a.tagName === 'INPUT' && a.type !== 'checkbox') return;   // don't wipe what's being typed
+    $('sm-title').textContent = 'Stock · ' + (p.name || 'Product');
+    const sizes = sizesOf(p), on = tracksStock(p);
+    $('sm-body').innerHTML = `
+      <label class="switch-row" style="margin-bottom:18px;"><span class="avail"><input type="checkbox" id="sm-track" ${on ? 'checked' : ''}><span class="avail-sl"></span></span>
+        <span>Count how many are in storage<small>${on ? 'Orders take stock off by themselves; cancelled orders put it back.' : 'Off: made to order, every size shows as available in the app.'}</small></span></label>
+      ${!on ? '' : !sizes.length ? '<p class="note">Pick the sizes first: press Edit on the product.</p>' : `
+      <div class="sm-sec">In storage now <span class="note" style="font-weight:400;">· <b data-total="${esc(p.id)}">${sizes.reduce((s, z) => s + shownStock(p, z), 0)}</b> pieces · saved right away</span></div>
+      <div class="st-cells" style="margin-bottom:24px;">${sizes.map(z => stockCell(p, z)).join('')}</div>
+      <div class="sm-sec"><i class="bi bi-truck" style="color:var(--orange);"></i> Add a delivery</div>
+      <p class="note" style="margin-bottom:10px;">Type how many of each size came in, then press <strong>Add to storage</strong>.</p>
+      <div class="sm-add">${sizes.map(z => `<label>${esc(z)}<input type="number" min="0" max="100000" step="1" inputmode="numeric" placeholder="0" data-add="${esc(z)}"></label>`).join('')}
+        <button class="btn-grad" id="sm-add-btn" onclick="addDelivery()" style="height:44px;"><i class="bi bi-plus-lg"></i> Add to storage</button></div>`}`;
+    $('sm-track').addEventListener('change', async e => {
+      if (e.target.checked) await startTracking(p.id);
+      else if (!(await stopTracking(p.id))) e.target.checked = true;
+      renderStockModal(true);
+    });
+    $('sm-body').querySelectorAll('[data-add]').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') addDelivery(); }));
+  }
+  async function addDelivery() {
+    const p = all.find(x => x.id === stockPid); if (!p) return;
+    const adds = [...document.querySelectorAll('#sm-body [data-add]')].map(i => [i.dataset.add, i.value.trim()]).filter(([, v]) => v !== '');
+    if (adds.some(([, v]) => !/^\d+$/.test(v) || Number(v) > 100000)) { toast('Use whole numbers, like 24', 'warn'); return; }
+    const real = adds.filter(([, v]) => Number(v) > 0);
+    if (!real.length) { toast('Type how many came in for at least one size', 'warn'); return; }
+    const btn = $('sm-add-btn'); btn.disabled = true;
+    try {
+      const change = {};
+      real.forEach(([z, v]) => { change['inventory.' + z] = firebase.firestore.FieldValue.increment(Number(v)); });
+      await db.collection('products').doc(p.id).update(change);
+      toast('Added to storage: ' + real.map(([z, v]) => `${z} +${v}`).join(', '), 'ok');
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      renderStockModal(true);
+    } catch (e) { toast('Not added: ' + e.message, 'err'); }
+    finally { if ($('sm-add-btn')) $('sm-add-btn').disabled = false; }
+  }
+
+  // ── Categories pop-up ─────────────────────────────────────────────────────────────────────────────
+  let catEditing = null, catDeleting = null;
+  const productsIn = name => all.filter(p => sameName(p.category, name) || productCategory(p) === name);
+  const catMeta = () => ({ updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: (auth.currentUser && auth.currentUser.email) || '' });
+  function openCats() { catEditing = catDeleting = null; renderCats(true); $('cat-overlay').classList.add('show'); setTimeout(() => { const n = $('c-new'); if (n && !n.disabled) n.focus(); }, 80); }
+  function closeCats() { $('cat-overlay').classList.remove('show'); catEditing = catDeleting = null; }
+  function catEdit(id) { catEditing = id; catDeleting = null; renderCats(true); setTimeout(() => $('ce-name') && $('ce-name').focus(), 30); }
+  function catAskDelete(id) { catDeleting = id; catEditing = null; renderCats(true); }
+  function catCancel() { catEditing = catDeleting = null; renderCats(true); }
+  function renderCats(force) {
+    if (!force && !$('cat-overlay').classList.contains('show')) return;
+    // What's being typed survives a refresh from the database (the new name always; the others unless reopened)
+    const a = document.activeElement, focusId = a && a.id && a.closest && a.closest('#cat-body') ? a.id : '';
+    const caret = focusId && typeof a.selectionStart === 'number' ? [a.selectionStart, a.selectionEnd] : null;
+    const kept = {}; $('cat-body').querySelectorAll('input[id], select[id]').forEach(el => { if (el.type !== 'checkbox' && (!force || el.id === 'c-new')) kept[el.id] = el.value; });
+    const loose = [...new Set(all.map(p => String(p.category || '').trim()).filter(n => n && !cats.some(c => sameName(c.name, n) || productCategory({ category: n }) === c.name)))].sort();
+    const starter = [...new Set(STARTER_CATEGORIES.concat(all.map(productCategory).filter(Boolean)))];
+    window._loose = loose;
+    let html = '';
+    if (catsDenied) html += `<div class="card warn-card" style="margin-bottom:14px;"><div class="card-head" style="margin-bottom:8px;"><span class="card-title"><i class="bi bi-exclamation-triangle"></i> One-time Firestore setup</span></div>
+      <p class="note">Firestore isn't letting this page save categories yet. Open the <a href="https://console.firebase.google.com/project/${esc(firebaseConfig.projectId)}/firestore/rules" target="_blank" rel="noopener" style="color:var(--orange);">Firestore rules</a>,
+        paste this inside <code>match /databases/{database}/documents { … }</code> and press Publish. (App Keys has every rule in one block.)</p>
+      <button class="btn-ghost" type="button" style="margin-top:10px;" onclick="navigator.clipboard.writeText(CATEGORY_RULE).then(()=>toast('Copied','ok'))"><i class="bi bi-clipboard"></i> Copy</button><pre class="rule-pre">${esc(CATEGORY_RULE)}</pre></div>`;
+    html += `<p class="note" style="margin-bottom:12px;">These are the filters customers tap in the app's shop, in this order. A category switched off keeps its products; they still show under <strong>All</strong>.</p>
+      <div class="cat-add"><input type="text" class="inp" id="c-new" maxlength="40" placeholder="New category, e.g. Jackets" ${catsDenied ? 'disabled' : ''} aria-label="New category name">
+        <button class="btn-grad" id="c-add" onclick="catAdd()" ${catsDenied ? 'disabled' : ''}><i class="bi bi-plus-lg"></i> Add</button></div>`;
+    if (!catsDenied && catsLoaded && !cats.length) html += `<div class="qs" style="margin-bottom:14px;"><span style="flex:1;min-width:200px;">Start with ${starter.map(n => `<strong>${esc(n)}</strong>`).join(', ')} in one go. You can rename, reorder or delete them after.</span>
+      <button class="btn-grad" onclick="catImport()"><i class="bi bi-magic"></i> Add these</button></div>`;
+    if (!catsLoaded) html += '<div class="spinner"></div>';
+    if (cats.length) html += `<div class="cat-list">${cats.map((c, i) => {
+      const inIt = productsIn(c.name), forSale = inIt.filter(p => p.isAvailable === true).length, id = esc(c.id);
+      if (catEditing === c.id) return `<div class="cat-row editing"><div class="cat-edit">
+          <input class="inp" id="ce-name" maxlength="40" value="${esc(c.name)}" aria-label="Category name">
+          <input class="inp" id="ce-desc" maxlength="120" value="${esc(c.description)}" placeholder="Note for staff (optional)" aria-label="Note for staff"></div>
+        <div class="cat-foot"><span class="note">${inIt.length ? `Renaming also moves its ${plural(inIt.length, 'product')}.` : ''}</span>
+          <button class="btn-ghost" onclick="catCancel()">Cancel</button><button class="btn-grad" id="ce-save" onclick="catSave('${id}')"><i class="bi bi-check-lg"></i> Save</button></div></div>`;
+      if (catDeleting === c.id) {
+        const others = cats.filter(x => x.id !== c.id);
+        return `<div class="cat-row deleting"><div class="nm"><b>Delete "${esc(c.name)}"?</b>
+            <div>${inIt.length ? (others.length ? `Its ${plural(inIt.length, 'product')} move to:` : `${plural(inIt.length, 'product')} in it and no other category to move them to. Add another first.`) : 'It has no products.'}</div></div>
+          ${inIt.length && others.length ? `<select class="inp" id="cd-move" aria-label="Move its products to">${others.map(x => `<option value="${esc(x.name)}">${esc(x.name)}</option>`).join('')}</select>` : ''}
+          <div class="btns"><button class="btn-ghost" onclick="catCancel()">Cancel</button>
+            <button class="btn-danger" id="cd-go" onclick="catDelete('${id}')" ${inIt.length && !others.length ? 'disabled' : ''}><i class="bi bi-trash3"></i> Delete</button></div></div>`;
+      }
+      return `<div class="cat-row">
+        <div class="ord"><button class="btn-icon" title="Move up" aria-label="Move ${esc(c.name)} up" ${i === 0 ? 'disabled' : ''} onclick="catMove(${i},-1)"><i class="bi bi-arrow-up"></i></button>
+          <button class="btn-icon" title="Move down" aria-label="Move ${esc(c.name)} down" ${i === cats.length - 1 ? 'disabled' : ''} onclick="catMove(${i},1)"><i class="bi bi-arrow-down"></i></button></div>
+        <div class="nm"><b>${esc(c.name)}</b><div>${plural(inIt.length, 'product')}${inIt.length ? ` · ${forSale} for sale` : ''}${c.description ? ' · ' + esc(c.description) : ''}</div>
+          ${c.showInApp && inIt.length && !forSale ? '<div class="hint">Not in the app until one of its products is for sale</div>' : ''}</div>
+        <label class="show"><span class="avail"><input type="checkbox" ${c.showInApp ? 'checked' : ''} onchange="catShown('${id}',this.checked)" aria-label="Show ${esc(c.name)} in the app"><span class="avail-sl"></span></span> In the app</label>
+        <div class="btns"><button class="btn-ghost" onclick="catEdit('${id}')"><i class="bi bi-pencil"></i> Rename</button>
+          <button class="btn-icon del" title="Delete" aria-label="Delete ${esc(c.name)}" onclick="catAskDelete('${id}')"><i class="bi bi-trash3"></i></button></div>
+      </div>`;
+    }).join('')}</div>`;
+    if (!catsDenied && cats.length && loose.length) html += `<div style="margin-top:20px;"><div class="sm-sec">Used by products but not in your list</div>
+      <p class="note" style="margin-bottom:6px;">From older products or a different spelling. Add it to the list, or move its products into one you have.</p>
+      ${loose.map((n, i) => { const count = all.filter(p => sameName(p.category, n)).length; return `<div class="loose"><strong>${esc(n)}</strong><span class="pill">${plural(count, 'product')}</span>
+        <button class="btn-ghost" onclick="catAdopt(${i})"><i class="bi bi-plus-lg"></i> Add to list</button>
+        <select class="inp" id="loose-to-${i}" aria-label="Category to move ${esc(n)} products to">${cats.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('')}</select>
+        <button class="btn-ghost" onclick="catMoveLoose(${i})"><i class="bi bi-arrow-right"></i> Move products</button></div>`; }).join('')}</div>`;
+    $('cat-body').innerHTML = html;
+    Object.keys(kept).forEach(id => { const el = $(id); if (el) el.value = kept[id]; });
+    if (focusId && $(focusId)) { const el = $(focusId); el.focus(); if (caret) try { el.setSelectionRange(caret[0], caret[1]); } catch (e) {} }
+    const n = $('c-new'); if (n) n.addEventListener('keydown', e => { if (e.key === 'Enter') catAdd(); });
+    const en = $('ce-name'); if (en) en.addEventListener('keydown', e => { if (e.key === 'Enter') catSave(catEditing); });
+  }
+  function freeCatId(name) { let id = categoryId(name), k = 2; while (cats.some(c => c.id === id)) id = categoryId(name) + '-' + k++; return id; }
+  const nextCatOrder = () => cats.reduce((m, c) => Math.max(m, c.order), 0) + 10;
+  async function catAdd() {
+    const name = ($('c-new').value || '').trim().replace(/\s+/g, ' ');
+    if (!name) { toast('Type a name first', 'warn'); $('c-new').focus(); return; }
+    if (cats.some(c => sameName(c.name, name))) { toast(`"${name}" is already in the list`, 'warn'); return; }
+    $('c-add').disabled = true;
+    try {
+      await db.collection('categories').doc(freeCatId(name)).set(Object.assign({ name, description: '', showInApp: true, order: nextCatOrder(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp() }, catMeta()));
+      toast(`"${name}" added`, 'ok'); $('c-new').value = '';
+    } catch (e) { toast(e.code === 'permission-denied' ? 'Firestore refused it. See the setup note at the top.' : 'Not added: ' + e.message, 'err'); }
+    finally { if ($('c-add')) $('c-add').disabled = catsDenied; }
+  }
+  async function catImport() {
+    const names = [...new Set(STARTER_CATEGORIES.concat(all.map(productCategory).filter(Boolean)))];
+    try {
+      const batch = db.batch();
+      names.forEach((name, i) => batch.set(db.collection('categories').doc(categoryId(name)), Object.assign({ name, description: '', showInApp: true, order: (i + 1) * 10,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp() }, catMeta())));
+      await batch.commit(); toast(names.length + ' categories added', 'ok');
+    } catch (e) { toast('Not added: ' + e.message, 'err'); }
+  }
+  /** Swaps a category with its neighbour, then renumbers the list 10, 20, 30… so gaps never pile up. */
+  async function catMove(i, dir) {
+    const list = cats.slice(), j = i + dir; if (j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    try { const batch = db.batch(); list.forEach((c, k) => { if (c.order !== (k + 1) * 10) batch.update(db.collection('categories').doc(c.id), { order: (k + 1) * 10 }); }); await batch.commit(); }
+    catch (e) { toast('Not moved: ' + e.message, 'err'); }
+  }
+  async function catShown(id, on) {
+    try { await db.collection('categories').doc(id).update(Object.assign({ showInApp: on }, catMeta())); toast(on ? 'Shown in the app' : 'Hidden from the app', 'ok'); }
+    catch (e) { toast('Not changed: ' + e.message, 'err'); renderCats(true); }
+  }
+  /** Writes `change` to every product in `list`, in batches small enough for Firestore. */
+  async function updateProducts(list, change) {
+    for (let k = 0; k < list.length; k += 400) { const batch = db.batch(); list.slice(k, k + 400).forEach(p => batch.update(db.collection('products').doc(p.id), change)); await batch.commit(); }
+  }
+  async function catSave(id) {
+    const c = cats.find(x => x.id === id); if (!c) return;
+    const name = $('ce-name').value.trim().replace(/\s+/g, ' ');
+    if (!name) { toast("The name can't be empty", 'warn'); return; }
+    if (cats.some(x => x.id !== c.id && sameName(x.name, name))) { toast(`"${name}" is already in the list`, 'warn'); return; }
+    $('ce-save').disabled = true;
+    try {
+      const moving = name !== c.name ? productsIn(c.name) : [];
+      if (moving.length) await updateProducts(moving, { category: name });
+      await db.collection('categories').doc(c.id).update(Object.assign({ name, description: $('ce-desc').value.trim() }, catMeta()));
+      if (cat === c.name) cat = name;
+      catEditing = null; renderCats(true);
+      toast(moving.length ? `Renamed; ${plural(moving.length, 'product')} moved with it` : 'Saved', 'ok');
+    } catch (e) { toast('Not saved: ' + e.message, 'err'); if ($('ce-save')) $('ce-save').disabled = false; }
+  }
+  async function catDelete(id) {
+    const c = cats.find(x => x.id === id); if (!c) return;
+    const inIt = productsIn(c.name), to = $('cd-move') ? $('cd-move').value : '';
+    $('cd-go').disabled = true;
+    try {
+      if (inIt.length) await updateProducts(inIt, { category: to });
+      await db.collection('categories').doc(c.id).delete();
+      catDeleting = null; renderCats(true);
+      toast(`"${c.name}" deleted` + (inIt.length ? `; ${plural(inIt.length, 'product')} moved to "${to}"` : ''), 'ok');
+    } catch (e) { toast('Not deleted: ' + e.message, 'err'); if ($('cd-go')) $('cd-go').disabled = false; }
+  }
+  async function catAdopt(i) {
+    const name = window._loose[i]; if (!name) return;
+    try { await db.collection('categories').doc(freeCatId(name)).set(Object.assign({ name, description: '', showInApp: true, order: nextCatOrder(), createdAt: firebase.firestore.FieldValue.serverTimestamp() }, catMeta())); toast(`"${name}" added to the list`, 'ok'); }
+    catch (e) { toast('Not added: ' + e.message, 'err'); }
+  }
+  async function catMoveLoose(i) {
+    const name = window._loose[i], to = $('loose-to-' + i).value; if (!name || !to) return;
+    const list = all.filter(p => sameName(p.category, name));
+    try { await updateProducts(list, { category: to }); toast(`${plural(list.length, 'product')} moved to "${to}"`, 'ok'); }
+    catch (e) { toast('Not moved: ' + e.message, 'err'); }
+  }
+
+  // ── Add / Edit form ───────────────────────────────────────────────────────────────────────────────
+  /** The Category picker: every category, the product's own one kept even when it isn't in the list. */
+  function fillCatSelect(current) {
+    const names = categoryChoices(all);
+    if (current && !names.includes(current)) names.push(current);
+    $('p-cat').innerHTML = '<option value="">Select…</option>' + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('') + '<option value="__new">＋ New category…</option>';
+    $('p-cat').value = current || '';
+    $('p-newcat-row').hidden = true;
+  }
+  $('p-cat').addEventListener('change', e => {
+    const isNew = e.target.value === '__new';
+    $('p-newcat-row').hidden = !isNew;
+    if (isNew) setTimeout(() => $('p-newcat').focus(), 30);
+  });
+  /** Adds the typed category to the list (when Firestore allows it) and picks it. */
+  async function addNewCat() {
+    const name = $('p-newcat').value.trim().replace(/\s+/g, ' ');
+    if (!name) { toast("Type the new category's name", 'warn'); return; }
+    const existing = categoryChoices(all).find(n => n.toLowerCase() === name.toLowerCase());
+    if (!existing && !catsDenied) {
+      try {
+        await db.collection('categories').doc(freeCatId(name)).set(Object.assign({ name, description: '', showInApp: true, order: nextCatOrder(),
+          createdAt: firebase.firestore.FieldValue.serverTimestamp() }, catMeta()));
+        toast(`"${name}" added to Categories`, 'ok');
+      } catch (e) { toast("Saved on this product only; it couldn't be added to Categories: " + e.message, 'warn'); }
+    }
+    fillCatSelect(existing || name);
+  }
+
+  // Sizes and their stock (saved with the product)
+  let formStock = {}, loadedStock = null;   // loadedStock: the counts shown when a product already counted was opened
+  const getSizes = () => [...document.querySelectorAll('#size-pills .sz.on')].map(s => s.dataset.v);
+  const setSizes = arr => document.querySelectorAll('#size-pills .sz').forEach(s => { s.classList.toggle('on', arr.includes(s.dataset.v)); s.setAttribute('aria-pressed', arr.includes(s.dataset.v)); });
+  document.querySelectorAll('#size-pills .sz').forEach(s => s.addEventListener('click', () => { s.classList.toggle('on'); s.setAttribute('aria-pressed', s.classList.contains('on')); renderFormStock(); renderSizeChart(); }));
+  $('p-track').addEventListener('change', renderFormStock);
+  function renderFormStock() {
+    const on = $('p-track').checked, sizes = getSizes();
+    $('p-track-sub').textContent = on ? 'Orders take stock off by themselves; cancelled orders put it back.' : 'Off: made to order, every size shows as available.';
+    $('p-stock-wrap').hidden = !on;
+    if (!on) return;
+    $('p-stock').innerHTML = sizes.length ? sizes.map(z => `<div class="fst" data-s="${esc(z)}"><div class="scc-size">${esc(z)}</div><div class="scc-row">
+        <button type="button" class="scc-b" data-fd="-1" aria-label="One less ${esc(z)}"><i class="bi bi-dash-lg"></i></button>
+        <input class="scc-n" type="number" min="0" max="100000" step="1" inputmode="numeric" value="${formStock[z] || 0}" aria-label="${esc(z)} in storage">
+        <button type="button" class="scc-b" data-fd="1" aria-label="One more ${esc(z)}"><i class="bi bi-plus-lg"></i></button></div></div>`).join('')
+      : '<p class="note">Pick the sizes above first.</p>';
+    stockHelp();
+  }
+  function stockHelp() {
+    const sizes = getSizes(), h = $('p-stock-help');
+    if (!$('p-track').checked || !sizes.length) { h.textContent = ''; return; }
+    const allZero = sizes.every(z => !(formStock[z] > 0));
+    h.className = 'fg-help' + (allZero ? ' warn' : '');
+    h.textContent = allZero ? 'Every size is at 0, so the app shows it as out of stock. Type how many you have.'
+      : loadedStock ? 'What you change here is added when you press Save; orders that come in meanwhile still come off.' : 'How many of each size you have now.';
+  }
+  $('p-stock').addEventListener('click', e => {
+    const b = e.target.closest('[data-fd]'); if (!b) return;
+    const box = b.closest('.fst'), z = box.dataset.s;
+    formStock[z] = Math.max(0, (formStock[z] || 0) + Number(b.dataset.fd)); box.querySelector('.scc-n').value = formStock[z]; stockHelp();
+  });
+  $('p-stock').addEventListener('input', e => {
+    const inp = e.target.closest('.scc-n'); if (!inp) return;
+    const z = inp.closest('.fst').dataset.s, v = inp.value.trim();
+    formStock[z] = /^\d+$/.test(v) ? Math.min(100000, Number(v)) : (v === '' ? 0 : formStock[z] || 0); stockHelp();
+  });
+
+  // ── Measurements per size (Advanced) ──────────────────────────────────────────────────────────────
+  // Saved as the product's `sizeChart` and shown in the app's size picker:
+  //   {unit:'in'|'cm', columns:['Chest','Length'], rows:[{size:'M', values:[20, 28]}]}   (null = not given)
+  const SC_COLS = 4;
+  let scUnit = 'in', scCols = [], scVals = {};
+  const defaultCols = kind => (!kind || kind === 'top') ? ['Chest', 'Length', 'Shoulder', 'Sleeve'] : kind === 'headwear' ? ['Circumference', 'Height', '', ''] : ['Width', 'Height', 'Length', ''];
+  /** The model the form points at: the one picked, else the shirt read off the name (null = none). */
+  function currentModel() {
+    const id = $('p-style').value;
+    return models.find(m => m.id === id) || productModel({ name: $('p-name').value, category: $('p-cat').value }, models);
+  }
+  function setChart(chart) {
+    scVals = {};
+    if (chart && Array.isArray(chart.columns) && chart.columns.length) {
+      scUnit = chart.unit === 'cm' ? 'cm' : 'in';
+      scCols = chart.columns.slice(0, SC_COLS).map(String);
+      while (scCols.length < SC_COLS) scCols.push('');
+      (chart.rows || []).forEach(r => { if (r && r.size) scVals[r.size] = scCols.map((_, i) => { const v = (r.values || [])[i]; return typeof v === 'number' ? String(v) : ''; }); });
+    } else { const m = currentModel(); scUnit = 'in'; scCols = defaultCols(m && m.kind); }
+    renderSizeChart();
+  }
+  const chartTouched = () => Object.values(scVals).some(a => a.some(x => x !== ''));
+  function renderSizeChart() {
+    document.querySelectorAll('.sc-unit button').forEach(b => b.classList.toggle('on', b.dataset.u === scUnit));
+    const sizes = ALL_SIZES.filter(s => getSizes().includes(s)), wrap = $('sc-wrap');
+    if (!sizes.length) { wrap.innerHTML = '<div class="sc-empty">Pick the sizes first.</div>'; return; }
+    wrap.innerHTML = `<table class="sc-table"><thead><tr><th>Size</th>${scCols.map((c, i) =>
+        `<th><input class="sc-col" data-i="${i}" value="${esc(c)}" maxlength="16" placeholder="Name" aria-label="Measurement ${i + 1} name"></th>`).join('')}</tr></thead><tbody>${
+      sizes.map(s => `<tr><th>${esc(s)}</th>${scCols.map((_, i) =>
+        `<td><input class="sc-val" type="number" inputmode="decimal" min="0" step="0.1" data-s="${esc(s)}" data-i="${i}" value="${esc((scVals[s] || [])[i] || '')}" placeholder="—" aria-label="${esc(s)} ${esc(scCols[i] || 'measurement')}"></td>`).join('')}</tr>`).join('')
+    }</tbody></table>`;
+  }
+  $('sc-wrap').addEventListener('input', e => {
+    const t = e.target;
+    if (t.classList.contains('sc-col')) scCols[+t.dataset.i] = t.value;
+    else if (t.classList.contains('sc-val')) (scVals[t.dataset.s] = scVals[t.dataset.s] || scCols.map(() => ''))[+t.dataset.i] = t.value.trim();
+  });
+  document.querySelectorAll('.sc-unit button').forEach(b => b.addEventListener('click', () => { scUnit = b.dataset.u; renderSizeChart(); }));
+  /** The chart to save, or null when nothing is filled in. Throws a message for the admin when a box is wrong. */
+  function getSizeChart(sizes) {
+    const offered = ALL_SIZES.filter(s => sizes.includes(s));
+    const num = t => { if (!t) return null; const n = Number(t); if (!isFinite(n) || n <= 0 || n > 500) throw 'Measurements must be numbers above 0, like 20 or 27.5'; return Math.round(n * 10) / 10; };
+    const table = offered.map(s => ({ size: s, values: scCols.map((_, i) => num((scVals[s] || [])[i])) }));
+    const keep = scCols.map((c, i) => i).filter(i => table.some(r => r.values[i] !== null));
+    if (!keep.length) return null;
+    if (keep.some(i => !scCols[i].trim())) throw 'Give each measurement column a name, like Chest or Length';
+    const names = keep.map(i => scCols[i].trim().replace(/\s+/g, ' '));
+    if (new Set(names.map(n => n.toLowerCase())).size !== names.length) throw 'Two measurement columns have the same name';
+    return { unit: scUnit, columns: names, rows: table.map(r => ({ size: r.size, values: keep.map(i => r.values[i]) })).filter(r => r.values.some(v => v !== null)) };
+  }
+
+  // ── Photo from a preset ───────────────────────────────────────────────────────────────────────────
+  let presetList = null, presetLoad = null, ppToken = 0;
+  const previewCache = {};
+  function loadPresetList() {
+    if (!presetLoad) presetLoad = db.collection('designPresets').get()
+      .then(s => { presetList = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''))); })
+      .catch(() => { presetList = []; presetLoad = null; });
+    return presetLoad;
+  }
+  async function renderPresetPicker() {
+    const list = $('pp-list'), forEl = $('pp-for'), token = ++ppToken;
+    const m = currentModel();
+    if (!m || !m.front) { forEl.textContent = ''; list.innerHTML = '<div class="pp-empty">Ready-made designs show here once the product has a 3D model (a shirt name like "Classic Tee" is enough).</div>'; return; }
+    forEl.textContent = '· ' + m.label;
+    if (!presetList) { list.innerHTML = '<div class="pp-empty">Loading…</div>'; await loadPresetList(); if (token !== ppToken) return; }
+    const mine = (presetList || []).filter(p => designModelId(p) === m.id && p.customization && p.customization.views && Object.keys(p.customization.views).length);
+    if (!mine.length) { list.innerHTML = `<div class="pp-empty">None made on ${esc(m.label)} yet. <a href="design.html?mode=preset&model=${encodeURIComponent(m.id)}" target="_blank" rel="noopener">Make one in the Design Studio</a></div>`; return; }
+    list.innerHTML = mine.map(p => `<button type="button" class="pp-card" data-id="${esc(p.id)}" title="Use “${esc(p.name || 'Preset')}” as the photo">
+      <span class="pp-img"><i class="bi bi-hourglass-split"></i></span><span class="pp-name">${esc(p.name || 'Preset')}${p.isActive === false ? ' <em>(hidden)</em>' : ''}</span></button>`).join('');
+    for (const p of mine) {
+      const slot = list.querySelector(`.pp-card[data-id="${CSS.escape(p.id)}"] .pp-img`); if (!slot) continue;
+      try {
+        const key = p.id + '|' + m.id + '|' + ((p.updatedAt && p.updatedAt.seconds) || '');
+        if (!previewCache[key]) previewCache[key] = (await renderDesignCanvas(m, p.customization, 180)).toDataURL('image/png');
+        if (token !== ppToken) return;
+        slot.innerHTML = `<img src="${previewCache[key]}" alt="">`;
+      } catch (e) { slot.innerHTML = `<i class="bi bi-exclamation-triangle" title="${esc(e.message || String(e))}"></i>`; }
+    }
+  }
+  $('pp-list').addEventListener('click', async e => {
+    const card = e.target.closest('.pp-card'); if (!card || card.disabled) return;
+    const p = (presetList || []).find(x => x.id === card.dataset.id), m = currentModel(); if (!p || !m) return;
+    const cards = [...document.querySelectorAll('.pp-card')], save = $('save-btn');
+    cards.forEach(c => c.disabled = true); card.classList.add('busy'); save.disabled = true;
+    toast('Making the photo from “' + (p.name || 'Preset') + '”…');
+    try {
+      const file = await canvasToPngFile(await renderDesignCanvas(m, p.customization, 900), 'preset-' + p.id + '.png');
+      $('p-img').value = await uploadToCloudinary(file, { folder: 'kustomoimprenta/products' });
+      showPreview(); toast('Photo set from the design', 'ok');
+    } catch (err) { toast('Photo not made: ' + (err.message || err), 'err'); }
+    finally { cards.forEach(c => c.disabled = false); card.classList.remove('busy'); save.disabled = false; }
+  });
+  // The presets, the measurement columns and the model line follow the model: the one picked, or the shirt read off the name
+  let modelTimer = null;
+  function modelChanged() {
+    clearTimeout(modelTimer);
+    modelTimer = setTimeout(() => {
+      renderPresetPicker(); renderModelLine();
+      if (!chartTouched()) { const m = currentModel(); scCols = defaultCols(m && m.kind); renderSizeChart(); }
+    }, 250);
+  }
+  /** Under the description: which 3D model the app will use, with a shortcut to change it (it lives under Advanced). */
+  function renderModelLine() {
+    const m = currentModel(), picked = !!$('p-style').value;
+    let line = $('model-line');
+    if (!line) { line = document.createElement('div'); line.id = 'model-line'; line.className = 'model-line'; $('p-desc').closest('.fg').appendChild(line); }
+    line.innerHTML = m ? `<i class="bi bi-badge-3d"></i> 3D model: <b>${esc(m.label)}</b>${picked ? '' : ' (from the name)'} · <button type="button" class="linkbtn" onclick="openModelPicker()">Change</button>`
+      : `<i class="bi bi-badge-3d"></i> No 3D model, so customers can't design it or try it on. <button type="button" class="linkbtn" onclick="openModelPicker()">Pick one</button>`;
+  }
+  function openModelPicker() { $('adv').open = true; $('p-style').focus(); $('p-style').scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+  $('p-style').addEventListener('change', modelChanged);
+  $('p-cat').addEventListener('change', () => { if (!$('p-style').value) modelChanged(); });
+  $('p-name').addEventListener('input', () => { if (!$('p-style').value) modelChanged(); });
+
+  /** Models customers can't buy yet (no product for sale uses them), offered as quick starts in the Add form. */
+  function renderQuickStart(show) {
+    const used = new Set(all.filter(p => p.isAvailable === true).map(modelOf).filter(Boolean).map(m => m.id));
+    const missing = models.filter(m => m.enabled && !used.has(m.id));
+    const qs = $('quick-start');
+    qs.hidden = !show || !missing.length;
+    qs.innerHTML = `<span style="color:var(--muted);">Not for sale yet, start from one:</span>` + missing.map(m => `<button type="button" class="btn-ghost" data-qs="${esc(m.id)}"><i class="bi bi-plus-lg"></i> ${esc(m.label)}</button>`).join('');
+  }
+  $('quick-start').addEventListener('click', e => { const b = e.target.closest('[data-qs]'); if (b) openAddForStyle(b.dataset.qs); });
+
+  function resetForm(title) {
+    $('modal-title').textContent = title;
+    $('edit-id').value = '';
+    ['p-name', 'p-desc', 'p-img', 'p-price', 'p-disc'].forEach(i => $(i).value = '');
+    $('p-tag').value = ''; $('p-style').value = ''; $('p-avail').checked = true;
+    loadedPrice = null; tagTouched = false; loadedStock = null; formStock = {};
+    $('adv').open = false;
+  }
+  function openAdd() {
+    resetForm('Add Product');
+    fillCatSelect(cat !== 'all' ? cat : '');
+    showPreview(); updatePriceTag();
+    setSizes([]); $('p-track').checked = true; renderFormStock();
+    setChart(null); renderPresetPicker(); renderModelLine(); renderQuickStart(true);
+    $('prod-overlay').classList.add('show');
+    setTimeout(() => $('p-name').focus(), 60);
   }
   /** Add form started for one model: name, category and model filled in, price left to enter. */
-  function openAddForStyle(modelId){
-    const m=models.find(x=>x.id===modelId); if(!m)return;
-    const s=SHIRT_STYLES.find(x=>x.id===modelId);
-    openAdd();
-    document.getElementById('p-name').value=s?s.suggestedName:m.label;
-    document.getElementById('p-desc').value=s?s.description:(m.blurb||'');
-    // The model's usual category, matched to the shop's own spelling when it has one
-    const want=s?'Tees':((MODEL_KINDS.find(k=>k.id===m.kind)||{}).category||'Accessories');
-    fillCatSelect(productCategory({category:want})||want);
-    document.getElementById('p-style').value=m.id;
-    setSizes(m.kind==='top'||s?['S','M','L','XL']:['One Size']);
-    document.getElementById('p-price').focus();
+  function openAddForStyle(modelId) {
+    const m = models.find(x => x.id === modelId); if (!m) return;
+    const s = SHIRT_STYLES.find(x => x.id === modelId);
+    openAdd(); renderQuickStart(false);
+    $('p-name').value = s ? s.suggestedName : m.label;
+    $('p-desc').value = s ? s.description : (m.blurb || '');
+    const want = s ? 'Tees' : ((MODEL_KINDS.find(k => k.id === m.kind) || {}).category || 'Accessories');
+    fillCatSelect(productCategory({ category: want }) || want);
+    $('p-style').value = m.id;
+    setSizes(m.kind === 'top' || s ? ['S', 'M', 'L', 'XL'] : ['One Size']);
+    renderFormStock(); setChart(null); renderPresetPicker(); renderModelLine();
+    setTimeout(() => $('p-price').focus(), 80);
   }
-  function openEdit(id){
-    const p=all.find(x=>x.id===id); if(!p)return;
-    document.getElementById('modal-title').textContent='Edit Product';
-    document.getElementById('edit-id').value=p.id;
-    document.getElementById('p-name').value=p.name||'';
+  function openEdit(id) {
+    const p = all.find(x => x.id === id); if (!p) return;
+    resetForm('Edit Product');
+    $('edit-id').value = p.id;
+    $('p-name').value = p.name || '';
     fillCatSelect(productCategory(p));
     // The form takes the regular price and a discount; older products saved a "was" price instead
-    const onSale=p.originalPrice>p.price;
-    const regular=onSale?p.originalPrice:(p.price||0);
-    const disc=onSale?(Number.isInteger(p.discountPercent)&&p.discountPercent>0?p.discountPercent:Math.max(1,Math.round((1-p.price/p.originalPrice)*100))):0;
-    document.getElementById('p-price').value=regular||'';
-    document.getElementById('p-disc').value=disc||'';
-    loadedPrice=regular?{regular,disc,price:p.price}:null; tagTouched=true;
+    const onSale = p.originalPrice > p.price, regular = onSale ? p.originalPrice : (p.price || 0), disc = onSale ? discountOf(p) : 0;
+    $('p-price').value = regular || ''; $('p-disc').value = disc || '';
+    loadedPrice = regular ? { regular, disc, price: p.price } : null; tagTouched = true;
     updatePriceTag();
-    document.getElementById('p-desc').value=p.description||'';
-    document.getElementById('p-img').value=p.imageUrl||'';
-    showPreview();
-    document.getElementById('p-tag').value=p.tag||'';
-    document.getElementById('p-style').value=models.some(m=>m.id===p.shirtStyle)?p.shirtStyle:'';
-    document.getElementById('p-avail').checked=p.isAvailable!==false;
-    setSizes(p.sizes||[]);
-    setStock(p.inventory);
-    document.getElementById('prod-overlay').classList.add('show');
+    $('p-desc').value = p.description || '';
+    $('p-img').value = p.imageUrl || ''; showPreview();
+    $('p-tag').value = p.tag || '';
+    $('p-style').value = models.some(m => m.id === p.shirtStyle) ? p.shirtStyle : '';
+    $('p-avail').checked = p.isAvailable !== false;
+    setSizes(p.sizes || []);
+    $('p-track').checked = tracksStock(p);
+    if (tracksStock(p)) { loadedStock = {}; Object.keys(p.inventory).forEach(z => { loadedStock[z] = stockOf(p, z); }); formStock = Object.assign({}, loadedStock); }
+    renderFormStock();
+    setChart(p.sizeChart);
+    renderPresetPicker(); renderModelLine(); renderQuickStart(false);
+    $('prod-overlay').classList.add('show');
   }
-  /** Add form filled in from another product, as a new product (a new colour or cut of the same thing). */
-  function openDuplicate(id){
-    const p=all.find(x=>x.id===id); if(!p)return;
+  /** Add form filled in from another product, as a new product (a new colour or cut of the same thing). Its stock starts at 0. */
+  function openDuplicate(id) {
+    const p = all.find(x => x.id === id); if (!p) return;
     openEdit(id);
-    document.getElementById('modal-title').textContent='Duplicate Product';
-    document.getElementById('edit-id').value='';
-    document.getElementById('p-name').value=(p.name||'')+' (copy)';
-    document.getElementById('p-avail').checked=false;
-    document.getElementById('p-name').select();
+    $('modal-title').textContent = 'Duplicate Product';
+    $('edit-id').value = '';
+    $('p-name').value = (p.name || '') + ' (copy)';
+    $('p-avail').checked = false;
+    loadedStock = null; formStock = {}; renderFormStock();
+    $('p-name').focus(); $('p-name').select();
   }
-  function closeModal(){document.getElementById('prod-overlay').classList.remove('show');}
+  function closeModal() { $('prod-overlay').classList.remove('show'); }
 
-  function showPreview(){
-    const u=safeUrl(document.getElementById('p-img').value.trim()), img=document.getElementById('p-prev');
-    if(u){img.src=document.getElementById('p-img').value.trim();img.style.display='';}else{img.removeAttribute('src');img.style.display='none';}
+  function showPreview() {
+    const u = safeUrl($('p-img').value.trim()), img = $('p-prev');
+    if (u) { img.src = $('p-img').value.trim(); img.style.display = ''; } else { img.removeAttribute('src'); img.style.display = 'none'; }
   }
-  document.getElementById('p-img').addEventListener('input',showPreview);
-  document.getElementById('p-prev').addEventListener('error',e=>{e.target.style.display='none';});
-  document.getElementById('p-file').addEventListener('change',async e=>{
-    const f=e.target.files[0]; e.target.value=''; if(!f)return;
-    if(f.size>8*1048576){toast('Photos can be up to 8 MB','warn');return;}
-    const lbl=document.getElementById('p-upload-lbl'), save=document.getElementById('save-btn');
-    lbl.style.opacity='.5'; save.disabled=true; toast('Uploading the photo…');
-    try{document.getElementById('p-img').value=await uploadToCloudinary(f,{folder:'kustomoimprenta/products'});showPreview();toast('Photo uploaded','ok');}
-    catch(err){toast('Upload failed: '+err.message,'err');}
-    finally{lbl.style.opacity='';save.disabled=false;}
+  $('p-img').addEventListener('input', showPreview);
+  $('p-prev').addEventListener('error', e => { e.target.style.display = 'none'; });
+  $('p-file').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    if (f.size > 8 * 1048576) { toast('Photos can be up to 8 MB', 'warn'); return; }
+    const lbl = $('p-upload-lbl'), save = $('save-btn');
+    lbl.style.opacity = '.5'; save.disabled = true; toast('Uploading the photo…');
+    try { $('p-img').value = await uploadToCloudinary(f, { folder: 'kustomoimprenta/products' }); showPreview(); toast('Photo uploaded', 'ok'); }
+    catch (err) { toast('Upload failed: ' + err.message, 'err'); }
+    finally { lbl.style.opacity = ''; save.disabled = false; }
   });
 
-  // ── Price and discount ─────────────────────────────────────────────────────────────────────────────
+  // ── Price and discount ────────────────────────────────────────────────────────────────────────────
   // The product keeps `price` (what customers pay) and, when on sale, `originalPrice` (shown crossed out) and
   // `discountPercent` (the app's "-15%" badge), so the app needs nothing new to show a sale.
-  let loadedPrice=null;   // the product being edited: its exact price is kept while its price and discount stay as loaded
-  let tagTouched=false;   // the Tag box was set by hand, so a discount doesn't change it
-  const discountValue=()=>{const v=document.getElementById('p-disc').value.trim();return v===''?0:Number(v);};
-  const discountOk=d=>Number.isInteger(d)&&d>=0&&d<=90;
+  let loadedPrice = null;   // the product being edited: its exact price is kept while its price and discount stay as loaded
+  let tagTouched = false;   // the Tag box was set by hand, so a discount doesn't change it
+  const discountValue = () => { const v = $('p-disc').value.trim(); return v === '' ? 0 : Number(v); };
+  const discountOk = d => Number.isInteger(d) && d >= 0 && d <= 90;
   /** What customers pay: the price less the discount, rounded down to whole pesos so the discount is never smaller than shown. */
-  function salePrice(regular,d){
-    if(loadedPrice&&regular===loadedPrice.regular&&d===loadedPrice.disc)return loadedPrice.price;
-    if(!d)return regular;
-    return Math.floor(Math.round(regular*100)*(100-d)/10000);
+  function salePrice(regular, d) {
+    if (loadedPrice && regular === loadedPrice.regular && d === loadedPrice.disc) return loadedPrice.price;
+    if (!d) return regular;
+    return Math.floor(Math.round(regular * 100) * (100 - d) / 10000);
   }
-  function updatePriceTag(){
-    const box=document.getElementById('p-pay'), note=document.getElementById('p-pay-note');
-    const regular=parseFloat(document.getElementById('p-price').value), d=discountValue();
-    note.className='price-note';
-    if(isNaN(regular)||regular<=0){box.className='price-tag empty';box.textContent='Enter a price';note.textContent='';return;}
-    if(!discountOk(d)){box.className='price-tag empty';box.textContent='Discount: 0 to 90%';note.textContent='Use a whole number, like 15.';return;}
-    const pay=salePrice(regular,d);
-    box.className='price-tag';
-    box.innerHTML=d
-      ?`<span class="now">${peso(pay)}</span><span class="was">${peso(regular)}</span><span class="off">${d}% OFF</span>`
-      :`<span class="now">${peso(pay)}</span><span class="off none">No discount</span>`;
-    if(pay<20){note.className='price-note bad';note.textContent='Below ₱20, the lowest amount GCash accepts. Lower the discount or raise the price.';}
-    else note.textContent=d?`Customers save ${peso(regular-pay)}. The app shows ${peso(regular)} crossed out with a "-${d}%" badge.`:'';
+  function updatePriceTag() {
+    const box = $('p-pay'), note = $('p-pay-note');
+    const regular = parseFloat($('p-price').value), d = discountValue();
+    note.className = 'price-note';
+    if (isNaN(regular) || regular <= 0) { box.className = 'price-tag empty'; box.textContent = 'Enter a price'; note.textContent = ''; return; }
+    if (!discountOk(d)) { box.className = 'price-tag empty'; box.textContent = 'Discount: 0 to 90%'; note.textContent = 'Use a whole number, like 15.'; return; }
+    const pay = salePrice(regular, d);
+    box.className = 'price-tag';
+    box.innerHTML = d ? `<span class="now">${peso(pay)}</span><span class="was">${peso(regular)}</span><span class="off">${d}% OFF</span>`
+      : `<span class="now">${peso(pay)}</span><span class="off none">No discount</span>`;
+    if (pay < 20) { note.className = 'price-note bad'; note.textContent = 'Below ₱20, the lowest amount GCash accepts. Lower the discount or raise the price.'; }
+    else note.textContent = d ? `Customers save ${peso(regular - pay)}. The app shows ${peso(regular)} crossed out with a "-${d}%" badge.` : '';
   }
-  ['p-price','p-disc'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{
+  ['p-price', 'p-disc'].forEach(id => $(id).addEventListener('input', () => {
     updatePriceTag();
-    // A product on sale gets the "Sale" tag unless one was picked by hand
-    const tagSel=document.getElementById('p-tag');
-    if(!tagTouched&&!tagSel.value&&discountValue()>0)tagSel.value='Sale';
+    const tagSel = $('p-tag');
+    if (!tagTouched && !tagSel.value && discountValue() > 0) tagSel.value = 'Sale';
   }));
-  document.getElementById('p-tag').addEventListener('change',()=>{tagTouched=true;});
-  // The price box can't be selected, copied or typed into: it only shows the result
-  document.getElementById('p-pay').addEventListener('mousedown',e=>e.preventDefault());
+  $('p-tag').addEventListener('change', () => { tagTouched = true; });
+  $('p-pay').addEventListener('mousedown', e => e.preventDefault());
 
-  async function saveProduct(){
-    const name=document.getElementById('p-name').value.trim();
-    const cat2=document.getElementById('p-cat').value==='__new'?'':document.getElementById('p-cat').value;
-    const regular=parseFloat(document.getElementById('p-price').value);
-    const disc=discountValue();
-    const desc=document.getElementById('p-desc').value.trim();
-    const img=document.getElementById('p-img').value.trim();
-    const tag=document.getElementById('p-tag').value;
-    const style=document.getElementById('p-style').value;
-    const avail=document.getElementById('p-avail').checked;
-    const sizes=getSizes();
-    if(!name){toast('Name is required','warn');return;}
-    if(name.length>80){toast('Keep the name under 80 characters','warn');return;}
-    if(!cat2){toast('Category is required','warn');return;}
-    if(isNaN(regular)||regular<20){toast('Enter a price of at least ₱20 (the lowest amount GCash accepts)','warn');return;}
-    if(regular>100000){toast('That price looks too high. Check it again.','warn');return;}
-    if(!discountOk(disc)){toast('The discount must be a whole number from 0 to 90','warn');document.getElementById('p-disc').focus();return;}
-    const price=salePrice(regular,disc);
-    if(price<20){toast(`With ${disc}% off, customers would pay ${peso(price)}. It must be at least ₱20 (the lowest amount GCash accepts).`,'warn');document.getElementById('p-disc').focus();return;}
-    if(document.querySelectorAll('.stock-in').length&&[...document.querySelectorAll('.stock-in')].some(i=>i.value!==''&&(!/^\d+$/.test(i.value.trim())||+i.value>100000))){toast('Stock must be a whole number from 0 up','warn');return;}
-    if(img&&!safeUrl(img)){toast('The photo must be an https:// link','warn');return;}
-    if(!sizes.length){toast('Pick at least one size','warn');return;}
+  async function saveProduct() {
+    const name = $('p-name').value.trim();
+    const cat2 = $('p-cat').value === '__new' ? '' : $('p-cat').value;
+    const regular = parseFloat($('p-price').value), disc = discountValue();
+    const desc = $('p-desc').value.trim(), img = $('p-img').value.trim(), tag = $('p-tag').value, style = $('p-style').value;
+    const avail = $('p-avail').checked, sizes = getSizes(), track = $('p-track').checked;
+    if (!name) { toast('Name is required', 'warn'); $('p-name').focus(); return; }
+    if (!cat2) { toast('Pick a category', 'warn'); $('p-cat').focus(); return; }
+    if (isNaN(regular) || regular < 20) { toast('Enter a price of at least ₱20 (the lowest amount GCash accepts)', 'warn'); $('p-price').focus(); return; }
+    if (regular > 100000) { toast('That price looks too high. Check it again.', 'warn'); return; }
+    if (!discountOk(disc)) { toast('The discount must be a whole number from 0 to 90', 'warn'); $('p-disc').focus(); return; }
+    const price = salePrice(regular, disc);
+    if (price < 20) { toast(`With ${disc}% off, customers would pay ${peso(price)}. It must be at least ₱20 (the lowest amount GCash accepts).`, 'warn'); $('p-disc').focus(); return; }
+    if (img && !safeUrl(img)) { toast('The photo must be an https:// link', 'warn'); return; }
+    if (!sizes.length) { toast('Pick at least one size', 'warn'); return; }
+    let chart;
+    try { chart = getSizeChart(sizes); } catch (msg) { $('adv').open = true; toast(String(msg), 'warn'); return; }
+    if (track && sizes.every(z => !(formStock[z] > 0)) && !confirm("Every size is at 0 in storage, so customers can't buy it yet. Save anyway?")) return;
 
-    const btn=document.getElementById('save-btn'); btn.disabled=true;
-    const data={name,category:cat2,price,originalPrice:disc?regular:null,description:desc,imageUrl:img||null,tag:tag||'',shirtStyle:style||'',isAvailable:avail,sizes};
-    const eid=document.getElementById('edit-id').value;
-    if(disc)data.discountPercent=disc;
-    else if(eid)data.discountPercent=firebase.firestore.FieldValue.delete();
-    const inv=getStock(sizes);
-    if(inv)data.inventory=inv;
-    else if(eid)data.inventory=firebase.firestore.FieldValue.delete();
-    try{
-      if(eid){await db.collection('products').doc(eid).update(data);toast('Product updated','ok');}
-      else{data.createdAt=firebase.firestore.FieldValue.serverTimestamp();await db.collection('products').add(data);toast('Product added','ok');}
+    const btn = $('save-btn'); btn.disabled = true;
+    const FV = firebase.firestore.FieldValue, eid = $('edit-id').value;
+    const data = { name, category: cat2, price, originalPrice: disc ? regular : null, description: desc, imageUrl: img || null, tag: tag || '', shirtStyle: style || '', isAvailable: avail, sizes };
+    if (disc) data.discountPercent = disc; else if (eid) data.discountPercent = FV.delete();
+    if (chart) data.sizeChart = chart; else if (eid) data.sizeChart = FV.delete();
+    // Stock: a new count is saved as is; on a product already counted only the change made here is added, so an
+    // order taken off while the form was open isn't undone
+    const p = eid ? all.find(x => x.id === eid) : null;
+    if (track && p && tracksStock(p) && loadedStock) {
+      sizes.forEach(z => {
+        const now = formStock[z] || 0;
+        if (typeof p.inventory[z] !== 'number') data['inventory.' + z] = now;
+        else if (now !== (loadedStock[z] || 0)) data['inventory.' + z] = FV.increment(now - (loadedStock[z] || 0));
+      });
+      Object.keys(p.inventory).forEach(z => { if (!sizes.includes(z)) data['inventory.' + z] = FV.delete(); });
+    } else if (track) data.inventory = Object.fromEntries(sizes.map(z => [z, formStock[z] || 0]));
+    else if (eid) data.inventory = FV.delete();
+    try {
+      if (eid) { await db.collection('products').doc(eid).update(data); toast('Product updated', 'ok'); }
+      else { data.createdAt = FV.serverTimestamp(); await db.collection('products').add(data); toast('Product added', 'ok'); }
       closeModal();
-    }catch(e){toast('Save failed: '+e.message,'err');}
-    finally{btn.disabled=false;}
+    } catch (e) { toast('Save failed: ' + e.message, 'err'); }
+    finally { btn.disabled = false; }
   }
 
-  /** Removes the design a product opens with in the app's designer. It is set from the app: sign in there with an
-   *  admin account, make the design on that product, then Designs → "Use this design as the product's starting design". */
-  async function clearDefaultDesign(id){
-    try{await db.collection('products').doc(id).update({defaultCustomization:firebase.firestore.FieldValue.delete()});toast('Starting design removed','ok');}
-    catch(e){toast('Not removed: '+e.message,'err');}
+  /** Removes the design a product opens with in the app's designer (made in the Design Studio). */
+  async function clearDefaultDesign(id) {
+    const p = all.find(x => x.id === id);
+    if (!confirm(`Remove the starting design of "${(p && p.name) || 'this product'}"? Customers then start from a plain shirt.`)) return;
+    try { await db.collection('products').doc(id).update({ defaultCustomization: firebase.firestore.FieldValue.delete() }); toast('Starting design removed', 'ok'); }
+    catch (e) { toast('Not removed: ' + e.message, 'err'); }
+  }
+  async function toggleAvail(id, v) {
+    try { await db.collection('products').doc(id).update({ isAvailable: v }); toast(v ? 'Now for sale in the app' : 'Hidden from the app', 'ok'); }
+    catch (e) { toast('Not changed: ' + e.message, 'err'); render(); }
   }
 
-  async function toggleAvail(id,v){
-    try{await db.collection('products').doc(id).update({isAvailable:v});toast(v?'Product enabled':'Product disabled','ok');}
-    catch(e){toast('Not changed: '+e.message,'err');render();}
+  function openDel(id) { const p = all.find(x => x.id === id); if (!p) return; delId = id; $('del-name').textContent = p.name || 'this product'; $('del-overlay').classList.add('show'); }
+  function closeDel() { $('del-overlay').classList.remove('show'); delId = null; }
+  async function confirmDel() {
+    if (!delId) return;
+    try { await db.collection('products').doc(delId).delete(); toast('Product deleted', 'ok'); closeDel(); }
+    catch (e) { toast('Delete failed: ' + e.message, 'err'); }
   }
 
-  function openDel(id){const p=all.find(x=>x.id===id);if(!p)return;delId=id;document.getElementById('del-name').textContent=p.name||'this product';document.getElementById('del-overlay').classList.add('show');}
-  function closeDel(){document.getElementById('del-overlay').classList.remove('show');delId=null;}
-  async function confirmDel(){
-    if(!delId)return;
-    try{await db.collection('products').doc(delId).delete();toast('Product deleted','ok');closeDel();}
-    catch(e){toast('Delete failed: '+e.message,'err');}
-  }
-
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeDel();}});
-  ['prod-overlay','del-overlay'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target===e.currentTarget){id==='prod-overlay'?closeModal():closeDel();}});});
+  const CLOSERS = { 'prod-overlay': closeModal, 'del-overlay': closeDel, 'stock-overlay': closeStock, 'cat-overlay': closeCats };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') Object.keys(CLOSERS).forEach(id => { if ($(id).classList.contains('show')) CLOSERS[id](); }); });
+  Object.keys(CLOSERS).forEach(id => $(id).addEventListener('click', e => { if (e.target === e.currentTarget) CLOSERS[id](); }));
+  render();
 </script>
 </body>
 </html>
