@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KustomoImprenta — Custom shirts by K's Print Xpress</title>
+  <meta name="description" content="KustomoImprenta is the K's Print Xpress app: design your own shirt, try it on with your phone's camera, pay with GCash and track your order. Download it free for Android.">
+  <meta property="og:title" content="KustomoImprenta — Custom shirts by K's Print Xpress">
+  <meta property="og:description" content="Design your own shirt, try it on with your camera, pay with GCash and track your order. Free for Android.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#0A0A0A">
+  <link rel="icon" href="img/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    /* ── EDIT HERE when you publish a new app version ─────────────────────────────── */
+    /* (the values are in the <script> at the bottom: APK_URL, VERSION, SIZE)          */
+
+    :root {
+      --orange: #FF5C00; --pink: #FF2D78; --yellow: #FFD600;
+      --black: #0A0A0A; --dark: #141414; --card: #1C1C1C; --border: #2A2A2A;
+      --text: #F2F2F2; --muted: #9A9A9A;
+      --grad: linear-gradient(135deg, var(--orange), var(--pink));
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--black); color: var(--text); font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif; line-height: 1.55; overflow-x: hidden; }
+    a { color: inherit; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+    /* top bar */
+    header { position: sticky; top: 0; z-index: 10; background: rgba(10,10,10,.82); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+    header .wrap { display: flex; align-items: center; justify-content: space-between; height: 62px; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .brand img { width: 38px; height: 38px; border-radius: 10px; background: #fff; object-fit: contain; padding: 2px; }
+    .brand b { font-size: 20px; font-weight: 800; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: -.3px; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 14px; margin-left: 20px; }
+    nav a:hover { color: var(--text); }
+    @media (max-width: 640px) { nav .hide-sm { display: none; } }
+
+    /* hero */
+    .hero { position: relative; padding: 72px 0 56px; }
+    .hero::before { content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse at 12% 10%, rgba(255,92,0,.16), transparent 55%), radial-gradient(ellipse at 90% 80%, rgba(255,45,120,.13), transparent 55%); }
+    .hero .wrap { position: relative; display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--yellow); border: 1px solid rgba(255,214,0,.35); border-radius: 999px; padding: 5px 12px; }
+    h1 { font-size: clamp(34px, 5.4vw, 58px); line-height: 1.06; letter-spacing: -1.2px; margin: 18px 0 16px; font-weight: 800; }
+    h1 span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .lead { font-size: 18px; color: #C8C8C8; max-width: 540px; }
+    .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 30px; }
+    .btn { display: inline-flex; align-items: center; gap: 10px; border-radius: 14px; padding: 15px 24px; font-weight: 700; font-size: 16px; text-decoration: none; border: none; cursor: pointer; }
+    .btn-main { background: var(--grad); color: #fff; box-shadow: 0 10px 30px rgba(255,60,60,.25); }
+    .btn-main:hover { filter: brightness(1.08); }
+    .btn-main i { font-size: 22px; }
+    .btn-main small { display: block; font-weight: 500; font-size: 12px; opacity: .85; }
+    .btn-main[aria-disabled="true"] { background: #2b2b2b; color: var(--muted); box-shadow: none; cursor: default; filter: none; }
+    .btn-line { border: 1px solid var(--border); color: var(--text); background: transparent; }
+    .btn-line:hover { border-color: #444; }
+    .meta { margin-top: 16px; font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+    .meta i { color: var(--orange); margin-right: 4px; }
+
+    /* shirt showcase */
+    .show { position: relative; aspect-ratio: 1 / 1; max-width: 460px; justify-self: center; width: 100%; }
+    .show .ring { position: absolute; inset: 6%; border-radius: 50%; background: conic-gradient(from 200deg, #e0157a, #b65ca0, #6a78c0, #78c8f0, #0078c8, #78c8a0, #b8e080, #80c030, #e0157a); opacity: .22; filter: blur(2px); }
+    .show img { position: absolute; width: 58%; filter: drop-shadow(0 18px 30px rgba(0,0,0,.55)); transition: transform .4s; }
+    .show .s1 { left: 4%; top: 18%; transform: rotate(-9deg); }
+    .show .s2 { right: 2%; top: 8%; transform: rotate(7deg); width: 54%; }
+    .show .s3 { left: 22%; bottom: 0; width: 60%; }
+    .show:hover .s1 { transform: rotate(-12deg) translateX(-6px); }
+    .show:hover .s2 { transform: rotate(10deg) translateX(6px); }
+
+    section { padding: 64px 0; }
+    .sec-head { text-align: center; margin-bottom: 36px; }
+    .sec-head h2 { font-size: clamp(26px, 3.6vw, 36px); letter-spacing: -.6px; }
+    .sec-head p { color: var(--muted); margin-top: 8px; }
+
+    /* features */
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .feat { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 24px; }
+    .feat .ic { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; font-size: 22px; color: #fff; background: var(--grad); margin-bottom: 14px; }
+    .feat h3 { font-size: 17px; margin-bottom: 6px; }
+    .feat p { color: var(--muted); font-size: 14.5px; }
+
+    /* install */
+    .install { background: var(--dark); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .install .wrap { display: grid; grid-template-columns: 1.3fr .7fr; gap: 40px; align-items: start; }
+    .steps { list-style: none; counter-reset: s; display: grid; gap: 14px; }
+    .steps li { counter-increment: s; display: grid; grid-template-columns: 40px 1fr; gap: 14px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
+    .steps li::before { content: counter(s); width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: rgba(255,92,0,.14); color: var(--orange); }
+    .steps b { display: block; margin-bottom: 2px; }
+    .steps span { color: var(--muted); font-size: 14.5px; }
+    .qr-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 24px; text-align: center; position: sticky; top: 84px; }
+    .qr-card h3 { font-size: 16px; margin-bottom: 4px; }
+    .qr-card p { color: var(--muted); font-size: 13.5px; margin-bottom: 16px; }
+    #qr { background: #fff; border-radius: 14px; padding: 12px; display: inline-block; line-height: 0; }
+    #qr img, #qr canvas { width: 180px !important; height: 180px !important; }
+    .req { margin-top: 16px; font-size: 13px; color: var(--muted); }
+
+    /* faq */
+    .faq { max-width: 760px; margin: 0 auto; display: grid; gap: 12px; }
+    details { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; }
+    summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: '\F282'; font-family: 'bootstrap-icons'; color: var(--muted); transition: transform .2s; }
+    details[open] summary::after { transform: rotate(180deg); }
+    details p { color: var(--muted); margin-top: 10px; font-size: 14.5px; }
+
+    footer { padding: 34px 0 40px; border-top: 1px solid var(--border); color: var(--muted); font-size: 13.5px; }
+    footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--text); }
+
+    @media (max-width: 900px) {
+      .hero { padding: 44px 0 30px; }
+      .hero .wrap, .install .wrap { grid-template-columns: 1fr; }
+      .show { max-width: 360px; order: -1; }
+      .grid { grid-template-columns: 1fr 1fr; }
+      .qr-card { position: static; }
+    }
+    @media (max-width: 560px) {
+      .grid { grid-template-columns: 1fr; }
+      .btn { width: 100%; justify-content: center; }
+      .lead { font-size: 16.5px; }
+      section { padding: 48px 0; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <a class="brand" href="#top"><img src="img/logo.png" alt="K's Print Xpress logo"><b>KustomoImprenta</b></a>
+      <nav>
+        <a href="#features" class="hide-sm">Features</a>
+        <a href="#install" class="hide-sm">How to install</a>
+        <a href="#download">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="hero">
+      <div class="wrap">
+        <div>
+          <span class="eyebrow"><i class="bi bi-stars"></i> By K's Print Xpress · Digital Printing Services</span>
+          <h1>Design it. <span>Try it on.</span> Wear it.</h1>
+          <p class="lead">KustomoImprenta is our shop's app for custom shirts. Put your own design on a shirt, see how it looks on you with your phone's camera, pay with GCash, and follow your order until it's ready.</p>
+          <div class="cta" id="download">
+            <a class="btn btn-main dl-btn" href="#" rel="nofollow">
+              <i class="bi bi-android2"></i>
+              <span>Download for Android<small class="dl-sub">Free · APK</small></span>
+            </a>
+            <a class="btn btn-line" href="#install"><i class="bi bi-question-circle"></i> How to install</a>
+          </div>
+          <div class="meta">
+            <span><i class="bi bi-phone"></i>Android 7.0 or newer</span>
+            <span><i class="bi bi-tag"></i><span class="dl-version">Version 1.0</span></span>
+            <span class="dl-size-wrap" hidden><i class="bi bi-hdd"></i><span class="dl-size"></span></span>
+          </div>
+        </div>
+        <div class="show" aria-hidden="true">
+          <div class="ring"></div>
+          <img class="s1" src="img/shirt_art_male_classic_front.png" alt="">
+          <img class="s2" src="img/shirt_art_female_vneck_front.png" alt="">
+          <img class="s3" src="img/shirt_art_long_sleeve_front.png" alt="">
+        </div>
+      </div>
+    </div>
+
+    <section id="features">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>Everything for your custom shirt, in one app</h2>
+          <p>From the first idea to picking it up at the shop.</p>
+        </div>
+        <div class="grid">
+          <div class="feat"><div class="ic"><i class="bi bi-palette2"></i></div><h3>Design Studio</h3><p>Add your own pictures and text to the front, back and sleeves, and save your designs for later.</p></div>
+          <div class="feat"><div class="ic"><i class="bi bi-camera"></i></div><h3>Try it on with AR</h3><p>Point your camera at yourself and see the shirt on you before you order.</p></div>
+          <div class="feat"><div class="ic"><i class="bi bi-rulers"></i></div><h3>Fit Scan sizing</h3><p>Not sure about your size? Let the camera help you pick the right fit.</p></div>
+          <div class="feat"><div class="ic"><i class="bi bi-bag-check"></i></div><h3>Shop our shirts</h3><p>Classic, V-neck and long-sleeve styles for men and women, with sizes and colors to choose from.</p></div>
+          <div class="feat"><div class="ic"><i class="bi bi-wallet2"></i></div><h3>Pay with GCash</h3><p>Pay in full or with a downpayment, right inside the app.</p></div>
+          <div class="feat"><div class="ic"><i class="bi bi-chat-dots"></i></div><h3>Track &amp; chat</h3><p>See your order move from printing to ready, and message the shop if you have questions.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="install" id="install">
+      <div class="wrap">
+        <div>
+          <div class="sec-head" style="text-align:left;">
+            <h2>How to install</h2>
+            <p>KustomoImprenta is downloaded straight from this page, not from the Play Store.</p>
+          </div>
+          <ol class="steps">
+            <li><div><b>Download on your Android phone</b><span>Open this page on your phone and tap <strong>Download for Android</strong>. On a computer? Scan the QR code with your phone's camera.</span></div></li>
+            <li><div><b>Open the downloaded file</b><span>Tap the notification, or open <strong>Files → Downloads</strong> and tap <strong>KustomoImprenta.apk</strong>.</span></div></li>
+            <li><div><b>Allow the install</b><span>If your phone asks, tap <strong>Settings</strong> and turn on <strong>Allow from this source</strong> for your browser, then go back.</span></div></li>
+            <li><div><b>Tap Install</b><span>If Google Play Protect warns that the app isn't from the Play Store, tap <strong>More details → Install anyway</strong>.</span></div></li>
+            <li><div><b>Open KustomoImprenta and sign in</b><span>Create an account or sign in with Google, and start designing.</span></div></li>
+          </ol>
+        </div>
+        <aside class="qr-card">
+          <h3>Scan to get the app</h3>
+          <p>Opens this page on your phone.</p>
+          <div id="qr" role="img" aria-label="QR code linking to this page"></div>
+          <div class="req">Android 7.0 or newer · camera recommended for AR try-on</div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="wrap">
+        <div class="sec-head"><h2>Questions</h2></div>
+        <div class="faq">
+          <details><summary>Is KustomoImprenta free?</summary><p>Yes. The app is free; you only pay for the shirts you order.</p></details>
+          <details><summary>Is there an iPhone version?</summary><p>Not yet. KustomoImprenta is only available for Android phones for now.</p></details>
+          <details><summary>Why does my phone warn me before installing?</summary><p>Android shows that warning for every app that isn't installed from the Play Store. Download KustomoImprenta only from this page.</p></details>
+          <details><summary>How do I update the app?</summary><p>Download it again from this page and install it over the old one. Your account and orders stay the same.</p></details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© <span id="year">2026</span> K's Print Xpress · KustomoImprenta</span>
+      <a href="login.html" rel="nofollow"><i class="bi bi-shield-lock"></i> Shop staff login</a>
+    </div>
+  </footer>
+
+  <script src="js/qrcode.min.js"></script>
+  <script>
+    // ── EDIT HERE when you publish a new app version ──────────────────────────────────────────────
+    // APK_URL: where the app file is. With a GitHub release (see the setup steps) this link always gives the newest one:
+    //   https://github.com/YOUR-GITHUB-NAME/YOUR-REPO/releases/latest/download/KustomoImprenta.apk
+    // Or, if KustomoImprenta.apk sits in this site's folder next to this page, just: 'KustomoImprenta.apk'
+    const APK_URL = 'https://github.com/YOUR-GITHUB-NAME/YOUR-REPO/releases/latest/download/KustomoImprenta.apk';
+    const VERSION = '1.0';
+    const SIZE    = '';           // optional, like '68 MB'
+
+    const ready = !/YOUR-GITHUB-NAME|YOUR-REPO/.test(APK_URL);
+    document.querySelectorAll('.dl-btn').forEach(a => {
+      if (ready) { a.href = APK_URL; a.setAttribute('download', 'KustomoImprenta.apk'); }
+      else {
+        a.setAttribute('aria-disabled', 'true');
+        a.querySelector('.dl-sub').textContent = 'Coming soon';
+        a.addEventListener('click', e => e.preventDefault());
+      }
+    });
+    document.querySelectorAll('.dl-version').forEach(el => el.textContent = 'Version ' + VERSION);
+    if (SIZE) { document.querySelectorAll('.dl-size').forEach(el => el.textContent = SIZE); document.querySelectorAll('.dl-size-wrap').forEach(el => el.hidden = false); }
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // QR code of this page's own address, so it's right on whatever address the site ends up at
+    try {
+      new QRCode(document.getElementById('qr'), { text: location.origin + location.pathname.replace(/index\.html$/, ''), width: 360, height: 360, correctLevel: QRCode.CorrectLevel.M });
+    } catch (e) { document.querySelector('.qr-card').hidden = true; }
+  </script>
+</body>
+</html>

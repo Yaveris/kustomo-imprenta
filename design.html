@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design Studio — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<style>
+  .ds-wrap { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:16px; align-items:start; }
+  @media (max-width: 1100px) { .ds-wrap { grid-template-columns:minmax(0,1fr); } }
+  .ds-stage-scroll { overflow-x:auto; padding:18px; display:flex; justify-content:center; }
+  .ds-stage { position:relative; flex:0 0 auto; user-select:none; touch-action:none; }
+  .ds-stage.drop { outline:2px dashed var(--orange); outline-offset:6px; }
+  .ds-tint, .ds-art { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+  .ds-tint { -webkit-mask-size:100% 100%; mask-size:100% 100%; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; }
+  .ds-art { mix-blend-mode:multiply; }
+  .ds-zone { position:absolute; overflow:hidden; outline:1.5px dashed rgba(255,92,0,.85); }
+  .ds-item { position:absolute; cursor:grab; }
+  .ds-item:active { cursor:grabbing; }
+  .ds-item.sel { outline:1.5px solid #fff; box-shadow:0 0 0 3px rgba(255,92,0,.9); }
+  .ds-item img, .ds-item svg { width:100%; height:100%; display:block; pointer-events:none; }
+  .ds-item img { object-fit:contain; }
+  .ds-text { white-space:pre; line-height:1.15; font-family:Roboto, "Segoe UI", system-ui, sans-serif; padding:0 2px; }
+  .ds-handle { position:absolute; width:16px; height:16px; border-radius:50%; background:#fff; border:3px solid var(--orange); cursor:nwse-resize; z-index:50; transform:translate(-50%,-50%); }
+  .ds-swatches { display:flex; flex-wrap:wrap; gap:7px; }
+  .ds-sw { width:26px; height:26px; border-radius:50%; border:1px solid #555; cursor:pointer; padding:0; }
+  .ds-sw.on { box-shadow:0 0 0 2px var(--card-bg), 0 0 0 4px var(--orange); }
+  .ds-shape-btn { width:46px; height:46px; border-radius:9px; background:var(--dark); border:1px solid var(--border); cursor:pointer; padding:7px; }
+  .ds-shape-btn:hover { border-color:var(--orange); }
+  .ds-shape-btn svg { width:100%; height:100%; display:block; }
+  .ds-panel label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); display:block; margin:12px 0 5px; }
+  .ds-panel input[type=text], .ds-panel textarea, .ds-panel select { width:100%; box-sizing:border-box; padding:8px 9px; border-radius:8px; background:var(--dark); color:var(--text); border:1px solid var(--border); font-size:13px; }
+  .ds-panel input[type=range] { width:100%; accent-color:var(--orange); }
+  .ds-layer { display:flex; align-items:center; gap:8px; padding:7px 9px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; font-size:13px; cursor:pointer; }
+  .ds-layer.on { border-color:var(--orange); background:rgba(255,92,0,.1); }
+  .ds-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; align-items:end; }
+  .ds-row .fg { margin:0; }
+  #ds-product-row { grid-template-columns:minmax(220px,420px); }
+</style>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Design Studio <span>Starting designs &amp; presets</span></div>
+    <div class="topbar-right">
+      <span id="ds-dirty" style="font-size:12.5px;color:var(--yellow);" hidden>Unsaved changes</span>
+      <button class="btn-ghost" id="ds-remove" onclick="removeTarget()" hidden><i class="bi bi-trash3"></i> <span id="ds-remove-text">Remove starting design</span></button>
+      <button class="btn-grad" id="ds-save" onclick="saveTarget()"><i class="bi bi-check-lg"></i> <span id="ds-save-text">Save to product</span></button>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+          <div class="filter-bar" style="margin:0;" id="ds-modes" role="tablist">
+            <button class="f-tab active" data-mode="product" role="tab"><i class="bi bi-box-seam"></i> Product starting design</button>
+            <button class="f-tab" data-mode="preset" role="tab"><i class="bi bi-stars"></i> Presets</button>
+          </div>
+          <span id="ds-mode-help" style="font-size:12.5px;color:var(--muted);flex:1;min-width:240px;line-height:1.5;"></span>
+        </div>
+        <div id="ds-product-row" class="ds-row">
+          <div class="fg"><label for="ds-product">Product</label><select id="ds-product"></select></div>
+        </div>
+        <div id="ds-preset-row" class="ds-row" hidden>
+          <div class="fg"><label for="ds-preset">Preset</label><select id="ds-preset"></select></div>
+          <div class="fg"><label for="ds-model">Design it on</label><select id="ds-model"></select></div>
+          <div class="fg"><label for="ds-pname">Name *</label><input type="text" id="ds-pname" maxlength="30" placeholder="e.g. Summer Vibes"></div>
+          <div class="fg"><label for="ds-pdesc">Short description</label><input type="text" id="ds-pdesc" maxlength="80" placeholder="Optional"></div>
+          <div class="fg"><label for="ds-pfor">Shown for</label><select id="ds-pfor"><option value="all">Every model</option><option value="this">Only the model it's designed on</option></select></div>
+          <div class="fg" style="display:flex;align-items:flex-end;"><label class="fg-check" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);margin:0 0 9px;"><input type="checkbox" id="ds-pactive" checked> Customers can see it</label></div>
+        </div>
+        <div class="filter-bar" style="margin:0;" id="ds-sides">
+          <button class="f-tab active" data-side="Front">Front</button>
+          <button class="f-tab" data-side="Back">Back</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ds-wrap">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title" id="ds-stage-title">Shirt</span>
+          <span style="font-size:12.5px;color:var(--muted);">Drag to move · drag the white dot to resize · drop an image file on the picture to add it</span>
+        </div>
+        <div class="ds-stage-scroll"><div class="ds-stage" id="ds-stage"></div></div>
+      </div>
+
+      <div class="card ds-panel">
+        <div class="card-head"><span class="card-title">Add</span></div>
+        <div style="padding:0 18px 16px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-ghost" onclick="addText()"><i class="bi bi-fonts"></i> Text</button>
+            <button class="btn-ghost" id="ds-upload-btn" onclick="document.getElementById('ds-file').click()"><i class="bi bi-upload"></i> Upload image</button>
+            <input type="file" id="ds-file" accept="image/*" hidden>
+          </div>
+          <div id="ds-upload-status" style="font-size:12.5px;color:var(--muted);margin-top:8px;" role="status"></div>
+          <label>Shapes</label>
+          <div id="ds-shapes" style="display:flex;gap:7px;flex-wrap:wrap;"></div>
+          <div id="ds-color-box"><label>Color</label>
+          <div class="ds-swatches" id="ds-colors"></div></div>
+        </div>
+
+        <div class="card-head" style="border-top:1px solid var(--border);"><span class="card-title">Layers on this side</span></div>
+        <div style="padding:0 18px 12px;" id="ds-layers"></div>
+
+        <div class="card-head" style="border-top:1px solid var(--border);"><span class="card-title" id="ds-sel-title">Selected</span></div>
+        <div style="padding:0 18px 18px;" id="ds-sel"><p style="font-size:13px;color:var(--muted);">Click something on the picture to edit it.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  // A design is saved in the same form the app's designer uses (products/{id}.defaultCustomization):
+  //   { apparelColorHex, shirtStyle, views: { Front: {customText, fontStyle, fontColorHex, fontSize, imageUrl,
+  //     imgOffX, imgOffY, imgScale, txtOffX, txtOffY, shapes[], layerOrder[], locked[], area{}, ref{}} , Back: {…} } }
+  // Positions are px from the center of the shirt picture as drawn here. `ref` records where the print area is in
+  // that picture, and the app uses it to put everything on the same spot of the shirt on any phone
+  // (ViewDesign.fitTo in CustomizerScreen.kt). Each side holds one image, one text and any number of shapes,
+  // the same as in the app.
+
+  const STAGE_H = 520;                       // height the shirt is drawn at, px
+  const SHIRT_COLORS = [['#FFFFFF','White'],['#EEEEEE','Light Grey'],['#9E9E9E','Grey'],['#212121','Black'],['#1A3A6B','Navy'],
+    ['#1565C0','Royal Blue'],['#34415E','Dark Navy'],['#1976D2','Light Blue'],['#00838F','Teal'],['#2E7D32','Forest Green'],
+    ['#8D1B1B','Maroon'],['#D32F2F','Red'],['#FF5C00','Orange']];
+  const INK_COLORS = ['#FFFFFF','#0A0A0A','#FF5C00','#FF2D78','#FFD600','#378ADD','#00C853','#8B5CF6','#00BCD4','#8D1B1B','#9E9E9E'];
+  const SIDES = ['Front','Back'];
+
+  // ── Shapes: outlines in a 0..1 square, written the way the app stores them ("F0.050:x,y x,y …") ──
+  const f3 = n => n.toFixed(3);
+  const poly = pts => 'F0.050:' + pts.map(p => f3(p[0]) + ',' + f3(p[1])).join(' ');
+  const ring = (n, r, start = -90) => Array.from({length:n}, (_, i) => { const a = (start + i*360/n) * Math.PI/180; return [0.5 + r*Math.cos(a), 0.5 + r*Math.sin(a)]; });
+  const star = (n, R, r) => Array.from({length:n*2}, (_, i) => { const a = (-90 + i*180/n) * Math.PI/180, q = i % 2 ? r : R; return [0.5 + q*Math.cos(a), 0.5 + q*Math.sin(a)]; });
+  const heart = () => Array.from({length:60}, (_, i) => { const t = i/60 * 2*Math.PI;
+    const x = 16*Math.pow(Math.sin(t),3), y = 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
+    return [0.5 + x/36, 0.47 - y/36]; });
+  const SHAPES = [
+    ['Circle', poly(ring(64, 0.46))], ['Square', poly([[.06,.06],[.94,.06],[.94,.94],[.06,.94]])],
+    ['Triangle', poly([[.5,.06],[.96,.88],[.04,.88]])], ['Star', poly(star(5, .48, .2))], ['Heart', poly(heart())],
+    ['Diamond', poly([[.5,.03],[.84,.5],[.5,.97],[.16,.5]])], ['Hexagon', poly(ring(6, .47, 0))], ['Burst', poly(star(12, .48, .34))],
+    ['Arrow', poly([[.04,.38],[.56,.38],[.56,.18],[.96,.5],[.56,.82],[.56,.62],[.04,.62]])]
+  ];
+  function shapeSvg(path, color, outline, repeat) {
+    const n = Math.min(4, Math.max(1, repeat || 1)); let cells = '';
+    const strokes = String(path || '').split(';').map(part => {
+      const c = part.indexOf(':'); if (c < 2) return '';
+      const filled = part[0] === 'F', w = parseFloat(part.slice(1, c)) || 0.05;
+      const pts = part.slice(c + 1).trim().split(/\s+/).join(' ');
+      if (filled && !outline) return `<polygon points="${pts}" fill="${color}"/>`;
+      return `<${filled ? 'polygon' : 'polyline'} points="${pts}" fill="none" stroke="${color}" stroke-width="${filled ? 0.05 : w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }).join('');
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) cells += `<g transform="translate(${c/n} ${r/n}) scale(${1/n})">${strokes}</g>`;
+    return `<svg viewBox="0 0 1 1" xmlns="http://www.w3.org/2000/svg">${cells}</svg>`;
+  }
+
+  // ── State ──
+  // mode 'product': the design a product opens with (products/{id}.defaultCustomization)
+  // mode 'preset':  a ready-made design every customer can start from (designPresets/{id})
+  let mode = 'product', models = [], model = null, presets = [], preset = null;
+  let products = [], product = null;
+  let side = 'Front', sel = null, dirty = false;
+  let colorHex = '#FFFFFF';
+  let views = {};          // Front / Back being edited
+  let otherViews = {};     // sleeves etc. from an existing design, saved back untouched
+  const blank = () => ({ customText:'', fontStyle:'Normal', fontColorHex:'#0A0A0A', fontSize:22, imageUrl:'',
+    imgOffX:0, imgOffY:0, imgScale:1, txtOffX:0, txtOffY:0, shapes:[], layerOrder:[], locked:[] });
+  const $ = id => document.getElementById(id);
+  const num = (v, d) => (typeof v === 'number' && isFinite(v)) ? v : d;
+
+  // ── Geometry: the stage is the model's picture (Models page); offsets are px from its center ──
+  const sidesOf = m => m && m.back ? SIDES : ['Front'];
+  function geo(s = side) {
+    const a = (s === 'Back' && model.back) ? model.back : model.front;
+    const w = STAGE_H * a.w / a.h, h = STAGE_H, zn = a.zone;
+    const z = { left: zn.left*w - w/2, top: zn.top*h - h/2, width: (zn.right-zn.left)*w, height: (zn.bottom-zn.top)*h };
+    return { art: a, w, h, zone: z };
+  }
+  /** Moves a saved side onto this page's picture, using the print area it was made against (same as the app). */
+  function fitView(v, s) {
+    const z = geo(s).zone, r = v.ref, out = Object.assign(blank(), v);
+    out.shapes = (v.shapes || []).map(x => Object.assign({}, x));
+    if (r && r.width > 0 && r.height > 0) {
+      const kx = z.width / r.width, ky = z.height / r.height;
+      const x = n => z.left + (num(n,0) - r.left) * kx, y = n => z.top + (num(n,0) - r.top) * ky;
+      out.imgOffX = x(v.imgOffX); out.imgOffY = y(v.imgOffY); out.txtOffX = x(v.txtOffX); out.txtOffY = y(v.txtOffY);
+      out.fontSize = num(v.fontSize, 18) * kx * (r.sp > 0 ? r.sp : 1);
+      out.shapes.forEach(sh => { sh.offX = x(sh.offX); sh.offY = y(sh.offY); });
+    } else {
+      // Made before positions carried a reference: sizes are kept, everything starts in the middle of the print area
+      const cx = z.left + z.width/2, cy = z.top + z.height/2;
+      out.imgOffX = cx; out.imgOffY = cy; out.txtOffX = cx; out.txtOffY = cy;
+      out.shapes.forEach((sh, i) => { sh.offX = cx + i*10; sh.offY = cy + i*10; });
+      out.fontSize = Math.min(48, Math.max(12, z.width / 8));
+    }
+    delete out.ref;
+    return out;
+  }
+  const hasContent = v => !!(v.customText || v.imageUrl || (v.shapes && v.shapes.length));
+
+  /** Layer keys bottom to top, same rule as the app: image first, then shapes, then text, unless an order is saved. */
+  function layerKeys(v) {
+    const existing = [];
+    if (v.imageUrl) existing.push('image');
+    v.shapes.forEach(s => existing.push('shape:' + s.id));
+    if (v.customText) existing.push('text');
+    const ordered = (v.layerOrder || []).filter(k => existing.includes(k));
+    const missing = existing.filter(k => !ordered.includes(k));
+    if (missing.includes('image') && ordered.length) return ['image', ...ordered, ...missing.filter(k => k !== 'image')];
+    return [...ordered, ...missing];
+  }
+  const layerName = (v, k) => k === 'image' ? 'Image' : k === 'text' ? 'Text: ' + v.customText.slice(0, 18) : ((v.shapes.find(s => 'shape:' + s.id === k) || {}).name || 'Shape');
+
+  // ── Drawing the stage ──
+  function render() {
+    const g = geo(), v = views[side], st = $('ds-stage');
+    st.style.width = g.w + 'px'; st.style.height = g.h + 'px';
+    const what = mode === 'product' ? (product ? product.name : 'Product') : (($('ds-pname').value || '').trim() || 'New preset');
+    $('ds-stage-title').textContent = what + ' · ' + model.label + ' · ' + side;
+    const zx = g.w/2 + g.zone.left, zy = g.h/2 + g.zone.top;
+    let items = '';
+    layerKeys(v).forEach((k, i) => {
+      const on = sel === k ? ' sel' : '';
+      if (k === 'image') {
+        const sz = g.zone.width * 0.7 * v.imgScale;
+        items += `<div class="ds-item${on}" data-k="image" style="z-index:${i+1};left:${v.imgOffX - g.zone.left - sz/2}px;top:${v.imgOffY - g.zone.top - sz/2}px;width:${sz}px;height:${sz}px;"><img src="${esc(v.imageUrl)}" alt="" draggable="false"></div>`;
+      } else if (k === 'text') {
+        const fs = v.fontStyle || 'Normal';
+        items += `<div class="ds-item ds-text${on}" data-k="text" style="z-index:${i+1};left:${v.txtOffX - g.zone.left}px;top:${v.txtOffY - g.zone.top}px;transform:translate(-50%,-50%);font-size:${v.fontSize}px;color:${v.fontColorHex};font-weight:${fs.includes('Bold') ? 700 : 400};font-style:${fs.includes('Italic') ? 'italic' : 'normal'};">${esc(v.customText)}</div>`;
+      } else {
+        const sh = v.shapes.find(s => 'shape:' + s.id === k); if (!sh) return;
+        const sz = g.zone.width * 0.4 * num(sh.scale, 1);
+        items += `<div class="ds-item${on}" data-k="${k}" style="z-index:${i+1};left:${sh.offX - g.zone.left - sz/2}px;top:${sh.offY - g.zone.top - sz/2}px;width:${sz}px;height:${sz}px;transform:rotate(${num(sh.rotation,0)}deg);">${shapeSvg(sh.path, sh.colorHex || '#FFFFFF', sh.outline, sh.repeat)}</div>`;
+      }
+    });
+    st.innerHTML =
+      `<div class="ds-tint" style="background:${model.tintable === false ? 'transparent' : colorHex};-webkit-mask-image:url('${g.art.img}');mask-image:url('${g.art.img}');"></div>
+       <img class="ds-art" src="${esc(g.art.img)}" alt="" draggable="false" crossorigin="anonymous">
+       <div class="ds-zone" id="ds-zone" style="left:${zx}px;top:${zy}px;width:${g.zone.width}px;height:${g.zone.height}px;">${items}</div>`;
+    // Resize handle on the selected item: its bottom-right corner (drawn outside the clipped print area)
+    const box = selBox(g, v);
+    if (box) st.insertAdjacentHTML('beforeend', `<div class="ds-handle" id="ds-handle" style="left:${g.w/2 + box.cx + box.hw}px;top:${g.h/2 + box.cy + box.hh}px;" title="Drag to resize"></div>`);
+    renderLayers(); renderSel();
+    $('ds-dirty').hidden = !dirty;
+    $('ds-remove').hidden = mode === 'product' ? !(product && product.defaultCustomization) : !preset;
+    $('ds-remove-text').textContent = mode === 'product' ? 'Remove starting design' : 'Delete preset';
+    $('ds-save-text').textContent = mode === 'product' ? 'Save to product' : (preset ? 'Save preset' : 'Publish preset');
+    document.querySelectorAll('#ds-sides .f-tab').forEach(b => { b.classList.toggle('active', b.dataset.side === side); b.hidden = !sidesOf(model).includes(b.dataset.side); });
+    document.querySelectorAll('#ds-colors .ds-sw').forEach(b => b.classList.toggle('on', b.dataset.c === colorHex));
+    $('ds-color-box').hidden = model.tintable === false;
+  }
+  /** Center and half-size (px from the stage center) of the selected item, for the resize handle. */
+  function selBox(g, v) {
+    if (sel === 'image' && v.imageUrl) { const h = g.zone.width * 0.7 * v.imgScale / 2; return { cx: v.imgOffX, cy: v.imgOffY, hw: h, hh: h }; }
+    if (sel === 'text' && v.customText) { const el = document.querySelector('.ds-item[data-k="text"]'); if (!el) return null; return { cx: v.txtOffX, cy: v.txtOffY, hw: el.offsetWidth/2, hh: el.offsetHeight/2 }; }
+    const sh = v.shapes.find(s => 'shape:' + s.id === sel);
+    if (sh) { const h = g.zone.width * 0.4 * num(sh.scale,1) / 2; return { cx: sh.offX, cy: sh.offY, hw: h, hh: h }; }
+    return null;
+  }
+
+  function renderLayers() {
+    const v = views[side], keys = layerKeys(v).slice().reverse();
+    $('ds-layers').innerHTML = keys.length ? keys.map(k =>
+      `<div class="ds-layer ${sel === k ? 'on' : ''}" onclick="select('${k}')">
+         <i class="bi ${k === 'image' ? 'bi-image' : k === 'text' ? 'bi-fonts' : 'bi-star'}"></i>
+         <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(layerName(v, k))}</span>
+         <button class="btn-icon" title="Bring forward" aria-label="Bring forward" onclick="event.stopPropagation();moveLayer('${k}',1)"><i class="bi bi-arrow-up"></i></button>
+         <button class="btn-icon" title="Send back" aria-label="Send back" onclick="event.stopPropagation();moveLayer('${k}',-1)"><i class="bi bi-arrow-down"></i></button>
+       </div>`).join('')
+      : '<p style="font-size:13px;color:var(--muted);">Nothing on this side yet. Top of the list is on top.</p>';
+  }
+  const swatches = (cur, fn) => `<div class="ds-swatches">${INK_COLORS.map(c => `<button class="ds-sw ${c === cur ? 'on' : ''}" style="background:${c};" title="${c}" aria-label="Color ${c}" onclick="${fn}('${c}')"></button>`).join('')}</div>`;
+  function renderSel() {
+    const v = views[side], box = $('ds-sel');
+    const del = `<button class="btn-ghost" style="margin-top:14px;color:#FF4444;" onclick="removeSel()"><i class="bi bi-trash3"></i> Remove</button>`;
+    if (sel === 'text' && v.customText !== undefined && layerKeys(v).includes('text')) {
+      $('ds-sel-title').textContent = 'Text';
+      box.innerHTML = `<label for="s-text">Words</label><textarea id="s-text" rows="2" oninput="setText(this.value)">${esc(v.customText)}</textarea>
+        <label for="s-size">Size</label><input type="range" id="s-size" min="8" max="90" step="1" value="${Math.round(v.fontSize)}" oninput="setProp('fontSize',+this.value)">
+        <label for="s-style">Style</label><select id="s-style" onchange="setProp('fontStyle',this.value)">${['Normal','Bold','Italic','Bold Italic'].map(o => `<option ${o === v.fontStyle ? 'selected' : ''}>${o}</option>`).join('')}</select>
+        <label>Color</label>${swatches(v.fontColorHex, 'setTextColor')}${del}`;
+    } else if (sel === 'image' && v.imageUrl) {
+      $('ds-sel-title').textContent = 'Image';
+      box.innerHTML = `<label for="s-iscale">Size</label><input type="range" id="s-iscale" min="0.3" max="4" step="0.01" value="${v.imgScale}" oninput="setProp('imgScale',+this.value)">
+        <button class="btn-ghost" style="margin-top:14px;" onclick="document.getElementById('ds-file').click()"><i class="bi bi-arrow-repeat"></i> Replace image</button><br>${del}`;
+    } else {
+      const sh = v.shapes.find(s => 'shape:' + s.id === sel);
+      if (!sh) { $('ds-sel-title').textContent = 'Selected'; box.innerHTML = '<p style="font-size:13px;color:var(--muted);">Click something on the picture to edit it.</p>'; return; }
+      $('ds-sel-title').textContent = sh.name || 'Shape';
+      box.innerHTML = `<label for="s-sscale">Size</label><input type="range" id="s-sscale" min="0.25" max="4" step="0.01" value="${num(sh.scale,1)}" oninput="setShape('scale',+this.value)">
+        <label for="s-rot">Turn</label><input type="range" id="s-rot" min="-180" max="180" step="1" value="${num(sh.rotation,0)}" oninput="setShape('rotation',+this.value)">
+        <label for="s-rep">Repeat as a pattern</label><select id="s-rep" onchange="setShape('repeat',+this.value)">${[1,2,3,4].map(n => `<option value="${n}" ${n === (sh.repeat||1) ? 'selected' : ''}>${n === 1 ? 'No' : n + ' × ' + n}</option>`).join('')}</select>
+        <label class="fg-check" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);"><input type="checkbox" ${sh.outline ? 'checked' : ''} onchange="setShape('outline',this.checked)"> Outline only</label>
+        <label>Color</label>${swatches(sh.colorHex, 'setShapeColor')}${del}`;
+    }
+  }
+
+  // ── Editing ──
+  const touch = () => { dirty = true; };
+  /** Redraws the shirt without rebuilding the panel, so a slider or text box being used keeps its focus. */
+  function redrawStage() { const keep = document.activeElement && document.activeElement.id; const pos = keep && document.activeElement.selectionStart;
+    render(); if (keep && $(keep)) { $(keep).focus(); try { if (pos != null) $(keep).setSelectionRange(pos, pos); } catch (e) {} } }
+  function select(k) { sel = k; render(); }
+  function center() { const z = geo().zone; return { x: z.left + z.width/2, y: z.top + z.height/2 }; }
+  function addText() { const v = views[side], c = center(); if (!v.customText) { v.customText = 'Your text'; v.txtOffX = c.x; v.txtOffY = c.y; touch(); } sel = 'text'; render(); const t = $('s-text'); if (t) { t.focus(); t.select(); } }
+  function setText(t) { views[side].customText = t; touch(); if (!t) { sel = null; } redrawStage(); }
+  function setProp(k, val) { views[side][k] = val; touch(); redrawStage(); }
+  function setTextColor(c) { views[side].fontColorHex = c; touch(); render(); }
+  const curShape = () => views[side].shapes.find(s => 'shape:' + s.id === sel);
+  function setShape(k, val) { const s = curShape(); if (!s) return; s[k] = val; touch(); redrawStage(); }
+  function setShapeColor(c) { const s = curShape(); if (!s) return; s.colorHex = c; touch(); render(); }
+  function addShape(i) {
+    const v = views[side], c = center(), n = v.shapes.length % 5 * 12;
+    const dark = parseInt(colorHex.slice(1,3),16)*0.299 + parseInt(colorHex.slice(3,5),16)*0.587 + parseInt(colorHex.slice(5,7),16)*0.114 < 128;
+    const sh = { id: Math.random().toString(16).slice(2, 10), name: SHAPES[i][0], path: SHAPES[i][1], colorHex: dark ? '#FFFFFF' : '#0A0A0A',
+      outline: false, repeat: 1, offX: c.x + n, offY: c.y + n, scale: 1, rotation: 0 };
+    v.shapes.push(sh); sel = 'shape:' + sh.id; touch(); render();
+  }
+  function removeSel() {
+    const v = views[side]; if (!sel) return;
+    if (sel === 'text') v.customText = ''; else if (sel === 'image') v.imageUrl = ''; else v.shapes = v.shapes.filter(s => 'shape:' + s.id !== sel);
+    v.layerOrder = (v.layerOrder || []).filter(k => k !== sel); sel = null; touch(); render();
+  }
+  function moveLayer(k, step) {
+    const v = views[side], keys = layerKeys(v), from = keys.indexOf(k); if (from < 0) return;
+    const to = Math.min(keys.length - 1, Math.max(0, from + step)); if (to === from) return;
+    keys.splice(from, 1); keys.splice(to, 0, k); v.layerOrder = keys; touch(); render();
+  }
+  function setColor(c) { colorHex = c; touch(); render(); }
+
+  // ── Uploads: the button, or an image file dropped on the shirt ──
+  async function addImageFile(file, at) {
+    if (!file || !/^image\//.test(file.type)) { toast('That file is not an image', 'warn'); return; }
+    if (file.size > 10 * 1024 * 1024) { toast('Images can be up to 10 MB', 'warn'); return; }
+    const status = $('ds-upload-status'), btn = $('ds-upload-btn');
+    status.textContent = 'Uploading ' + file.name + '…'; btn.disabled = true;
+    try {
+      const url = await uploadDesignImage(file);
+      const v = views[side], c = at || center();
+      if (!v.imageUrl || at) { v.imgOffX = c.x; v.imgOffY = c.y; }
+      if (!v.imageUrl) v.imgScale = 1;
+      v.imageUrl = url; sel = 'image'; touch(); status.textContent = '';
+      render();
+    } catch (e) { status.textContent = ''; toast('Upload failed: ' + e.message, 'err'); }
+    finally { btn.disabled = false; $('ds-file').value = ''; }
+  }
+  $('ds-file').addEventListener('change', e => addImageFile(e.target.files[0]));
+  const stage = $('ds-stage');
+  ['dragenter','dragover'].forEach(n => stage.addEventListener(n, e => { e.preventDefault(); stage.classList.add('drop'); }));
+  ['dragleave','drop'].forEach(n => stage.addEventListener(n, e => { e.preventDefault(); stage.classList.remove('drop'); }));
+  stage.addEventListener('drop', e => {
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (!f) return;
+    const r = stage.getBoundingClientRect(), z = geo().zone;
+    // Dropped where it should sit, kept inside the print area
+    const x = Math.min(z.left + z.width, Math.max(z.left, e.clientX - r.left - r.width/2));
+    const y = Math.min(z.top + z.height, Math.max(z.top, e.clientY - r.top - r.height/2));
+    addImageFile(f, { x, y });
+  });
+  // A file dropped beside the shirt must not make the browser leave the page
+  ['dragover','drop'].forEach(n => window.addEventListener(n, e => e.preventDefault()));
+
+  // ── Dragging and resizing on the shirt ──
+  let drag = null;
+  stage.addEventListener('pointerdown', e => {
+    const handle = e.target.closest('#ds-handle'), item = e.target.closest('.ds-item');
+    const v = views[side], g = geo(), r = stage.getBoundingClientRect();
+    const px = e.clientX - r.left - r.width/2, py = e.clientY - r.top - r.height/2;
+    if (handle && sel) {
+      const b = selBox(g, v); if (!b) return;
+      const sh = curShape();
+      drag = { mode: 'size', cx: b.cx, cy: b.cy, d0: Math.hypot(px - b.cx, py - b.cy) || 1,
+        v0: sel === 'image' ? v.imgScale : sel === 'text' ? v.fontSize : num(sh && sh.scale, 1) };
+    } else if (item) {
+      const k = item.dataset.k; if (sel !== k) { sel = k; render(); }
+      const sh = curShape();
+      const ox = k === 'image' ? v.imgOffX : k === 'text' ? v.txtOffX : sh.offX, oy = k === 'image' ? v.imgOffY : k === 'text' ? v.txtOffY : sh.offY;
+      drag = { mode: 'move', dx: px - ox, dy: py - oy };
+    } else { if (sel) { sel = null; render(); } return; }
+    stage.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  stage.addEventListener('pointermove', e => {
+    if (!drag || !sel) return;
+    const v = views[side], g = geo(), z = g.zone, r = stage.getBoundingClientRect();
+    const px = e.clientX - r.left - r.width/2, py = e.clientY - r.top - r.height/2, sh = curShape();
+    if (drag.mode === 'move') {
+      // The item's center stays inside the print area, as in the app
+      const x = Math.min(z.left + z.width, Math.max(z.left, px - drag.dx)), y = Math.min(z.top + z.height, Math.max(z.top, py - drag.dy));
+      if (sel === 'image') { v.imgOffX = x; v.imgOffY = y; } else if (sel === 'text') { v.txtOffX = x; v.txtOffY = y; } else if (sh) { sh.offX = x; sh.offY = y; }
+    } else {
+      const k = Math.hypot(px - drag.cx, py - drag.cy) / drag.d0;
+      if (sel === 'image') v.imgScale = Math.min(4, Math.max(0.3, drag.v0 * k));
+      else if (sel === 'text') v.fontSize = Math.min(90, Math.max(8, drag.v0 * k));
+      else if (sh) sh.scale = Math.min(4, Math.max(0.25, drag.v0 * k));
+    }
+    touch(); render();
+  });
+  ['pointerup','pointercancel'].forEach(n => stage.addEventListener(n, () => { drag = null; }));
+  window.addEventListener('keydown', e => {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && sel && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); removeSel(); }
+  });
+
+  // ── Loading a design onto the stage ──
+  /** Puts a saved customization on the stage, on model [m]. */
+  function loadDesignData(d, m) {
+    model = m || models[0];
+    d = d || {};
+    colorHex = /^#[0-9a-f]{6}$/i.test(d.apparelColorHex || '') ? d.apparelColorHex.toUpperCase() : '#FFFFFF';
+    views = {}; otherViews = {};
+    Object.keys(d.views || {}).forEach(k => { if (!SIDES.includes(k)) otherViews[k] = d.views[k]; });
+    SIDES.forEach(s => { views[s] = (d.views && d.views[s] && sidesOf(model).includes(s)) ? fitView(d.views[s], s) : blank(); });
+    // A side this model has no picture for is kept as it was
+    SIDES.forEach(s => { if (!sidesOf(model).includes(s) && d.views && d.views[s]) otherViews[s] = d.views[s]; });
+    side = 'Front'; sel = null; dirty = false; render();
+  }
+  function loadProduct(id) {
+    product = products.find(p => p.id === id) || null;
+    loadDesignData(product && product.defaultCustomization, product ? productModel(product, models) : null);
+  }
+  function loadPreset(id) {
+    preset = presets.find(p => p.id === id) || null;
+    const wanted = $('ds-model').value;
+    const c = preset ? (preset.customization || {}) : null;
+    const m = (c && models.find(x => x.id === c.shirtStyle)) || models.find(x => x.id === wanted) || models[0];
+    $('ds-model').value = m.id;
+    $('ds-pname').value = preset ? (preset.name || '') : '';
+    $('ds-pdesc').value = preset ? (preset.description || '') : '';
+    $('ds-pfor').value = preset && Array.isArray(preset.models) && preset.models.length ? 'this' : 'all';
+    $('ds-pactive').checked = !preset || preset.isActive !== false;
+    loadDesignData(c, m);
+  }
+  function buildCustomization() {
+    const out = { apparelColorHex: colorHex, shirtStyle: model.id, views: Object.assign({}, otherViews) };
+    sidesOf(model).forEach(s => {
+      const v = views[s]; if (!hasContent(v)) return;
+      const z = geo(s).zone;
+      out.views[s] = {
+        customText: v.customText || '', fontStyle: v.fontStyle || 'Normal', fontColorHex: v.fontColorHex || '#FFFFFF', fontSize: v.fontSize,
+        imageUrl: v.imageUrl || '', imgOffX: v.imgOffX, imgOffY: v.imgOffY, imgScale: v.imgScale, txtOffX: v.txtOffX, txtOffY: v.txtOffY,
+        shapes: v.shapes.map(sh => ({ id: sh.id, name: sh.name || 'Shape', path: sh.path, colorHex: sh.colorHex || '#FFFFFF', outline: !!sh.outline,
+          repeat: sh.repeat || 1, offX: sh.offX, offY: sh.offY, scale: num(sh.scale,1), rotation: num(sh.rotation,0) })),
+        layerOrder: layerKeys(v), locked: v.locked || [], area: { left: 0, top: 0, right: 1, bottom: 1 },
+        // Where the print area is in this page's picture; text here is sized in px, so 1sp = 1px
+        ref: { left: z.left, top: z.top, width: z.width, height: z.height, sp: 1 }
+      };
+    });
+    return out;
+  }
+
+  // ── Saving ──
+  const saveTarget = () => mode === 'product' ? saveDesign() : savePreset();
+  const removeTarget = () => mode === 'product' ? removeDesign() : deletePreset();
+  async function saveDesign() {
+    if (!product) { toast('Pick a product first', 'warn'); return; }
+    const data = buildCustomization();
+    if (!Object.keys(data.views).length) { toast('The design is empty. Add something, or use Remove starting design.', 'warn'); return; }
+    const btn = $('ds-save'); btn.disabled = true;
+    try {
+      await db.collection('products').doc(product.id).update({ defaultCustomization: data });
+      product.defaultCustomization = data; dirty = false; toast('Saved. Customers will see it in the app.', 'ok'); render(); fillProductList();
+    } catch (e) { toast('Not saved: ' + e.message, 'err'); }
+    finally { btn.disabled = false; }
+  }
+  /** Asks twice (the button changes to "Click again…") before something is removed. */
+  function confirmTwice(btnId, label, again) {
+    const btn = $(btnId), text = $(btnId + '-text') || btn;
+    if (btn.dataset.sure === '1') { btn.dataset.sure = ''; text.textContent = label; return true; }
+    btn.dataset.sure = '1'; text.textContent = again;
+    setTimeout(() => { if (btn.dataset.sure === '1') { btn.dataset.sure = ''; text.textContent = label; } }, 4000);
+    return false;
+  }
+  async function removeDesign() {
+    if (!product || !product.defaultCustomization) return;
+    if (!confirmTwice('ds-remove', 'Remove starting design', 'Click again to remove')) return;
+    try {
+      await db.collection('products').doc(product.id).update({ defaultCustomization: firebase.firestore.FieldValue.delete() });
+      delete product.defaultCustomization; toast('Starting design removed', 'ok'); loadProduct(product.id); fillProductList();
+    } catch (e) { toast('Not removed: ' + e.message, 'err'); }
+  }
+  async function savePreset() {
+    const name = $('ds-pname').value.trim();
+    if (!name) { toast('Give the preset a name', 'warn'); $('ds-pname').focus(); return; }
+    const data = buildCustomization();
+    if (!Object.keys(data.views).length) { toast('The design is empty. Add text, a shape or an image first.', 'warn'); return; }
+    const fields = {
+      name, description: $('ds-pdesc').value.trim(), customization: data, isActive: $('ds-pactive').checked,
+      models: $('ds-pfor').value === 'this' ? [model.id] : [],
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: (auth.currentUser && auth.currentUser.email) || ''
+    };
+    const btn = $('ds-save'); btn.disabled = true;
+    try {
+      if (preset) {
+        await db.collection('designPresets').doc(preset.id).update(fields);
+        toast('Preset saved. Customers see the change the next time they open Presets.', 'ok');
+      } else {
+        const ref = await db.collection('designPresets').add(Object.assign(fields, {
+          thumbnailUrl: '', createdBy: auth.currentUser ? auth.currentUser.uid : '', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }));
+        preset = { id: ref.id };
+        toast('Preset published. Customers see it under Presets in the app\'s designer.', 'ok');
+      }
+      dirty = false;
+      await loadPresets(preset.id);
+    } catch (e) {
+      toast(e && e.code === 'permission-denied' ? "Not saved: the database rules need updating (App Keys → For your developer)." : 'Not saved: ' + e.message, 'err');
+    } finally { btn.disabled = false; }
+  }
+  async function deletePreset() {
+    if (!preset) return;
+    if (!confirmTwice('ds-remove', 'Delete preset', 'Click again to delete')) return;
+    try {
+      await db.collection('designPresets').doc(preset.id).delete();
+      toast('Preset deleted', 'ok'); preset = null; dirty = false; await loadPresets('');
+    } catch (e) { toast('Not deleted: ' + e.message, 'err'); }
+  }
+  window.saveTarget = saveTarget; window.removeTarget = removeTarget;
+
+  window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  // ── Setup ──
+  $('ds-colors').innerHTML = SHIRT_COLORS.map(c => `<button class="ds-sw" data-c="${c[0]}" style="background:${c[0]};" title="${c[1]}" aria-label="${c[1]}" onclick="setColor('${c[0]}')"></button>`).join('');
+  $('ds-shapes').innerHTML = SHAPES.map((s, i) => `<button class="ds-shape-btn" title="${s[0]}" aria-label="Add ${s[0]}" onclick="addShape(${i})">${shapeSvg(s[1], '#F0F0F0', false, 1)}</button>`).join('');
+  document.querySelectorAll('#ds-sides .f-tab').forEach(b => b.addEventListener('click', () => { side = b.dataset.side; sel = null; render(); }));
+  /** Switching away from unsaved changes needs a second try within a few seconds. */
+  let leaveArmed = '';
+  function canLeave(key) {
+    if (!dirty || leaveArmed === key) { leaveArmed = ''; return true; }
+    leaveArmed = key; toast('You have unsaved changes. Do it again to leave them.', 'warn');
+    setTimeout(() => { if (leaveArmed === key) leaveArmed = ''; }, 6000);
+    return false;
+  }
+  $('ds-product').addEventListener('change', e => {
+    if (!canLeave('p:' + e.target.value)) { e.target.value = product ? product.id : ''; return; }
+    loadProduct(e.target.value);
+  });
+  $('ds-preset').addEventListener('change', e => {
+    if (!canLeave('s:' + e.target.value)) { e.target.value = preset ? preset.id : ''; return; }
+    loadPreset(e.target.value);
+  });
+  $('ds-model').addEventListener('change', e => {
+    // Same design, moved onto the other model's picture
+    const data = buildCustomization(), m = models.find(x => x.id === e.target.value) || models[0], wasDirty = dirty;
+    loadDesignData(data, m); dirty = wasDirty || Object.keys(data.views).length > 0; render();
+  });
+  ['ds-pname', 'ds-pdesc'].forEach(id => $(id).addEventListener('input', () => { dirty = true; $('ds-dirty').hidden = false; $('ds-stage-title').textContent = (($('ds-pname').value || '').trim() || 'New preset') + ' · ' + model.label + ' · ' + side; }));
+  ['ds-pfor', 'ds-pactive'].forEach(id => $(id).addEventListener('change', () => { dirty = true; $('ds-dirty').hidden = false; }));
+
+  const HELP = {
+    product: 'What customers see first when they open this product in the app\'s designer. They can change it.',
+    preset: 'Ready-made designs customers can start from (the Presets tab in the app\'s designer). Design one, name it, and publish it.'
+  };
+  function setMode(m) {
+    if (m === mode) return;
+    if (!canLeave('m:' + m)) return;
+    mode = m;
+    document.querySelectorAll('#ds-modes .f-tab').forEach(b => { b.classList.toggle('active', b.dataset.mode === m); b.setAttribute('aria-selected', b.dataset.mode === m); });
+    $('ds-product-row').hidden = m !== 'product'; $('ds-preset-row').hidden = m !== 'preset';
+    $('ds-mode-help').textContent = HELP[m];
+    if (m === 'product') { if (product) loadProduct(product.id); else render(); }
+    else loadPreset(preset ? preset.id : ($('ds-preset').value || ''));
+  }
+  document.querySelectorAll('#ds-modes .f-tab').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+  function fillProductList() {
+    $('ds-product').innerHTML = products.map(p => `<option value="${p.id}">${esc(p.name || p.id)} · ${esc(productModel(p, models).label)}${p.defaultCustomization ? ' (has a design)' : ''}${p.isAvailable === false ? ' (hidden)' : ''}</option>`).join('');
+    if (product) $('ds-product').value = product.id;
+  }
+  async function loadPresets(selectId) {
+    try {
+      const snap = await db.collection('designPresets').get();
+      presets = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => ((b.createdAt && b.createdAt.seconds) || 0) - ((a.createdAt && a.createdAt.seconds) || 0));
+    } catch (e) { presets = []; toast("Couldn't load presets: " + e.message, 'err'); }
+    const label = p => {
+      const m = Array.isArray(p.models) && p.models.length ? models.find(x => x.id === p.models[0]) : null;
+      return esc(p.name || 'Preset') + (m ? ' · ' + esc(m.label) + ' only' : '') + (p.isActive === false ? ' (hidden)' : '');
+    };
+    $('ds-preset').innerHTML = '<option value="">＋ New preset</option>' + presets.map(p => `<option value="${p.id}">${label(p)}</option>`).join('');
+    $('ds-preset').value = presets.some(p => p.id === selectId) ? selectId : '';
+    if (mode === 'preset') loadPreset($('ds-preset').value);
+  }
+
+  window.onAuthReady = async () => {
+    try {
+      models = (await loadModels()).filter(m => m.front);
+      $('ds-model').innerHTML = models.map(m => `<option value="${m.id}">${esc(m.label)}${m.enabled ? '' : ' (hidden in the shop)'}</option>`).join('');
+      model = models[0];
+      const snap = await db.collection('products').orderBy('name').get();
+      // Only products with a model have something to design on
+      products = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => productModel(p, models));
+      fillProductList();
+      $('ds-mode-help').textContent = HELP.product;
+      await loadPresets('');
+      const q = new URLSearchParams(location.search);
+      const first = products.find(p => p.id === q.get('product')) || products[0];
+      if (first) { $('ds-product').value = first.id; loadProduct(first.id); }
+      if (q.get('mode') === 'preset' || !first) {
+        if (!first) toast('No product has a model yet, so this opens on Presets. Add a product on the Products page.', 'warn');
+        setMode('preset');
+        if (q.get('model') && models.some(m => m.id === q.get('model'))) { $('ds-model').value = q.get('model'); loadPreset(''); }
+      }
+    } catch (e) { toast("Couldn't load the Design Studio: " + e.message, 'err'); }
+  };
+</script>
+</body>
+</html>

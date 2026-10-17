@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Help — KustomoImprenta Admin</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="img/logo.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    .help-wrap { max-width: 860px; display: grid; gap: 12px; }
+    .help-lead { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+    details.task { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; }
+    details.task > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 16px 18px; font-weight: 600; font-size: 14.5px; }
+    details.task > summary::-webkit-details-marker { display: none; }
+    details.task > summary .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: rgba(255,92,0,.12); color: var(--orange); font-size: 17px; flex-shrink: 0; }
+    details.task > summary .chev { margin-left: auto; color: var(--muted); transition: transform .18s; }
+    details.task[open] > summary .chev { transform: rotate(180deg); }
+    details.task ol { margin: 0 18px 16px 64px; padding: 0; display: grid; gap: 7px; font-size: 13.5px; line-height: 1.55; color: #d6d6d6; }
+    details.task p.tip { margin: 0 18px 16px 64px; font-size: 12.5px; color: var(--muted); border-left: 3px solid var(--yellow); padding-left: 10px; }
+    details.task a { color: var(--orange); }
+    .help-sec { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #6a6a6a; margin: 14px 0 2px; }
+    @media (max-width: 600px) { details.task ol, details.task p.tip { margin-left: 18px; } }
+  </style>
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Help <span>How to run the shop</span></div>
+  </div>
+  <div class="page-content">
+    <div class="help-wrap">
+      <p class="help-lead">Click a task to see the steps.</p>
+
+      <div class="help-sec">Every day</div>
+
+      <details class="task">
+        <summary><span class="ic"><i class="bi bi-bag-check"></i></span>Handle a new order<i class="bi bi-chevron-down chev"></i></summary>
+        <ol>
+          <li>Open <a href="orders.html">Orders</a>. New orders are under <strong>Pending</strong>, and the number beside Orders in the menu shows how many are waiting.</li>
+          <li>Click the order to see the items, sizes, the customer's address and the design they sent.</li>
+          <li>Check the design in the order chat on the right and press <strong>Approve</strong> or <strong>Reject</strong>.</li>
+          <li>Change the status with the box at the top as you work: <strong>Processing</strong> → <strong>Printing</strong> → <strong>Ready for pickup</strong> → <strong>Delivered</strong>. The customer sees each change in the app.</li>
+          <li>Press <strong>Print</strong> for a job sheet to keep with the order.</li>
+        </ol>
+        <p class="tip">Stock comes off automatically when an order leaves Pending, and goes back if you cancel it.</p>
+      </details>
+
+      <details class="task">
+        <summary><span class="ic"><i class="bi bi-wallet2"></i></span>Collect the balance of a downpayment order<i class="bi bi-chevron-down chev"></i></summary>
+        <ol>
+          <li>Downpayment orders show <strong>Balance due</strong> in the Orders list.</li>
+          <li>When the customer pays the rest on delivery or pickup, open the order and press <strong>Mark as collected</strong> next to Balance.</li>
+          <li>Setting an order to <strong>Delivered</strong> also asks whether the balance was collected.</li>
+        </ol>
+        <p class="tip">"Money received" on the Dashboard counts GCash payments plus the balances you mark as collected.</p>
+      </details>
+
+      <details class="task">
+        <summary><span class="ic"><i class="bi bi-chat-dots"></i></span>Reply to a customer<i class="bi bi-chevron-down chev"></i></summary>
+        <ol>
+          <li>Open <a href="chats.html">Messages</a>. Conversations with something new have an orange dot.</li>
+          <li>Click a conversation, type your reply and press Enter. The grey buttons above the box are ready-made replies you can use as-is or edit.</li>
+          <li>Each order has its own conversation, so you can also reply from inside the order.</li>
+        </ol>
+      </details>
+
+      <details class="task">
+        <summary><span class="ic"><i class="bi bi-x-octagon"></i></span>Cancel an order and refund it<i class="bi bi-chevron-down chev"></i></summary>
+        <ol>
+          <li>Open the order and set the status to <strong>Cancelled</strong>. Its stock is put back.</li>
+          <li>If the customer paid, refund them from the <a href="https://dashboard.paymongo.com/" target="_blank" rel="noopener">PayMongo dashboard</a> (Payments → the payment → Refund).</li>
+          <li>Let the customer know in the order chat.</li>
+        </ol>
+      </details>
+
+      <div class="help-sec">Catalog</div>
+
+      <details class="task">
+        <summary><span class="ic"><i class="bi bi-box-seam"></i></span>Add or change a product<i class="bi bi-chevron-down chev"></i></summary>
+        <ol>
+          <li>Open <a href="products.html">Products</a> and press <strong>Add Product</strong>, or the pencil on an existing one.</li>
+          <li>Fill in the name, category, price (at least ₱20) and sizes. Add the stock for each size if you track it.</li>
+          <li>Pick the 3D model so customers can design it and try it on.</li>
+          <li>Press Save. Use the <strong>For sale</strong> switch to hide a product from the app without deleting it.</li>
+        </ol>
+      </details>
+
+      <details class="task">
+        <summary><span class="ic"><i class="bi bi-tags"></i></span>Organise products into categories<i class="bi bi-chevron-down chev"></i></summary>
+        <ol>
+          <li>Open <a href="categories.html">Categories</a>, type a name and press <strong>Add</strong>.</li>
+          <li>Use the arrows to set the order they appear in the app.</li>
+          <li>Pick each product's category on the Products page.</li>
+        </ol>
+      </details>
+
+      <details class="task">
+        <summary><span class="ic"><i class="bi bi-palette"></i></span>Make a ready-made design (preset)<i class="bi bi-chevron-down chev"></i></summary>
+        <ol>
+          <li>Open <a href="design.html">Design Studio</a> and choose <strong>Presets</strong>.</li>
+          <li>Add text, shapes or an image on the shirt, then press <strong>Publish preset</strong> at the top right. Customers see it under Presets in the app's designer.</li>
+          <li>To set the design a product opens with, choose <strong>Product starting design</strong>, pick the product and press <strong>Save to product</strong>.</li>
+        </ol>
+      </details>
+
+      <div class="help-sec">Super Admin</div>
+
+      <details class="task">
+        <summary><span class="ic"><i class="bi bi-person-badge"></i></span>Add or remove an admin<i class="bi bi-chevron-down chev"></i></summary>
+        <ol>
+          <li>Open <a href="admins.html">Admin Accounts</a> and press <strong>Create Admin</strong>.</li>
+          <li>Enter their name, email and a starting password, and give them the password in person.</li>
+          <li>To stop someone's access, turn off their switch. To give a customer's account admin access, create an admin with their email.</li>
+        </ol>
+      </details>
+
+      <details class="task">
+        <summary><span class="ic"><i class="bi bi-sliders"></i></span>Change the shipping fee, downpayment or Terms<i class="bi bi-chevron-down chev"></i></summary>
+        <ol>
+          <li>Open <a href="settings.html">Shop Settings</a>.</li>
+          <li>Change the amounts. The box "What customers see" shows the result.</li>
+          <li>Press <strong>Save settings</strong>. The app uses them within a few seconds; orders already placed keep their amounts.</li>
+        </ol>
+      </details>
+
+      <details class="task">
+        <summary><span class="ic"><i class="bi bi-download"></i></span>Keep a backup of the shop's data<i class="bi bi-chevron-down chev"></i></summary>
+        <ol>
+          <li>Open the <strong>Advanced</strong> group in the menu, then <a href="export.html">Export</a>.</li>
+          <li>Press <strong>Export data</strong> and keep the file somewhere safe. Do this before any big change.</li>
+          <li>For a spreadsheet of orders, use <strong>Export</strong> on the Orders page.</li>
+        </ol>
+      </details>
+
+      <details class="task">
+        <summary><span class="ic"><i class="bi bi-shield-lock"></i></span>Forgot your password<i class="bi bi-chevron-down chev"></i></summary>
+        <ol>
+          <li>On the sign-in page, type your email and press <strong>Forgot password?</strong>.</li>
+          <li>Open the link in the email (check spam) and choose a new password.</li>
+        </ol>
+        <p class="tip">The admin site signs you out after 30 minutes without activity, to protect a shared computer.</p>
+      </details>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+</body>
+</html>

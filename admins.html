@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Accounts — KustomoImprenta Super Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    /* Extra page-specific styles */
+    .admin-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color .18s;
+    }
+    .admin-card:hover { border-color: rgba(255,214,0,.25); }
+    .admin-card.is-sa { border-left: 3px solid var(--yellow); }
+    .ac-avatar {
+      width: 46px; height: 46px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 17px; flex-shrink: 0;
+    }
+    .ac-avatar.sa { background: linear-gradient(135deg, #FFD600, #FF5C00); color: #000; }
+    .ac-avatar.admin { background: linear-gradient(135deg, var(--orange), var(--pink)); color: #fff; }
+    .ac-name { font-size: 14.5px; font-weight: 700; color: var(--text); }
+    .ac-email { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .ac-badge { margin-top: 5px; }
+    .ac-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .status-label { font-size: 11px; color: var(--muted); display: block; text-align: center; margin-bottom: 3px; }
+    .accounts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
+      gap: 12px;
+    }
+  </style>
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title" style="display:flex;align-items:center;gap:10px;">
+      <span style="background:linear-gradient(135deg,#FFD600,#FF5C00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Admin</span>
+      <span>Accounts</span>
+      <span style="background:rgba(255,214,0,.12);color:var(--yellow);border:1px solid rgba(255,214,0,.25);padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.5px;">SUPER ADMIN</span>
+    </div>
+    <div class="topbar-right">
+      <div class="search-wrap"><i class="bi bi-search"></i><input type="text" id="q" placeholder="Search admins…"></div>
+      <button class="btn-grad" id="add-btn" onclick="openCreate()" style="background:linear-gradient(90deg,#FFD600,#FF5C00);">
+        <i class="bi bi-person-plus-fill"></i> Create Admin
+      </button>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- Super Admin Overview Banner -->
+    <div class="sa-banner" style="margin-bottom:22px;">
+      <div>
+        <div class="sa-banner-label"><i class="bi bi-shield-fill-check"></i> &nbsp;Super Admin Control Panel</div>
+        <div class="sa-banner-title">Admin Account Management</div>
+        <div style="margin-top:8px;font-size:13px;color:rgba(255,255,255,.55);">
+          Create, view, and enable/disable admin accounts. Super Admin accounts are protected.
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:10.5px;color:rgba(255,214,0,.7);text-transform:uppercase;letter-spacing:1px;">Total Accounts</div>
+        <div style="font-size:32px;font-weight:800;color:var(--yellow);line-height:1.1;" id="total-count">—</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+          <span id="admin-count-lbl">— Admins</span> &nbsp;·&nbsp; <span id="sa-count-lbl">— Super Admins</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accounts Grid -->
+    <div class="accounts-grid" id="accounts-grid">
+      <div style="grid-column:1/-1;"><div class="spinner"></div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ CREATE ADMIN MODAL ══ -->
+<div class="overlay" id="create-overlay">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-hd">
+      <h3 style="display:flex;align-items:center;gap:8px;">
+        <i class="bi bi-person-plus-fill" style="color:var(--yellow);"></i> Create Admin Account
+      </h3>
+      <button class="modal-x" onclick="closeCreate()">&times;</button>
+    </div>
+    <div class="modal-bd">
+      <div class="sa-form-note">
+        <i class="bi bi-info-circle-fill"></i>
+        The new admin can sign in to this admin site right away with this email and password.
+        Share the credentials securely with the new admin.
+      </div>
+
+      <div class="fg-row">
+        <div class="fg">
+          <label>First Name *</label>
+          <input type="text" id="c-fname" placeholder="Juan">
+        </div>
+        <div class="fg">
+          <label>Last Name *</label>
+          <input type="text" id="c-lname" placeholder="dela Cruz">
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>Email Address *</label>
+        <input type="email" id="c-email" placeholder="admin2@ksprintexpress.com">
+      </div>
+
+      <div class="fg">
+        <label>Temporary Password *</label>
+        <div style="position:relative;">
+          <input type="password" id="c-pw" placeholder="Minimum 6 characters" style="padding-right:42px;">
+          <button type="button" onclick="togglePw('c-pw','c-pw-icon')" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:16px;padding:0;cursor:pointer;">
+            <i class="bi bi-eye" id="c-pw-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <div style="background:rgba(255,92,0,.07);border:1px solid rgba(255,92,0,.18);border-radius:8px;padding:10px 14px;font-size:12.5px;color:rgba(255,255,255,.6);margin-top:4px;">
+        <i class="bi bi-info-circle" style="color:var(--orange);"></i>
+        &nbsp;You stay signed in. If the email already has a KustomoImprenta account (a customer), you can make that account an admin instead.
+        The new admin can change the password with <strong style="color:var(--text);">Forgot password?</strong> on the sign-in page.
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-ghost" onclick="closeCreate()">Cancel</button>
+      <button id="create-btn" onclick="createAdmin()" style="background:linear-gradient(90deg,#FFD600,#FF5C00);color:#000;border:none;padding:9px 18px;border-radius:8px;font-size:13.5px;font-weight:700;display:inline-flex;align-items:center;gap:7px;">
+        <i class="bi bi-person-plus-fill"></i> Create Account
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  let allAdmins = [];
+
+  // ── Guard: only super_admin can access this page ──
+  window.onAuthReady = (user, role) => {
+    if (role !== 'super_admin') {
+      toast('Access denied — Super Admin only', 'err');
+      setTimeout(() => location.href = 'dashboard.html', 1500);
+      return;
+    }
+    loadAdmins();
+  };
+
+  // ── Real-time admin list ──
+  function loadAdmins() {
+    db.collection('users')
+      .where('role', 'in', ['admin', 'super_admin'])
+      .onSnapshot(snap => {
+        allAdmins = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderAdmins();
+      });
+  }
+
+  function renderAdmins() {
+    const q = document.getElementById('q').value.trim().toLowerCase();
+    let rows = allAdmins;
+    if (q) rows = rows.filter(a =>
+      (`${a.firstName||''} ${a.lastName||''}`).toLowerCase().includes(q) ||
+      (a.email || '').toLowerCase().includes(q)
+    );
+
+    // Counts
+    const adminCnt = allAdmins.filter(a => a.role === 'admin').length;
+    const saCnt    = allAdmins.filter(a => a.role === 'super_admin').length;
+    document.getElementById('total-count').textContent   = allAdmins.length;
+    document.getElementById('admin-count-lbl').textContent = `${adminCnt} Admin${adminCnt !== 1 ? 's' : ''}`;
+    document.getElementById('sa-count-lbl').textContent    = `${saCnt} Super Admin${saCnt !== 1 ? 's' : ''}`;
+
+    const grid = document.getElementById('accounts-grid');
+    if (!rows.length) {
+      grid.innerHTML = '<div style="grid-column:1/-1;"><div class="empty"><i class="bi bi-people"></i><p>No admin accounts found</p></div></div>';
+      return;
+    }
+
+    // Sort: super_admins first, then admins
+    rows.sort((a, b) => {
+      if (a.role === 'super_admin' && b.role !== 'super_admin') return -1;
+      if (b.role === 'super_admin' && a.role !== 'super_admin') return  1;
+      return 0;
+    });
+
+    grid.innerHTML = rows.map(a => {
+      const isSA    = a.role === 'super_admin';
+      const name    = `${a.firstName || ''} ${a.lastName || ''}`.trim() || 'Unknown';
+      const initial = name.charAt(0).toUpperCase();
+      const status  = a.status || 'Active';
+      const isActive = status === 'Active';
+
+      return `
+        <div class="admin-card ${isSA ? 'is-sa' : ''}">
+          <div class="ac-avatar ${isSA ? 'sa' : 'admin'}">${initial}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="ac-name">${esc(name)}</div>
+            <div class="ac-email">${esc(a.email || '—')}</div>
+            <div class="ac-badge">
+              <span class="role r-${a.role}" style="${isSA ? 'background:rgba(255,214,0,.12);color:var(--yellow);border:1px solid rgba(255,214,0,.25);' : ''}">
+                ${isSA ? '⭐ Super Admin' : 'Admin'}
+              </span>
+              ${!isSA ? `
+                <span style="font-size:11px;margin-left:8px;">
+                  <span class="status-dot ${isActive ? 'dot-active' : 'dot-disabled'}"></span>
+                  <span style="color:${isActive ? '#00E676' : 'var(--muted)'};">${status}</span>
+                </span>` : ''}
+            </div>
+          </div>
+          <div class="ac-actions">
+            ${isSA
+              ? `<span style="font-size:11.5px;color:rgba(255,214,0,.55);font-style:italic;">Protected</span>`
+              : `
+                <div style="text-align:center;">
+                  <span class="status-label">${isActive ? 'Active' : 'Disabled'}</span>
+                  <label class="avail" title="${isActive ? 'Disable admin' : 'Enable admin'}">
+                    <input type="checkbox" ${isActive ? 'checked' : ''}
+                      onchange="toggleAdminStatus('${a.id}', this.checked)">
+                    <span class="avail-sl"></span>
+                  </label>
+                </div>
+                <button class="btn-icon" title="Email a password reset link" aria-label="Email ${esc(name)} a password reset link" onclick="sendReset('${a.id}')">
+                  <i class="bi bi-envelope"></i>
+                </button>
+                <button class="btn-icon del" title="Remove admin role" aria-label="Remove admin role from ${esc(name)}" onclick="demoteAdmin('${a.id}')">
+                  <i class="bi bi-person-dash"></i>
+                </button>`}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  document.getElementById('q').addEventListener('input', renderAdmins);
+
+  // ── Toggle Admin Status ──
+  async function toggleAdminStatus(uid, enable) {
+    try {
+      await db.collection('users').doc(uid).update({ status: enable ? 'Active' : 'Disabled' });
+      toast(`Admin account ${enable ? 'enabled' : 'disabled'}`, enable ? 'ok' : 'warn');
+    } catch (e) {
+      toast('Failed to update status', 'err');
+    }
+  }
+
+  // ── Demote Admin (remove admin role → set to user) ──
+  /** Sends Firebase's password reset email to an admin (for a forgotten password). */
+  async function sendReset(uid) {
+    const a = allAdmins.find(x => x.id === uid);
+    if (!a || !a.email) { toast('This account has no email saved', 'warn'); return; }
+    if (!confirm(`Email a password reset link to ${a.email}?`)) return;
+    try { await auth.sendPasswordResetEmail(a.email); toast('Reset link sent to ' + a.email, 'ok'); }
+    catch (e) { toast('Not sent: ' + e.message, 'err'); }
+  }
+
+  async function demoteAdmin(uid) {
+    const a = allAdmins.find(x => x.id === uid);
+    const name = a ? (`${a.firstName || ''} ${a.lastName || ''}`.trim() || a.email || 'this admin') : 'this admin';
+    if (uid === window.ADMIN_UID) { toast("You can't remove your own access", 'warn'); return; }
+    if (!confirm(`Remove admin access for "${name}"? They will lose admin privileges.`)) return;
+    try {
+      await db.collection('users').doc(uid).update({ role: 'user', status: 'Active' });
+      toast(`${name} removed from admin accounts`, 'warn');
+    } catch (e) {
+      toast('Failed to remove admin', 'err');
+    }
+  }
+
+  // ── Create Admin Modal ──
+  function openCreate() {
+    document.getElementById('c-fname').value = '';
+    document.getElementById('c-lname').value = '';
+    document.getElementById('c-email').value = '';
+    document.getElementById('c-pw').value    = '';
+    document.getElementById('create-overlay').classList.add('show');
+    setTimeout(() => document.getElementById('c-fname').focus(), 100);
+  }
+  function closeCreate() {
+    document.getElementById('create-overlay').classList.remove('show');
+  }
+
+  function togglePw(inputId, iconId) {
+    const inp = document.getElementById(inputId);
+    const ico = document.getElementById(iconId);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    ico.className = inp.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+  }
+
+  // ── Create Admin Account ──
+  async function createAdmin() {
+    const firstName = document.getElementById('c-fname').value.trim();
+    const lastName  = document.getElementById('c-lname').value.trim();
+    const email     = document.getElementById('c-email').value.trim();
+    const password  = document.getElementById('c-pw').value;
+
+    if (!firstName)  { toast('First name is required', 'warn'); return; }
+    if (!lastName)   { toast('Last name is required', 'warn');  return; }
+    if (!email)      { toast('Email is required', 'warn');       return; }
+    if (password.length < 6) { toast('Password must be at least 6 characters', 'warn'); return; }
+
+    const btn = document.getElementById('create-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-arrow-repeat" style="animation:spin .65s linear infinite;display:inline-block;"></i> Creating…';
+
+    try {
+      // Use a secondary Firebase app instance so it doesn't sign out current user
+      let secondaryApp;
+      try {
+        secondaryApp = firebase.app('secondary');
+      } catch (_) {
+        secondaryApp = firebase.initializeApp(firebaseConfig, 'secondary');
+      }
+      const secondaryAuth = secondaryApp.auth();
+
+      // Create the user
+      const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+      const newUid = cred.user.uid;
+
+      // Save profile in Firestore
+      await db.collection('users').doc(newUid).set({
+        firstName,
+        lastName,
+        email,
+        role:      'admin',
+        status:    'Active',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Sign out the secondary app
+      await secondaryAuth.signOut();
+
+      closeCreate();
+      toast(`Admin account created for ${firstName} ${lastName}`, 'ok');
+
+    } catch (e) {
+      // Already registered (usually as a customer): offer to give that account admin access instead
+      if (e.code === 'auth/email-already-in-use') {
+        try {
+          const found = await db.collection('users').where('email', '==', email).limit(1).get();
+          if (!found.empty) {
+            const u = found.docs[0], d = u.data();
+            if (d.role === 'admin' || d.role === 'super_admin') { toast('That account is already an admin.', 'warn'); return; }
+            if (confirm(`${email} already has an account (${d.firstName || ''} ${d.lastName || ''}). Make it an admin? It keeps its current password.`)) {
+              await u.ref.update({ role: 'admin', status: 'Active', firstName: d.firstName || firstName, lastName: d.lastName || lastName });
+              closeCreate();
+              toast(`${email} is now an admin`, 'ok');
+            }
+            return;
+          }
+        } catch (e2) { /* fall through to the message */ }
+      }
+      const msgs = {
+        'auth/email-already-in-use': 'This email is already registered.',
+        'auth/invalid-email':        'Invalid email address.',
+        'auth/weak-password':        'Password is too weak (min 6 characters).'
+      };
+      toast(msgs[e.code] || 'Failed: ' + e.message, 'err');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-person-plus-fill"></i> Create Account';
+    }
+  }
+
+  // Close modals on overlay click
+  document.getElementById('create-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeCreate();
+  });
+</script>
+</body>
+</html>

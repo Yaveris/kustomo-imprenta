@@ -1,0 +1,6 @@
+# The home page (app download) can be found by search engines; the admin pages can't.
+User-agent: *
+Allow: /$
+Allow: /index.html
+Allow: /img/
+Disallow: /

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Export Data — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Export <span>Data</span></div>
+  </div>
+  <div class="page-content">
+    <div class="card" style="max-width:640px;">
+      <div class="card-head"><span class="card-title">Download a copy of the database</span></div>
+      <div style="padding:0 18px 18px;">
+        <p style="font-size:13.5px;color:var(--muted);margin-bottom:14px;">
+          Saves products, categories, models, orders, chats, customers and design presets into one JSON file. App keys and shop settings are left out. Nothing in the database is changed.
+        </p>
+        <label class="fg-check" style="margin-bottom:8px;"><input type="checkbox" id="x-private" checked> Leave out customer personal details (names, emails, phones, addresses, photos, chat text)</label>
+        <label class="fg-check" style="margin-bottom:16px;"><input type="checkbox" id="x-messages" checked> Include chat messages</label>
+        <button class="btn-grad" id="x-btn" onclick="runExport()"><i class="bi bi-download"></i> Export data</button>
+        <div id="x-log" style="margin-top:16px;font-size:13px;color:var(--muted);white-space:pre-line;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  // Fields that identify a customer; replaced with a placeholder when "leave out personal details" is ticked.
+  const PRIVATE_FIELDS = new Set(['firstName','lastName','fullName','customerName','email','phone','streetAddress',
+    'city','zipCode','barangay','landmark','addressLat','addressLng','photoUrl','messageText']);
+  const REMOVED = '<removed>';
+
+  const logEl = document.getElementById('x-log');
+  const log = line => { logEl.textContent += line + '\n'; };
+
+  /** Firestore values -> plain JSON (timestamps as ISO text), optionally hiding personal fields. */
+  function clean(value, hide, key) {
+    if (value === null || value === undefined) return null;
+    if (hide && PRIVATE_FIELDS.has(key)) return value === '' ? '' : REMOVED;
+    if (typeof value.toDate === 'function') return { _timestamp: value.toDate().toISOString() };
+    if (Array.isArray(value)) return value.map(v => clean(v, hide));
+    if (typeof value === 'object') {
+      if (typeof value.path === 'string' && value.firestore) return { _reference: value.path };
+      if (typeof value.latitude === 'number' && typeof value.longitude === 'number') return hide ? REMOVED : { _geo: [value.latitude, value.longitude] };
+      const out = {};
+      Object.keys(value).sort().forEach(k => { out[k] = clean(value[k], hide, k); });
+      return out;
+    }
+    return value;
+  }
+
+  /** Reads a collection; a failure (e.g. blocked by security rules) is recorded instead of stopping the export. */
+  async function readAll(ref, label, hide, errors) {
+    try {
+      const snap = await ref.get();
+      return snap.docs.map(d => ({ _id: d.id, ...clean(d.data(), hide) }));
+    } catch (e) {
+      errors.push(`${label}: ${e.code || ''} ${e.message}`);
+      log(`  ✗ ${label}: ${e.message}`);
+      return null;
+    }
+  }
+
+  async function runExport() {
+    const hide = document.getElementById('x-private').checked;
+    const withMessages = document.getElementById('x-messages').checked;
+    const btn = document.getElementById('x-btn');
+    btn.disabled = true;
+    logEl.textContent = '';
+    const errors = [];
+    const out = { exportedAt: new Date().toISOString(), projectId: firebaseConfig.projectId,
+                  personalDetailsRemoved: hide, collections: {}, errors };
+    try {
+      for (const name of ['products', 'categories', 'models', 'orders', 'designPresets', 'users', 'chats']) {
+        log(`Reading ${name}…`);
+        const docs = await readAll(db.collection(name), name, hide, errors);
+        out.collections[name] = docs;
+        if (docs) log(`  ${docs.length} documents`);
+      }
+      // Sub-collections the app keeps under each customer and each chat
+      const users = out.collections.users || [];
+      log('Reading saved designs and shapes of each customer…');
+      for (const u of users) {
+        for (const sub of ['designs', 'shapes']) {
+          const docs = await readAll(db.collection('users').doc(u._id).collection(sub), `users/${u._id}/${sub}`, hide, errors);
+          if (docs && docs.length) u['_' + sub] = docs;
+        }
+      }
+      if (withMessages) {
+        log('Reading chat messages…');
+        for (const c of (out.collections.chats || [])) {
+          const docs = await readAll(db.collection('chats').doc(c._id).collection('messages').orderBy('sentAt', 'asc'),
+            `chats/${c._id}/messages`, hide, errors);
+          if (docs) c._messages = docs;
+        }
+      }
+      const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `kustomoimprenta-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      log(errors.length ? `Done, with ${errors.length} part(s) that could not be read (listed in the file).` : 'Done. The file is in your Downloads.');
+      toast('Export downloaded', errors.length ? 'warn' : 'ok');
+    } catch (e) {
+      log('Export failed: ' + e.message);
+      toast('Export failed', 'err');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>

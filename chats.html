@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messages — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Messages <span>Center</span></div>
+    <div class="topbar-right">
+      <div class="search-wrap"><i class="bi bi-search"></i><input type="text" id="q" placeholder="Search chats…"></div>
+    </div>
+  </div>
+
+  <div class="page-content" style="height:calc(100vh - 62px);padding-bottom:0;overflow:hidden;">
+    <div class="chat-layout" style="height:100%;">
+
+      <!-- Chat List -->
+      <div class="chat-list-card">
+        <div class="cl-head" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span>Conversations</span>
+          <span id="chat-count" style="font-size:12px;color:var(--muted);margin-left:auto;"></span>
+          <label class="fg-check" style="margin:0;font-size:12px;font-weight:500;"><input type="checkbox" id="only-new"> New only</label>
+        </div>
+        <div class="cl-items" id="cl-items"><div class="spinner" style="margin:30px auto;"></div></div>
+      </div>
+
+      <!-- Chat Detail -->
+      <div class="chat-detail-card" id="cd-card">
+        <div class="no-chat">
+          <i class="bi bi-chat-square-dots"></i>
+          <p style="font-size:13.5px;">Select a conversation</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  let chats=[], active=null, unsubMsgs=null, adminUid=null;
+
+  auth.onAuthStateChanged(u=>{
+    if(!u)return;
+    adminUid=u.uid;
+    let first=true;
+    db.collection('chats').orderBy('lastMessageAt','desc').onSnapshot(snap=>{
+      chats=snap.docs.map(d=>({id:d.id,...d.data()}));
+      if(active)active=chats.find(c=>c.id===active.id)||active;
+      renderList();
+      // Opened from an order (chats.html?order=…) or a link to one conversation (chats.html?chat=…)
+      if(first){first=false;const qs=new URLSearchParams(location.search);
+        const want=chats.find(c=>c.id===qs.get('chat')||(qs.get('order')&&c.orderId===qs.get('order')));if(want)openChat(want.id);}
+      // The open conversation counts as seen while this page is in front
+      if(active&&chatIsUnread(active))markChatRead(active.id);
+    });
+  });
+  document.addEventListener('visibilitychange',()=>{if(active&&chatIsUnread(active))markChatRead(active.id);});
+
+  document.getElementById('q').addEventListener('input',renderList);
+  document.getElementById('only-new').addEventListener('change',renderList);
+
+  function renderList(){
+    const q=document.getElementById('q').value.trim().toLowerCase();
+    let rows=chats;
+    const qId=q.replace(/^(ff-|#)/,'');
+    if(q)rows=rows.filter(c=>(c.customerName||'').toLowerCase().includes(q)||(c.orderId||'').toLowerCase().includes(q)||(qId&&(c.orderId||'').toLowerCase().endsWith(qId)));
+    if(document.getElementById('only-new').checked)rows=rows.filter(c=>chatIsUnread(c)||active?.id===c.id);
+    const unread=chats.filter(chatIsUnread).length;
+    document.getElementById('chat-count').textContent=unread?`${unread} new`:`${rows.length}`;
+    const el=document.getElementById('cl-items');
+    if(!rows.length){el.innerHTML='<div class="empty" style="padding:40px 20px;"><i class="bi bi-chat-square"></i><p>No conversations</p></div>';return;}
+    el.innerHTML=rows.map(c=>{
+      const name=c.customerName||'Customer';
+      const isAct=active?.id===c.id, isNew=chatIsUnread(c)&&!isAct;
+      return `<div class="cl-item${isAct?' active':''}${isNew?' unread':''}" onclick="openChat('${c.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')openChat('${c.id}')">
+        <div class="cl-av">${esc(name.charAt(0).toUpperCase())}</div>
+        <div class="cl-info">
+          <div class="cl-name">${esc(name)}</div>
+          <div class="cl-prev">Order: ${orderNo(c.orderId)}${isNew?' · <span style="color:var(--orange);font-weight:700;">New</span>':''}</div>
+        </div>
+        <div class="cl-time" title="${c.lastMessageAt?esc(fmtDate(c.lastMessageAt)):''}">${shortWhen(c.lastMessageAt)}</div>
+        ${isNew?'<span class="unread-dot" aria-label="New"></span>':''}
+      </div>`;
+    }).join('');
+  }
+
+  /** "3:05 PM" today, "Oct 14" this year, "Oct 14, 2025" before that. */
+  function shortWhen(t){
+    if(!t||!t.toDate)return '';
+    const d=t.toDate(), now=new Date();
+    if(d.toDateString()===now.toDateString())return d.toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit'});
+    return d.toLocaleDateString('en-PH',d.getFullYear()===now.getFullYear()?{month:'short',day:'numeric'}:{month:'short',day:'numeric',year:'numeric'});
+  }
+
+  function openChat(chatId){
+    active=chats.find(c=>c.id===chatId); if(!active)return;
+    renderList();
+    if(unsubMsgs){unsubMsgs();unsubMsgs=null;}
+
+    const name=active.customerName||'Customer';
+    const oid=active.orderId||'';
+    const cd=document.getElementById('cd-card');
+
+    cd.innerHTML=`
+      <div class="cd-head">
+        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--pink));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;flex-shrink:0;">${esc(name.charAt(0))}</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:700;">${esc(name)}</div>
+          <div style="font-size:12px;color:var(--muted);">Order: <a href="order-detail.html?id=${oid}" target="_blank" style="color:var(--orange);">${orderNo(oid)}</a></div>
+        </div>
+        <a href="order-detail.html?id=${oid}" target="_blank" class="btn-ghost" style="font-size:12.5px;padding:5px 10px;"><i class="bi bi-box-arrow-up-right"></i> Order</a>
+      </div>
+      <div class="chat-wrap" id="msgs" style="flex:1;margin:0;border-radius:0;height:auto;"></div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border);">
+        <div class="quick-replies" id="quick-replies"></div>
+        <div class="chat-row">
+          <textarea id="msg-in" placeholder="Type a message… (Enter to send)" rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
+          <button class="btn-send" onclick="sendMsg()"><i class="bi bi-send-fill"></i></button>
+        </div>
+      </div>`;
+
+    cd.style.cssText='display:flex;flex-direction:column;overflow:hidden;';
+    renderQuickReplies('quick-replies','msg-in');
+    if(chatIsUnread(active))markChatRead(active.id);
+    document.getElementById('msgs').style.cssText='flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:11px;background:rgba(0,0,0,.18);';
+
+    unsubMsgs=db.collection('chats').doc(chatId).collection('messages')
+      .orderBy('sentAt','asc').onSnapshot(snap=>{
+        renderMsgs(snap.docs.map(d=>({id:d.id,...d.data()})));
+      });
+  }
+
+  function renderMsgs(msgs){
+    const wrap=document.getElementById('msgs');if(!wrap)return;
+    if(!msgs.length){wrap.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:30px 0;">No messages yet</div>';return;}
+    wrap.innerHTML=msgs.map(m=>{
+      const isA=m.senderRole==='admin';
+      const t=m.sentAt?fmtDate(m.sentAt):'';
+      if(m.isDesignSubmission)return `
+        <div class="cmsg user-msg">
+          <div class="cavatar">C</div>
+          <div>
+            <div class="design-box">
+              <div style="color:#8B5CF6;font-weight:600;margin-bottom:5px;font-size:12.5px;"><i class="bi bi-image"></i> Design Submission</div>
+              ${safeUrl(m.imageUrl)?`<a href="${safeUrl(m.imageUrl)}" target="_blank" rel="noopener"><img src="${safeUrl(m.imageUrl)}" alt="design"></a>`:''}
+              ${m.messageText?`<p style="font-size:13px;margin:5px 0;">${esc(m.messageText)}</p>`:''}
+              <div style="font-size:12px;color:var(--muted);margin-bottom:5px;">Status: <strong style="color:${m.approvalStatus==='Approved'?'#00E676':m.approvalStatus==='Rejected'?'#FF4444':'var(--yellow)'};">${m.approvalStatus||'Pending Approval'}</strong></div>
+              ${!m.approvalStatus||m.approvalStatus==='Pending Approval'?`
+                <div style="display:flex;gap:7px;margin-top:6px;">
+                  <button class="btn-ok" onclick="handleDesign('${active.id}','${m.id}',true)"><i class="bi bi-check-lg"></i> Approve</button>
+                  <button class="btn-no" onclick="handleDesign('${active.id}','${m.id}',false)"><i class="bi bi-x-lg"></i> Reject</button>
+                </div>`:''}
+            </div>
+            <div class="ctime">${t}</div>
+          </div>
+        </div>`;
+      return `
+        <div class="cmsg ${isA?'admin-msg':'user-msg'}">
+          <div class="cavatar">${isA?'A':'C'}</div>
+          <div>
+            <div class="cbubble">${esc(m.messageText||'')}</div>
+            <div class="ctime">${t}</div>
+          </div>
+        </div>`;
+    }).join('');
+    wrap.scrollTop=wrap.scrollHeight;
+  }
+
+  async function sendMsg(){
+    if(!active)return;
+    const inp=document.getElementById('msg-in');
+    const txt=(inp.value||'').trim(); if(!txt)return;
+    inp.value='';
+    try{
+      await db.collection('chats').doc(active.id).collection('messages').add({
+        senderId:adminUid,senderRole:'admin',messageText:txt,
+        sentAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await db.collection('chats').doc(active.id).update({lastMessageAt:firebase.firestore.FieldValue.serverTimestamp(),adminReadAt:firebase.firestore.FieldValue.serverTimestamp()});
+    }catch(e){toast('Send failed','err');inp.value=txt;}
+  }
+
+  async function handleDesign(chatId,msgId,approved){
+    try{await reviewDesign(chatId,msgId,approved,adminUid);}catch(e){toast('Action failed: '+e.message,'err');}
+  }
+</script>
+</body>
+</html>

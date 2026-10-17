@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Categories — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    .cat-add { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto auto; gap: 10px; align-items: end; }
+    .cat-add .fg { margin: 0; }
+    @media (max-width: 760px) { .cat-add { grid-template-columns: minmax(0, 1fr); } }
+    .ord-btns { display: flex; gap: 4px; }
+    .ord-btns .btn-icon:disabled { opacity: .3; cursor: default; }
+    .cat-name { font-weight: 700; font-size: 14px; }
+    .cat-desc { font-size: 12px; color: var(--muted); margin-top: 2px; max-width: 320px; }
+    .loose { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid var(--border); }
+    .loose:first-child { border-top: none; }
+    .loose strong { margin-right: auto; }
+  </style>
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Categories <span>Catalog</span></div>
+    <div class="topbar-right">
+      <a href="products.html" class="btn-ghost"><i class="bi bi-box-seam"></i> Products</a>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <!-- Shown when Firestore refuses the categories collection -->
+    <div class="card warn-card" id="rule-card" hidden style="margin-bottom:16px;">
+      <div class="card-head"><span class="card-title"><i class="bi bi-exclamation-triangle"></i> One-time Firestore setup</span></div>
+      <div style="padding:0 18px 18px;">
+        <p class="note">Firestore isn't letting this page read or save categories yet. Until it does, the app keeps showing the categories it reads off the products.
+          Open the <a id="rules-link" href="#" target="_blank" rel="noopener" style="color:var(--orange);">Firestore rules</a>, paste this inside
+          <code>match /databases/{database}/documents { … }</code>, press Publish, then reload this page. (The App Keys page has every rule in one block.)</p>
+        <button class="btn-ghost" type="button" style="margin-top:10px;" onclick="copyRule(this)"><i class="bi bi-clipboard"></i> Copy</button>
+        <pre class="rule-pre" id="rule-text"></pre>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><span class="card-title"><i class="bi bi-plus-circle" style="color:var(--orange);margin-right:6px;"></i>Add a category</span></div>
+      <div style="padding:0 18px 18px;">
+        <div class="cat-add">
+          <div class="fg"><label for="n-name">Name *</label><input type="text" id="n-name" maxlength="40" placeholder="e.g. Jackets"></div>
+          <div class="fg"><label for="n-desc">Note for staff (optional)</label><input type="text" id="n-desc" maxlength="120" placeholder="What goes in it"></div>
+          <label class="fg-check" style="margin:0 0 10px;"><input type="checkbox" id="n-show" checked> Show in the app</label>
+          <button class="btn-grad" id="n-add" onclick="addCategory()"><i class="bi bi-plus-lg"></i> Add</button>
+        </div>
+        <p class="note" style="margin-top:10px;">Categories are the filters customers tap in the app's shop (next to <strong>Saved</strong>), in the order below. Put products in one on the Products page.
+          A category that's hidden from the app keeps its products; they still show under <strong>All</strong>.</p>
+      </div>
+    </div>
+
+    <div class="card" id="start-card" hidden style="margin-bottom:16px;">
+      <div class="card-head"><span class="card-title">Start your list</span></div>
+      <div style="padding:0 18px 18px;">
+        <p class="note" id="start-text"></p>
+        <button class="btn-grad" style="margin-top:10px;" onclick="importCategories()"><i class="bi bi-magic"></i> Add these</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title">Your categories <span id="count" style="color:var(--muted);font-weight:400;font-size:13px;"></span></span></div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Order</th><th>Category</th><th>Products</th><th>In the app</th><th>Last changed</th><th>Actions</th></tr></thead>
+          <tbody id="tbody"><tr><td colspan="6"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="loose-card" hidden style="margin-top:16px;">
+      <div class="card-head"><span class="card-title">Used by products but not in your list</span></div>
+      <div style="padding:0 18px 14px;">
+        <p class="note" style="margin-bottom:6px;">These come from older products or a different spelling. Add one to the list, or move its products into a category you have.</p>
+        <div id="loose-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit -->
+<div class="overlay" id="edit-overlay">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-hd"><h3>Edit category</h3><button class="modal-x" onclick="closeEdit()">&times;</button></div>
+    <div class="modal-bd">
+      <div class="fg"><label for="e-name">Name *</label><input type="text" id="e-name" maxlength="40"></div>
+      <div class="fg"><label for="e-desc">Note for staff</label><input type="text" id="e-desc" maxlength="120"></div>
+      <label class="fg-check"><input type="checkbox" id="e-show"> Show in the app</label>
+      <p class="note" id="e-note" style="margin-top:10px;"></p>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-ghost" onclick="closeEdit()">Cancel</button>
+      <button class="btn-grad" id="e-save" onclick="saveEdit()"><i class="bi bi-check-lg"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete / move products -->
+<div class="overlay" id="del-overlay">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-hd"><h3 id="d-title" style="color:#FF4444;">Delete category</h3><button class="modal-x" onclick="closeDel()">&times;</button></div>
+    <div class="modal-bd">
+      <p style="font-size:14px;color:var(--muted);" id="d-text"></p>
+      <div class="fg" id="d-move-wrap" style="margin-top:12px;"><label for="d-move">Move its products to</label><select id="d-move"></select></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-ghost" onclick="closeDel()">Cancel</button>
+      <button id="d-go" style="padding:8px 16px;border-radius:8px;background:rgba(255,68,68,.13);color:#FF4444;border:1px solid rgba(255,68,68,.26);font-size:13.5px;font-weight:600;" onclick="confirmDel()"><i class="bi bi-trash3"></i> Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  let cats = [], products = [], denied = false, editId = null, del = null;
+  const $ = id => document.getElementById(id);
+  const meta = () => ({ updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: (auth.currentUser && auth.currentUser.email) || '' });
+
+  $('rule-text').textContent = CATEGORY_RULE;
+  $('rules-link').href = `https://console.firebase.google.com/project/${firebaseConfig.projectId}/firestore/rules`;
+  function copyRule(btn) {
+    navigator.clipboard.writeText(CATEGORY_RULE).then(() => { btn.innerHTML = '<i class="bi bi-check-lg"></i> Copied'; setTimeout(() => btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy', 1500); });
+  }
+
+  window.onAuthReady = () => {
+    db.collection('products').onSnapshot(snap => { products = snap.docs.map(d => ({ id: d.id, ...d.data() })); render(); });
+    db.collection('categories').onSnapshot(snap => {
+      denied = false;
+      cats = snap.docs.map(d => normalizeCategory(d.id, d.data())).filter(c => c.name)
+        .sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
+      _categoryList = cats;         // productCategory() reads the same list
+      render();
+    }, e => {
+      denied = e && e.code === 'permission-denied';
+      cats = []; _categoryList = [];
+      if (!denied) toast("Couldn't load the categories: " + e.message, 'err');
+      render();
+    });
+  };
+
+  const sameName = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+  /** Products filed under a category, matched the way the app matches them (the name, any case). */
+  const productsIn = name => products.filter(p => sameName(p.category, name) || productCategory(p) === name);
+
+  function render() {
+    $('rule-card').hidden = !denied;
+    $('n-add').disabled = denied;
+    $('count').textContent = `(${cats.length})`;
+
+    // Categories products use that aren't in the list
+    const loose = [...new Set(products.map(p => String(p.category || '').trim()).filter(n => n && !cats.some(c => sameName(c.name, n) || productCategory({ category: n }) === c.name)))].sort();
+    // Nothing yet: offer the categories products already use, plus the usual ones
+    const starter = [...new Set(STARTER_CATEGORIES.concat(products.map(productCategory).filter(Boolean)))];
+    $('start-card').hidden = denied || cats.length > 0;
+    $('start-text').innerHTML = `Add ${starter.map(n => `<strong>${esc(n)}</strong>`).join(', ')} in one go (the categories your products already use, plus the usual ones). You can rename, reorder or delete them after.`;
+
+    const tbody = $('tbody');
+    if (!cats.length) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><i class="bi bi-tags"></i><p>${denied ? 'Add the Firestore rule shown above first.' : 'No categories yet. Add one above.'}</p></div></td></tr>`;
+    } else {
+      tbody.innerHTML = cats.map((c, i) => {
+        const inIt = productsIn(c.name), forSale = inIt.filter(p => p.isAvailable === true).length;
+        return `<tr>
+          <td><div class="ord-btns">
+            <button class="btn-icon" title="Move up" aria-label="Move ${esc(c.name)} up" ${i === 0 ? 'disabled' : ''} onclick="move(${i},-1)"><i class="bi bi-arrow-up"></i></button>
+            <button class="btn-icon" title="Move down" aria-label="Move ${esc(c.name)} down" ${i === cats.length - 1 ? 'disabled' : ''} onclick="move(${i},1)"><i class="bi bi-arrow-down"></i></button>
+          </div></td>
+          <td><div class="cat-name">${esc(c.name)}</div>${c.description ? `<div class="cat-desc">${esc(c.description)}</div>` : ''}</td>
+          <td style="font-size:13px;"><a href="products.html?cat=${encodeURIComponent(c.name)}" style="color:var(--orange);font-weight:700;">${inIt.length}</a>
+            <span style="color:var(--muted);">${inIt.length ? ` · ${forSale} for sale` : ''}</span>
+            ${c.showInApp && inIt.length && !forSale ? '<div style="font-size:11.5px;color:var(--yellow);">Not shown in the app until a product in it is for sale</div>' : ''}
+            ${c.showInApp && !inIt.length ? '<div style="font-size:11.5px;color:var(--muted);">Empty, so the app doesn\'t show it yet</div>' : ''}</td>
+          <td><label class="avail" title="${c.showInApp ? 'Shown in the app' : 'Hidden from the app'}"><input type="checkbox" ${c.showInApp ? 'checked' : ''} onchange="setShown('${c.id}',this.checked)" aria-label="Show ${esc(c.name)} in the app"><span class="avail-sl"></span></label></td>
+          <td style="font-size:12px;color:var(--muted);">${c.updatedAt ? fmtDate(c.updatedAt, false) : '—'}${c.updatedBy ? `<div>${esc(c.updatedBy)}</div>` : ''}</td>
+          <td><div style="display:flex;gap:5px;">
+            <button class="btn-icon" title="Edit" aria-label="Edit ${esc(c.name)}" onclick="openEdit('${c.id}')"><i class="bi bi-pencil"></i></button>
+            <button class="btn-icon del" title="Delete" aria-label="Delete ${esc(c.name)}" onclick="openDel('${c.id}')"><i class="bi bi-trash3"></i></button>
+          </div></td>
+        </tr>`;
+      }).join('');
+    }
+
+    $('loose-card').hidden = denied || !cats.length || !loose.length;
+    $('loose-list').innerHTML = loose.map((n, i) => {
+      const count = products.filter(p => sameName(p.category, n)).length;
+      return `<div class="loose"><strong>${esc(n)}</strong><span class="pill">${count} product${count === 1 ? '' : 's'}</span>
+        <button class="btn-ghost" onclick="adoptLoose(${i})"><i class="bi bi-plus-lg"></i> Add to list</button>
+        <select id="loose-to-${i}" aria-label="Category to move ${esc(n)} products to">${cats.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('')}</select>
+        <button class="btn-ghost" onclick="moveLoose(${i})"><i class="bi bi-arrow-right"></i> Move products</button></div>`;
+    }).join('');
+    window._loose = loose;
+  }
+
+  /** The category's next free document id (two names can simplify to the same id). */
+  function freeId(name) {
+    let id = categoryId(name), n = 2;
+    while (cats.some(c => c.id === id)) id = categoryId(name) + '-' + n++;
+    return id;
+  }
+  const nextOrder = () => cats.reduce((m, c) => Math.max(m, c.order), 0) + 10;
+
+  async function addCategory() {
+    const name = $('n-name').value.trim().replace(/\s+/g, ' ');
+    if (!name) { toast('Type a name first', 'warn'); $('n-name').focus(); return; }
+    if (cats.some(c => sameName(c.name, name))) { toast(`"${name}" is already in the list`, 'warn'); return; }
+    const btn = $('n-add'); btn.disabled = true;
+    try {
+      await db.collection('categories').doc(freeId(name)).set(Object.assign({
+        name, description: $('n-desc').value.trim(), showInApp: $('n-show').checked, order: nextOrder(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, meta()));
+      $('n-name').value = ''; $('n-desc').value = ''; $('n-show').checked = true;
+      toast(`"${name}" added`, 'ok');
+    } catch (e) { toast(e.code === 'permission-denied' ? 'Firestore refused it. Add the rule shown at the top.' : 'Not added: ' + e.message, 'err'); }
+    finally { btn.disabled = denied; }
+  }
+  $('n-name').addEventListener('keydown', e => { if (e.key === 'Enter') addCategory(); });
+
+  async function importCategories() {
+    const names = [...new Set(STARTER_CATEGORIES.concat(products.map(productCategory).filter(Boolean)))];
+    try {
+      const batch = db.batch();
+      names.forEach((name, i) => batch.set(db.collection('categories').doc(categoryId(name)), Object.assign({
+        name, description: '', showInApp: true, order: (i + 1) * 10, createdAt: firebase.firestore.FieldValue.serverTimestamp() }, meta())));
+      await batch.commit();
+      toast(names.length + ' categories added', 'ok');
+    } catch (e) { toast('Not added: ' + e.message, 'err'); }
+  }
+
+  /** Swaps a category with its neighbour, then renumbers the whole list 10, 20, 30… so gaps never pile up. */
+  async function move(i, dir) {
+    const list = cats.slice(), j = i + dir;
+    if (j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    try {
+      const batch = db.batch();
+      list.forEach((c, k) => { if (c.order !== (k + 1) * 10) batch.update(db.collection('categories').doc(c.id), { order: (k + 1) * 10 }); });
+      await batch.commit();
+    } catch (e) { toast('Not moved: ' + e.message, 'err'); }
+  }
+
+  async function setShown(id, on) {
+    try { await db.collection('categories').doc(id).update(Object.assign({ showInApp: on }, meta())); toast(on ? 'Shown in the app' : 'Hidden from the app', 'ok'); }
+    catch (e) { toast('Not changed: ' + e.message, 'err'); render(); }
+  }
+
+  /** Writes `change` to every product in `list`, in batches small enough for Firestore. */
+  async function updateProducts(list, change) {
+    for (let k = 0; k < list.length; k += 400) {
+      const batch = db.batch();
+      list.slice(k, k + 400).forEach(p => batch.update(db.collection('products').doc(p.id), change));
+      await batch.commit();
+    }
+  }
+
+  function openEdit(id) {
+    const c = cats.find(x => x.id === id); if (!c) return;
+    editId = id;
+    $('e-name').value = c.name; $('e-desc').value = c.description; $('e-show').checked = c.showInApp;
+    const n = productsIn(c.name).length;
+    $('e-note').textContent = n ? `Renaming also renames it on its ${n} product${n === 1 ? '' : 's'}.` : '';
+    $('edit-overlay').classList.add('show');
+    setTimeout(() => $('e-name').focus(), 50);
+  }
+  function closeEdit() { $('edit-overlay').classList.remove('show'); editId = null; }
+  async function saveEdit() {
+    const c = cats.find(x => x.id === editId); if (!c) return;
+    const name = $('e-name').value.trim().replace(/\s+/g, ' ');
+    if (!name) { toast('The name can\'t be empty', 'warn'); return; }
+    if (cats.some(x => x.id !== c.id && sameName(x.name, name))) { toast(`"${name}" is already in the list`, 'warn'); return; }
+    const btn = $('e-save'); btn.disabled = true;
+    try {
+      const moving = name !== c.name ? productsIn(c.name) : [];
+      if (moving.length) await updateProducts(moving, { category: name });
+      await db.collection('categories').doc(c.id).update(Object.assign({ name, description: $('e-desc').value.trim(), showInApp: $('e-show').checked }, meta()));
+      toast(moving.length ? `Renamed, and ${moving.length} product${moving.length === 1 ? '' : 's'} moved with it` : 'Saved', 'ok');
+      closeEdit();
+    } catch (e) { toast('Not saved: ' + e.message, 'err'); }
+    finally { btn.disabled = false; }
+  }
+
+  function openDel(id) {
+    const c = cats.find(x => x.id === id); if (!c) return;
+    const inIt = productsIn(c.name), others = cats.filter(x => x.id !== id);
+    del = { c, inIt };
+    $('d-title').textContent = `Delete "${c.name}"`;
+    if (inIt.length && !others.length) {
+      $('d-text').textContent = `${inIt.length} product${inIt.length === 1 ? ' is' : 's are'} in "${c.name}" and there's no other category to move them to. Add another category first.`;
+      $('d-move-wrap').hidden = true; $('d-go').disabled = true;
+    } else if (inIt.length) {
+      $('d-text').textContent = `${inIt.length} product${inIt.length === 1 ? ' is' : 's are'} in "${c.name}". Choose where they go; the category is then removed from the list.`;
+      $('d-move').innerHTML = others.map(x => `<option value="${esc(x.name)}">${esc(x.name)}</option>`).join('');
+      $('d-move-wrap').hidden = false; $('d-go').disabled = false;
+    } else {
+      $('d-text').textContent = `"${c.name}" has no products. It is removed from the list and from the app's filters.`;
+      $('d-move-wrap').hidden = true; $('d-go').disabled = false;
+    }
+    $('del-overlay').classList.add('show');
+  }
+  function closeDel() { $('del-overlay').classList.remove('show'); del = null; }
+  async function confirmDel() {
+    if (!del) return;
+    const btn = $('d-go'); btn.disabled = true;
+    try {
+      if (del.inIt.length) await updateProducts(del.inIt, { category: $('d-move').value });
+      await db.collection('categories').doc(del.c.id).delete();
+      toast(`"${del.c.name}" deleted` + (del.inIt.length ? `; ${del.inIt.length} product${del.inIt.length === 1 ? '' : 's'} moved to "${$('d-move').value}"` : ''), 'ok');
+      closeDel();
+    } catch (e) { toast('Not deleted: ' + e.message, 'err'); btn.disabled = false; }
+  }
+
+  async function adoptLoose(i) {
+    const name = window._loose[i]; if (!name) return;
+    try {
+      await db.collection('categories').doc(freeId(name)).set(Object.assign({ name, description: '', showInApp: true, order: nextOrder(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp() }, meta()));
+      toast(`"${name}" added to the list`, 'ok');
+    } catch (e) { toast('Not added: ' + e.message, 'err'); }
+  }
+  async function moveLoose(i) {
+    const name = window._loose[i], to = $('loose-to-' + i).value; if (!name || !to) return;
+    const list = products.filter(p => sameName(p.category, name));
+    try { await updateProducts(list, { category: to }); toast(`${list.length} product${list.length === 1 ? '' : 's'} moved to "${to}"`, 'ok'); }
+    catch (e) { toast('Not moved: ' + e.message, 'err'); }
+  }
+
+  ['edit-overlay', 'del-overlay'].forEach(id => $(id).addEventListener('click', e => { if (e.target === e.currentTarget) id === 'edit-overlay' ? closeEdit() : closeDel(); }));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeEdit(); closeDel(); } });
+</script>
+</body>
+</html>

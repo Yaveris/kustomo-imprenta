@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customers — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Customers <span>Directory</span></div>
+    <div class="topbar-right">
+      <div class="search-wrap"><i class="bi bi-search"></i><input type="text" id="q" placeholder="Search name, email, city…"></div>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="card">
+      <div class="card-head"><span class="card-title">All Customers <span id="count" style="color:var(--muted);font-weight:400;font-size:13px;"></span></span>
+        <select id="sort" aria-label="Sort customers" style="padding:6px 10px;border-radius:8px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);font-size:12.5px;">
+          <option value="new">Newest first</option><option value="orders">Most orders</option><option value="spent">Highest order value</option><option value="recent">Ordered most recently</option><option value="name">Name A–Z</option>
+        </select></div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Customer</th><th>Email</th><th>Phone</th><th>City</th><th>Shirt size</th><th>Joined</th><th>Orders</th><th title="Total of their orders, cancelled ones left out">Order value</th><th>Last order</th><th>View</th></tr></thead>
+          <tbody id="tbody"><tr><td colspan="10"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Customer Modal -->
+<div class="overlay" id="cust-overlay">
+  <div class="modal wide">
+    <div class="modal-hd"><h3>Customer Profile</h3><button class="modal-x" onclick="closeCust()">&times;</button></div>
+    <div class="modal-bd" id="cust-body"><div class="spinner"></div></div>
+    <div class="modal-ft"><button class="btn-ghost" onclick="closeCust()">Close</button></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  let all=[], orderCounts={}, spent={}, lastOrder={};
+  const ms=t=>t&&t.toMillis?t.toMillis():0;
+
+  auth.onAuthStateChanged(async u=>{
+    if(!u)return;
+    const [uSnap,oSnap]=await Promise.all([db.collection('users').get(),db.collection('orders').get()]);
+    oSnap.docs.forEach(d=>{const o=d.data(),uid=o.userId;if(!uid)return;
+      orderCounts[uid]=(orderCounts[uid]||0)+1;
+      // Money only counts for orders that weren't cancelled
+      if(o.status!=='Cancelled')spent[uid]=(spent[uid]||0)+(+o.totalAmount||0);
+      if(ms(o.orderedAt)>ms(lastOrder[uid]))lastOrder[uid]=o.orderedAt;});
+    all=uSnap.docs.map(d=>({id:d.id,...d.data()}));
+    render();
+    const want=new URLSearchParams(location.search).get('uid');
+    if(want)viewCust(want);
+  });
+
+  function render(){
+    const q=document.getElementById('q').value.trim().toLowerCase();
+    let rows=all.filter(c=>c.role==='user'||!c.role);
+    if(q)rows=rows.filter(c=>(`${c.firstName||''} ${c.lastName||''}`).toLowerCase().includes(q)||(c.email||'').toLowerCase().includes(q)||(c.city||'').toLowerCase().includes(q)||(c.phone||'').includes(q));
+    const nm=c=>`${c.firstName||''} ${c.lastName||''}`.trim().toLowerCase();
+    const by={new:(a,b)=>ms(b.createdAt)-ms(a.createdAt),orders:(a,b)=>(orderCounts[b.id]||0)-(orderCounts[a.id]||0),
+      spent:(a,b)=>(spent[b.id]||0)-(spent[a.id]||0),recent:(a,b)=>ms(lastOrder[b.id])-ms(lastOrder[a.id]),name:(a,b)=>nm(a).localeCompare(nm(b))};
+    rows=rows.slice().sort(by[document.getElementById('sort').value]||by.new);
+    document.getElementById('count').textContent=`(${rows.length})`;
+    const tbody=document.getElementById('tbody');
+    if(!rows.length){tbody.innerHTML='<tr><td colspan="10"><div class="empty"><i class="bi bi-people"></i><p>No customers</p></div></td></tr>';return;}
+    tbody.innerHTML=rows.map(c=>{
+      const name=`${c.firstName||''} ${c.lastName||''}`.trim()||'Unknown';
+      const oc=orderCounts[c.id]||0;
+      const off=c.status==='Disabled'?' <span style="font-size:11px;color:#FF4444;font-weight:700;">DISABLED</span>':'';
+      return `<tr class="row-link" onclick="viewCust('${c.id}')">
+        <td><div style="display:flex;align-items:center;gap:9px;">
+          ${safeUrl(c.photoUrl)?`<img src="${safeUrl(c.photoUrl)}" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;" onerror="this.remove()">`:`<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--pink));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;">${esc(name.charAt(0).toUpperCase())}</div>`}
+          <strong style="font-size:13.5px;">${esc(name)}</strong>${off}
+        </div></td>
+        <td style="font-size:13px;color:var(--muted);">${esc(c.email||'—')}</td>
+        <td style="font-size:13px;">${esc(c.phone||'—')}</td>
+        <td style="font-size:13px;">${esc(c.city||'—')}</td>
+        <td style="text-align:center;">${c.recommendedSize?`<span style="background:rgba(255,92,0,.1);color:var(--orange);padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700;">${esc(c.recommendedSize)}</span>`:'—'}</td>
+        <td style="font-size:12px;color:var(--muted);">${fmtDate(c.createdAt,false)}</td>
+        <td style="text-align:center;font-weight:700;color:${oc>0?'var(--orange)':'var(--muted)'};">${oc}</td>
+        <td style="font-size:13px;font-weight:600;">${spent[c.id]?peso(spent[c.id]):'—'}</td>
+        <td style="font-size:12px;color:var(--muted);">${lastOrder[c.id]?fmtDate(lastOrder[c.id],false):'—'}</td>
+        <td><button class="btn-icon" aria-label="View ${esc(name)}" onclick="event.stopPropagation();viewCust('${c.id}')"><i class="bi bi-eye"></i></button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('q').addEventListener('input',render);
+  document.getElementById('sort').addEventListener('change',render);
+
+  async function viewCust(uid){
+    document.getElementById('cust-overlay').classList.add('show');
+    document.getElementById('cust-body').innerHTML='<div class="spinner"></div>';
+    const [uDoc,oSnap]=await Promise.all([
+      db.collection('users').doc(uid).get(),
+      // Sorted below instead of with orderBy: where + orderBy on different fields needs a database index this
+      // project doesn't have, and without it the query fails and the window never loads
+      db.collection('orders').where('userId','==',uid).get()
+    ]);
+    if(!uDoc.exists){
+      document.getElementById('cust-body').innerHTML=`<div class="empty"><i class="bi bi-person-x"></i><p>This customer's profile was deleted.</p>
+        ${oSnap.size?`<p class="note">${oSnap.size} order${oSnap.size===1?'':'s'} placed from this account are still on the <a href="orders.html" style="color:var(--orange);">Orders</a> page.</p>`:''}</div>`;
+      return;
+    }
+    const c=uDoc.data()||{};
+    const name=`${c.firstName||''} ${c.lastName||''}`.trim()||'Unknown';
+    const orders=oSnap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(b.orderedAt&&b.orderedAt.toMillis?b.orderedAt.toMillis():0)-(a.orderedAt&&a.orderedAt.toMillis?a.orderedAt.toMillis():0));
+    document.getElementById('cust-body').innerHTML=`
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+        ${safeUrl(c.photoUrl)?`<img src="${safeUrl(c.photoUrl)}" alt="" style="width:60px;height:60px;border-radius:50%;object-fit:cover;">`:`<div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--pink));display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;">${esc(name.charAt(0))}</div>`}
+        <div><div style="font-size:17px;font-weight:700;">${esc(name)}</div><div style="color:var(--muted);font-size:13px;">${esc(c.email||'—')}</div></div>
+      </div>
+      <div class="info-grid" style="margin-bottom:18px;">
+        <div class="ii"><label>Phone</label><span>${esc(c.phone||'—')}</span></div>
+        <div class="ii"><label>City</label><span>${esc(c.city||'—')}</span></div>
+        <div class="ii"><label>Address</label><span>${esc(c.streetAddress||'—')}</span></div>
+        <div class="ii"><label>Barangay</label><span>${esc(c.barangay||'—')}</span></div>
+        ${c.landmark?`<div class="ii"><label>Landmark</label><span>${esc(c.landmark)}</span></div>`:''}
+        <div class="ii"><label>Zip Code</label><span>${esc(c.zipCode||'—')}</span></div>
+        <div class="ii"><label>Height</label><span>${c.heightCm?c.heightCm+' cm':'—'}</span></div>
+        <div class="ii"><label>Weight</label><span>${c.weightKg?c.weightKg+' kg':'—'}</span></div>
+        <div class="ii"><label>Rec. Size</label><span>${esc(c.recommendedSize||'—')}</span></div>
+        <div class="ii"><label>Order value</label><span>${peso(orders.filter(o=>o.status!=='Cancelled').reduce((t,o)=>t+(+o.totalAmount||0),0))}</span></div>
+        <div class="ii"><label>Joined</label><span>${fmtDate(c.createdAt,false)}</span></div>
+        <div class="ii"><label>Account</label><span style="color:${c.status==='Disabled'?'#FF4444':'#00E676'};font-weight:700;">${c.status==='Disabled'?'Disabled':'Active'}</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
+        <button class="btn-ghost" id="acct-btn" onclick="setDisabled('${uid}',${c.status==='Disabled'?'false':'true'})">
+          <i class="bi ${c.status==='Disabled'?'bi-unlock':'bi-slash-circle'}"></i> ${c.status==='Disabled'?'Enable this account':'Disable this account'}</button>
+        <span style="font-size:12.5px;color:var(--muted);">${c.status==='Disabled'?'This customer is signed out of the app and can\'t sign back in.':'A disabled customer is signed out of the app and can\'t sign in or order.'}</span>
+      </div>
+      <hr class="divider">
+      <div style="font-weight:700;font-size:14px;margin-bottom:12px;">Order History (${orders.length})</div>
+      ${orders.length===0?'<p style="color:var(--muted);font-size:13px;">No orders yet</p>':orders.map(o=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;margin-bottom:7px;cursor:pointer;" onclick="window.open('order-detail.html?id=${o.id}','_blank')">
+          <div><div style="font-family:monospace;font-size:13px;font-weight:600;">${orderNo(o.id)}</div><div style="font-size:12px;color:var(--muted);">${fmtDate(o.orderedAt,false)}</div></div>
+          <div style="text-align:right;"><div style="font-weight:700;color:var(--orange);">${peso(o.totalAmount)}</div>${statusBadge(o.status)}</div>
+        </div>`).join('')}`;
+  }
+  /** Switches a customer's account off or back on (users/{uid}.status, which the app checks at sign-in and launch). */
+  async function setDisabled(uid, disable){
+    const btn=document.getElementById('acct-btn'); if(btn)btn.disabled=true;
+    try{
+      await db.collection('users').doc(uid).update({status:disable?'Disabled':'Active'});
+      toast(disable?'Account disabled':'Account enabled','ok');
+      const c=all.find(x=>x.id===uid); if(c){c.status=disable?'Disabled':'Active';render();}
+      viewCust(uid);
+    }catch(e){
+      toast('Not changed: '+e.message,'err'); if(btn)btn.disabled=false;
+    }
+  }
+  function closeCust(){document.getElementById('cust-overlay').classList.remove('show');}
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCust();});
+  document.getElementById('cust-overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeCust();});
+</script>
+</body>
+</html>

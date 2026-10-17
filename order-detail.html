@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Detail — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Order <span>Detail</span></div>
+    <div class="topbar-right">
+      <button class="btn-ghost" onclick="window.print()" title="Print a job sheet for the print floor"><i class="bi bi-printer"></i> Print</button>
+      <a href="orders.html" class="btn-ghost"><i class="bi bi-arrow-left"></i> Back to Orders</a>
+    </div>
+  </div>
+  <div class="page-content" id="content"><div class="spinner"></div></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  /** Link that opens the delivery address in Google Maps: the customer's exact pin when the order has one,
+   *  otherwise a search for the written address. */
+  function mapLink(o){
+    const hasPin=typeof o.addressLat==='number'&&typeof o.addressLng==='number';
+    const text=[o.streetAddress,o.barangay,o.city,o.zipCode].filter(Boolean).join(', ');
+    if(!hasPin&&!text)return '—';
+    const q=hasPin?`${o.addressLat},${o.addressLng}`:text;
+    return `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}" target="_blank" rel="noopener" style="color:var(--orange);"><i class="bi bi-geo-alt"></i> ${hasPin?'Open exact pin':'Search address'}</a>`;
+  }
+  const oid = new URLSearchParams(location.search).get('id');
+  if (!oid) location.href = 'orders.html';
+
+  let order = null, chatId = null, adminUid = null, unsubChat = null;
+
+  auth.onAuthStateChanged(async u => {
+    if (!u) return;
+    adminUid = u.uid;
+    await loadOrder();
+  });
+
+  async function loadOrder() {
+    const doc = await db.collection('orders').doc(oid).get();
+    if (!doc.exists) {
+      document.getElementById('content').innerHTML = '<div class="empty"><i class="bi bi-x-circle"></i><p>Order not found</p></div>';
+      return;
+    }
+    order = { id:doc.id, ...doc.data() };
+    document.getElementById('page-title').innerHTML = `Order <span>${orderNo(oid)}</span>`;
+    document.title = `Order ${orderNo(oid)} — KustomoImprenta Admin`;
+    renderDetail();
+    await setupChat();
+  }
+
+  /** Reads the order again and refreshes what a status change touches (badge, picker, stock line, history). */
+  async function refreshStatus() {
+    const doc = await db.collection('orders').doc(oid).get();
+    if (!doc.exists) return;
+    order = { id: doc.id, ...doc.data() };
+    renderStatusParts();
+  }
+  function renderStatusParts() {
+    const o = order, st = o.status || 'Pending';
+    document.getElementById('sts-badge').innerHTML = statusBadge(st);
+    document.getElementById('sts-sel').value = st;
+    document.getElementById('stock-line').textContent = o.stockDeducted
+      ? 'Deducted' + (o.stockDeductedAt ? ' on ' + fmtDate(o.stockDeductedAt) : '')
+      : o.stockRestoredAt ? 'Returned on ' + fmtDate(o.stockRestoredAt) + ' (cancelled)'
+      : st === 'Cancelled' ? 'Not deducted' : 'Deducted once you move the order past Pending';
+    const bal = document.getElementById('bal-line');
+    if (bal) bal.innerHTML = o.balancePaidAt
+      ? `<span style="color:#00E676;"><i class="bi bi-check-circle"></i> Collected ${fmtDate(o.balancePaidAt)}${o.balancePaidBy ? ' by ' + esc(o.balancePaidBy) : ''}</span>
+         <button class="btn-ghost no-print" style="margin-left:8px;padding:3px 9px;font-size:12px;" onclick="markBalance(false)">Undo</button>`
+      : `<span style="color:var(--yellow);">${peso(o.remainingAmount)} still to collect</span>
+         <button class="btn-grad no-print" style="margin-left:8px;padding:4px 11px;font-size:12px;" onclick="markBalance(true)"><i class="bi bi-cash-coin"></i> Mark as collected</button>`;
+    document.getElementById('upd-line').textContent = o.updatedAt ? fmtDate(o.updatedAt) : 'Not yet';
+    const hist = (Array.isArray(o.statusHistory) ? o.statusHistory : []).slice()
+      .sort((a, b) => (a.at && a.at.toMillis ? a.at.toMillis() : 0) - (b.at && b.at.toMillis ? b.at.toMillis() : 0));
+    const steps = [{ status: 'Placed', at: o.orderedAt, by: o.fullName || 'Customer' }].concat(hist);
+    document.getElementById('history').innerHTML = steps.map(h => {
+      const key = String(h.status || '').toLowerCase();
+      return `<li><span class="dot" style="color:var(--s-${key === 'placed' ? 'pending' : esc(key)},var(--muted));"></span>
+        <div><strong>${esc(h.status === 'Ready' ? 'Ready for pickup' : h.status || '')}</strong>
+        <div style="font-size:12px;color:var(--muted);">${h.at ? fmtDate(h.at) : ''}${h.by ? ' · ' + esc(h.by) : ''}</div></div></li>`;
+    }).join('') + (hist.length ? '' : '<li class="note" style="display:block;">Status changes made from now on are listed here.</li>');
+  }
+
+  async function saveNotes() {
+    const btn = document.getElementById('notes-btn'), text = document.getElementById('notes').value.trim();
+    btn.disabled = true;
+    try {
+      await db.collection('orders').doc(oid).update({ adminNotes: text, adminNotesAt: firebase.firestore.FieldValue.serverTimestamp(),
+        adminNotesBy: (auth.currentUser && auth.currentUser.email) || '' });
+      order.adminNotes = text;
+      document.getElementById('notes-state').textContent = 'Saved just now';
+      toast('Notes saved', 'ok');
+    } catch (e) { toast('Not saved: ' + e.message, 'err'); }
+    finally { btn.disabled = false; }
+  }
+
+  const hexOk = h => (typeof h === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(h)) ? h : '';
+
+  /** One side of a customer's design (front, back, a sleeve): its image, text and shapes. */
+  function renderSide(side, v) {
+    const img = safeUrl(v.imageUrl);
+    const shapes = Array.isArray(v.shapes) ? v.shapes : [];
+    if (!img && !v.customText && !shapes.length) return '';
+    const fontColor = hexOk(v.fontColorHex);
+    const names = shapes.map(sh => sh && sh.name).filter(Boolean);
+    return `
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.03);">
+        ${img ? `<a href="${img}" target="_blank" rel="noopener" title="Open the image"><img src="${img}" alt="${esc(side)} image" style="width:64px;height:64px;object-fit:contain;border-radius:6px;background:rgba(255,255,255,.08);"></a>` : ''}
+        <div style="font-size:12.5px;line-height:1.5;">
+          <div style="font-weight:700;">${esc(side)}</div>
+          ${v.customText ? `<div>Text: "${esc(v.customText)}"<span style="color:var(--muted);"> · ${esc(v.fontStyle || 'Normal')}${v.fontSize ? ', size ' + Math.round(v.fontSize) : ''}${fontColor ? ` <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${fontColor};border:1px solid var(--border);vertical-align:middle;"></span> ${fontColor}` : ''}</span></div>` : ''}
+          ${img ? `<div><a href="${img}" target="_blank" rel="noopener" style="color:var(--orange);">Open image</a></div>` : ''}
+          ${shapes.length ? `<div style="color:var(--muted);">${shapes.length} shape${shapes.length > 1 ? 's' : ''}${names.length ? ': ' + esc(names.join(', ')) : ''}</div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  /** An order line: what to make (product, style, colour, size), the customer's design and their notes. */
+  function renderItem(it) {
+    const c = it.customization || {};
+    const color = hexOk(it.colorHex) || hexOk(c.apparelColorHex);
+    const style = shirtStyleLabel(c.shirtStyle);
+    const views = c.views || {};
+    const sides = Object.keys(views).map(k => renderSide(k, views[k] || {})).filter(Boolean);
+    // The app appends Fit Scan measurements to the notes as "[Scanned Measurements - …]"
+    const notes = it.notes || '';
+    const marker = '[Scanned Measurements - ';
+    const at = notes.indexOf(marker);
+    const customerNotes = (at === -1 ? notes : notes.slice(0, at)).trim();
+    const end = at === -1 ? -1 : notes.indexOf(']', at);
+    const measurements = at === -1 ? '' : notes.slice(at + marker.length, end === -1 ? undefined : end).trim();
+    const thumb = safeUrl(it.imageUrl);
+    return `
+      <div class="item-row" style="align-items:flex-start;">
+        <div class="item-ico">${thumb ? `<img src="${thumb}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" onerror="this.replaceWith('👕')">` : '👕'}</div>
+        <div style="flex:1;">
+          <div class="item-name">${esc(it.productName||'Product')}</div>
+          <div class="item-meta">Size: ${esc(it.size||'—')} · Qty: ${it.quantity||1}${style?` · Style: ${esc(style)}`:''}${color?` · Colour: <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${color};border:1px solid var(--border);vertical-align:middle;"></span> ${color}`:''}${it.customText?` · Text: "${esc(it.customText)}"`:''}</div>
+          ${sides.length ? `<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">${sides.join('')}</div>` : ''}
+          ${customerNotes ? `<div style="font-size:12.5px;margin-top:8px;"><span style="color:var(--muted);">Notes:</span> ${esc(customerNotes)}</div>` : ''}
+          ${measurements ? `<div style="font-size:12.5px;margin-top:4px;"><span style="color:var(--muted);">Scanned measurements:</span> ${esc(measurements)}</div>` : ''}
+        </div>
+        <div class="item-price">${peso((it.price||0)*(it.quantity||1))}</div>
+      </div>`;
+  }
+
+  function renderDetail() {
+    const o = order;
+    const items = o.items || [];
+    const isDP  = o.isDownpayment;
+
+    document.getElementById('content').innerHTML = `
+      <div class="detail-grid">
+
+        <!-- LEFT -->
+        <div style="display:flex;flex-direction:column;gap:18px;">
+
+          <div class="print-only" style="margin-bottom:12px;">
+            <div style="font-size:20px;font-weight:800;">Job sheet · ${orderNo(oid)}</div>
+            <div style="font-size:12px;">Printed ${fmtDate(new Date())}</div>
+          </div>
+
+          <!-- Order Info -->
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Order Information</span>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span id="sts-badge">${statusBadge(o.status||'Pending')}</span>
+                <select id="sts-sel" aria-label="Order status" style="background:var(--card-bg);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12.5px;outline:none;" onchange="updateStatus(this.value)">
+                  ${ALL_STATUSES.map(s=>`<option value="${s}"${(o.status||'Pending')===s?' selected':''}>${s==='Ready'?'Ready for pickup':s}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div class="info-grid">
+              <div class="ii"><label>Order No.</label><span style="font-family:monospace;">${orderNo(oid)}</span></div>
+              ${o.payMongoSourceId?`<div class="ii"><label>PayMongo reference</label><span style="font-family:monospace;font-size:12px;word-break:break-all;">${esc(o.payMongoSourceId)}</span></div>`:''}
+              <div class="ii"><label>Ordered On</label><span>${fmtDate(o.orderedAt)}</span></div>
+              <div class="ii"><label>Status last changed</label><span id="upd-line"></span></div>
+              <div class="ii"><label>Stock</label><span id="stock-line"></span></div>
+              <div class="ii"><label>Customer</label><span>${esc(o.fullName||'—')}${o.userId?` · <a class="no-print" href="customers.html?uid=${encodeURIComponent(o.userId)}" style="color:var(--orange);">Profile</a>`:''}</span></div>
+              <div class="ii"><label>Phone</label><span>${esc(o.phone||'—')}</span></div>
+              <div class="ii"><label>Address</label><span>${esc(o.streetAddress||'—')}</span></div>
+              <div class="ii"><label>Barangay</label><span>${esc(o.barangay||'—')}</span></div>
+              <div class="ii"><label>City / Zip</label><span>${esc(o.city||'—')}${o.zipCode?', '+esc(o.zipCode):''}</span></div>
+              ${o.landmark?`<div class="ii"><label>Landmark</label><span>${esc(o.landmark)}</span></div>`:''}
+              <div class="ii"><label>Map</label><span>${mapLink(o)}</span></div>
+              <div class="ii"><label>Payment</label><span><i class="bi ${/cash on delivery|cod/i.test(o.paymentMethod||'')?'bi-cash-coin':'bi-phone'}" style="color:var(--orange);"></i> ${esc(o.paymentMethod||'GCash')}</span></div>
+              <div class="ii"><label>Payment Type</label><span>${isDP?dpPct(o)+'% Downpayment':'Full Payment'}</span></div>
+            </div>
+          </div>
+
+          <!-- Items -->
+          <div class="card">
+            <div class="card-head"><span class="card-title">Order Items (${items.length})</span></div>
+            ${items.map(renderItem).join('')}
+
+            <div class="totals">
+              <div class="tot-row"><span class="lbl">Subtotal</span><span>${peso(o.subtotal)}</span></div>
+              <div class="tot-row"><span class="lbl">Shipping</span><span>${+(o.shippingFee||0)===0?'<span style="color:#00E676;">FREE</span>':peso(o.shippingFee)}</span></div>
+              <div class="tot-row grand"><span class="lbl">Total</span><span class="val">${peso(o.totalAmount)}</span></div>
+              ${isDP?`
+              <div class="tot-row"><span class="lbl" style="color:var(--yellow);">Downpayment (${dpPct(o)}%)</span><span style="color:var(--yellow);">${peso(o.downpaymentAmount)}</span></div>
+              <div class="tot-row"><span class="lbl">Balance on delivery</span><span>${peso(o.remainingAmount)}</span></div>
+              <div class="tot-row"><span class="lbl">Balance</span><span id="bal-line"></span></div>`:''}
+            </div>
+            ${isDP?`<div class="dp-notice"><i class="bi bi-wallet2"></i> ${dpPct(o)}% was paid through GCash. Collect the other ${peso(o.remainingAmount)} on delivery or pickup, then press <strong>Mark as collected</strong>.</div>`:''}
+          </div>
+
+          <!-- Staff notes: only seen on this site -->
+          <div class="card">
+            <div class="card-head"><span class="card-title"><i class="bi bi-journal-text" style="color:var(--orange);"></i> Staff notes</span>
+              <span class="note" id="notes-state">${o.adminNotesAt?'Saved '+fmtDate(o.adminNotesAt)+(o.adminNotesBy?' by '+esc(o.adminNotesBy):''):'Not shown in the app'}</span></div>
+            <div style="padding:0 18px 16px;">
+              <textarea id="notes" class="inp" rows="3" maxlength="2000" placeholder="Print instructions, pickup arrangements, what was agreed in chat… (not shown in the app)" style="width:100%;">${esc(o.adminNotes||'')}</textarea>
+              <button class="btn-ghost no-print" id="notes-btn" style="margin-top:8px;" onclick="saveNotes()"><i class="bi bi-check-lg"></i> Save notes</button>
+            </div>
+          </div>
+
+          <!-- Status history -->
+          <div class="card no-print">
+            <div class="card-head"><span class="card-title"><i class="bi bi-clock-history" style="color:var(--orange);"></i> Status history</span></div>
+            <div style="padding:0 18px 16px;"><ul class="timeline" id="history"></ul></div>
+          </div>
+
+        </div><!-- /left -->
+
+        <!-- RIGHT: Chat -->
+        <div class="card no-print" style="display:flex;flex-direction:column;height:fit-content;">
+          <div class="card-head" style="margin-bottom:12px;">
+            <span class="card-title"><i class="bi bi-chat-dots" style="color:var(--orange);"></i> Order Chat</span>
+            <span style="font-size:11.5px;color:var(--muted);">● Live</span>
+          </div>
+          <div class="chat-wrap" id="chat-wrap"><div class="spinner" style="margin:20px auto;"></div></div>
+          <div class="quick-replies" id="quick-replies"></div>
+          <div class="chat-row">
+            <textarea id="chat-in" placeholder="Type a message… (Enter to send)" rows="1"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
+            <button class="btn-send" onclick="sendMsg()"><i class="bi bi-send-fill"></i></button>
+          </div>
+        </div>
+
+      </div>`;
+    renderStatusParts();
+    renderQuickReplies('quick-replies', 'chat-in');
+  }
+
+  /** Share of the total paid up front, for orders placed with a downpayment. */
+  function dpPct(o) { return o.totalAmount > 0 ? Math.round((o.downpaymentAmount || 0) / o.totalAmount * 100) : 50; }
+
+  async function updateStatus(s) {
+    const q = statusChangeQuestion(orderNo(oid), order.status, s);
+    if (q && !confirm(q)) { document.getElementById('sts-sel').value = order.status || 'Pending'; return; }
+    try {
+      await setOrderStatus(oid, s);
+      toast(`Status changed to "${s === 'Ready' ? 'Ready for pickup' : s}"`, 'ok');
+      if (s === 'Delivered' && order.isDownpayment && !order.balancePaidAt &&
+          confirm(`Was the balance of ${peso(order.remainingAmount)} collected? Press OK to mark it as collected.`)) {
+        await setBalanceCollected(oid, true);
+      }
+    } catch(e) {
+      toast('Update failed: ' + e.message,'err');
+    }
+    await refreshStatus().catch(() => {});
+  }
+
+  async function markBalance(collected) {
+    if (!collected && !confirm('Mark the balance as not collected yet?')) return;
+    try { await setBalanceCollected(oid, collected); toast(collected ? 'Balance marked as collected' : 'Balance marked as not collected', 'ok'); }
+    catch (e) { toast('Not saved: ' + e.message, 'err'); }
+    await refreshStatus().catch(() => {});
+  }
+
+  async function setupChat() {
+    const snap = await db.collection('chats').where('orderId','==',oid).limit(1).get();
+    if (!snap.empty) {
+      chatId = snap.docs[0].id;
+    } else {
+      const ref = await db.collection('chats').add({
+        orderId: oid, userId: order.userId||'',
+        customerName: order.fullName||'',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+        adminReadAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      chatId = ref.id;
+    }
+    subscribeChat();
+  }
+
+  function subscribeChat() {
+    if (unsubChat) unsubChat();
+    unsubChat = db.collection('chats').doc(chatId).collection('messages')
+      .orderBy('sentAt','asc').onSnapshot(snap=>{
+        renderMsgs(snap.docs.map(d=>({id:d.id,...d.data()})));
+      });
+    // Seen while this page shows it: clears the conversation's unread mark on the Messages page
+    db.collection('chats').doc(chatId).onSnapshot(d => { chatDoc = d.data() || {}; if (chatIsUnread(chatDoc)) markChatRead(chatId); });
+  }
+  let chatDoc = null;
+  document.addEventListener('visibilitychange', () => { if (chatDoc && chatIsUnread(chatDoc)) markChatRead(chatId); });
+
+  function renderMsgs(msgs) {
+    const wrap = document.getElementById('chat-wrap');
+    if (!wrap) return;
+    if (!msgs.length) {
+      wrap.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:30px 0;">No messages yet — start the conversation!</div>';
+      return;
+    }
+    wrap.innerHTML = msgs.map(m=>{
+      const isA = m.senderRole==='admin';
+      const t   = m.sentAt ? fmtDate(m.sentAt) : '';
+      if (m.isDesignSubmission) return `
+        <div class="cmsg user-msg">
+          <div class="cavatar">C</div>
+          <div>
+            <div class="design-box">
+              <div style="color:#8B5CF6;font-weight:600;margin-bottom:6px;font-size:12.5px;"><i class="bi bi-image"></i> Design Submission</div>
+              ${safeUrl(m.imageUrl)?`<a href="${safeUrl(m.imageUrl)}" target="_blank" rel="noopener"><img src="${safeUrl(m.imageUrl)}" alt="design"></a>`:''}
+              ${m.messageText?`<p style="font-size:13px;margin:5px 0;">${esc(m.messageText)}</p>`:''}
+              <div style="font-size:12px;color:var(--muted);margin-bottom:5px;">Status: <strong style="color:${m.approvalStatus==='Approved'?'#00E676':m.approvalStatus==='Rejected'?'#FF4444':'var(--yellow)'};">${m.approvalStatus||'Pending Approval'}</strong></div>
+              ${!m.approvalStatus||m.approvalStatus==='Pending Approval'?`
+                <div style="display:flex;gap:7px;margin-top:7px;">
+                  <button class="btn-ok" onclick="handleDesign('${m.id}',true)"><i class="bi bi-check-lg"></i> Approve</button>
+                  <button class="btn-no" onclick="handleDesign('${m.id}',false)"><i class="bi bi-x-lg"></i> Reject</button>
+                </div>`:''}
+            </div>
+            <div class="ctime">${t}</div>
+          </div>
+        </div>`;
+      return `
+        <div class="cmsg ${isA?'admin-msg':'user-msg'}">
+          <div class="cavatar">${isA?'A':'C'}</div>
+          <div>
+            <div class="cbubble">${esc(m.messageText||'')}</div>
+            <div class="ctime">${t}</div>
+          </div>
+        </div>`;
+    }).join('');
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+
+  async function sendMsg() {
+    const inp = document.getElementById('chat-in');
+    const txt = (inp.value||'').trim();
+    if (!txt || !chatId) return;
+    inp.value = '';
+    try {
+      await db.collection('chats').doc(chatId).collection('messages').add({
+        senderId: adminUid, senderRole:'admin',
+        messageText: txt,
+        sentAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await db.collection('chats').doc(chatId).update({lastMessageAt:firebase.firestore.FieldValue.serverTimestamp(),adminReadAt:firebase.firestore.FieldValue.serverTimestamp()});
+    } catch(e) { toast('Send failed','err'); inp.value=txt; }
+  }
+
+  async function handleDesign(msgId, approved) {
+    try { await reviewDesign(chatId, msgId, approved, adminUid); } catch(e) { toast('Action failed: ' + e.message,'err'); }
+  }
+</script>
+</body>
+</html>

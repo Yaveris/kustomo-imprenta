@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KustomoImprenta Admin — Login</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="img/logo.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    body { display:block; }
+    .bg-glow {
+      position:fixed; inset:0; pointer-events:none; z-index:0;
+      background: radial-gradient(ellipse at 15% 15%, rgba(255,92,0,.08) 0%, transparent 55%),
+                  radial-gradient(ellipse at 85% 85%, rgba(255,44,120,.07) 0%, transparent 55%);
+    }
+    .pw-wrap { position:relative; }
+    .pw-wrap input { padding-right:42px; }
+    .pw-toggle { position:absolute; right:11px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--muted); font-size:16px; padding:0; }
+    hr.div { border:none; border-top:1px solid var(--border); margin:20px 0; }
+  </style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div id="toast-box"></div>
+
+  <div class="login-page" style="position:relative;z-index:1;">
+    <div class="login-card">
+
+      <div class="login-logo">
+        <div class="login-brand">KustomoImprenta</div>
+        <span class="login-sub">Admin Panel</span>
+      </div>
+
+      <div class="login-err" id="login-err"></div>
+
+      <form id="login-form" autocomplete="on">
+        <div class="fg">
+          <label>Email Address</label>
+          <input type="email" id="email" placeholder="you@example.com" required autocomplete="email">
+        </div>
+
+        <div class="fg">
+          <label>Password</label>
+          <div class="pw-wrap">
+            <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password">
+            <button type="button" class="pw-toggle" id="pw-eye" title="Toggle visibility">
+              <i class="bi bi-eye" id="pw-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div style="text-align:right;margin:-6px 0 14px;"><a href="#" id="forgot" style="font-size:12.5px;color:var(--orange);">Forgot password?</a></div>
+        <button type="submit" class="btn-login" id="login-btn">
+          <span id="btn-lbl">Sign In</span>
+          <span id="btn-spin" style="display:none;">
+            <i class="bi bi-arrow-repeat" style="display:inline-block;animation:spin .65s linear infinite;"></i>
+          </span>
+        </button>
+      </form>
+
+      <hr class="div">
+
+      <p style="text-align:center;font-size:12.5px;color:var(--muted);">
+        <i class="bi bi-shield-lock-fill" style="color:var(--orange);"></i>&nbsp;
+        Authorized K's Print Express staff only
+      </p>
+
+    </div>
+    <p style="text-align:center;margin-top:18px;font-size:13px;"><a href="index.html" style="color:var(--muted);"><i class="bi bi-arrow-left"></i> Get the KustomoImprenta app</a></p>
+  </div>
+
+  <!-- Firebase SDKs (compat v10) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="js/firebase.js"></script>
+
+  <script>
+    // Redirect if already logged in as admin
+    auth.onAuthStateChanged(async u => {
+      if (!u) return;
+      const snap = await db.collection('users').doc(u.uid).get().catch(() => null);
+      const data = snap?.data() || {};
+      if ((data.role === 'admin' || data.role === 'super_admin') && data.status !== 'Disabled') location.href = 'dashboard.html';
+    });
+    // Password reset by email (Firebase sends the link); the same message either way, so it doesn't reveal accounts
+    document.getElementById('forgot').addEventListener('click', async e => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const errEl = document.getElementById('login-err');
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        errEl.textContent = 'Type your email address above first, then press Forgot password.';
+        errEl.style.display = 'block';
+        document.getElementById('email').focus();
+        return;
+      }
+      try { await auth.sendPasswordResetEmail(email); } catch (err) { if (err.code === 'auth/too-many-requests') { errEl.textContent = 'Too many attempts. Try again later.'; errEl.style.display = 'block'; return; } }
+      errEl.style.display = 'none';
+      toast('If ' + email + ' has an account, a reset link is on its way. Check the inbox and spam folder.', 'ok');
+    });
+
+    // Access denied message
+    const params = new URLSearchParams(location.search);
+    if (params.get('err') === 'access') {
+      const e = document.getElementById('login-err');
+      e.textContent = 'Access denied — admin accounts only.';
+      e.style.display = 'block';
+    }
+    if (params.get('err') === 'idle') {
+      const e = document.getElementById('login-err');
+      e.textContent = 'You were signed out after 30 minutes without activity. Sign in again.';
+      e.style.display = 'block';
+    }
+    if (params.get('err') === 'disabled') {
+      const e = document.getElementById('login-err');
+      e.textContent = 'This account has been disabled. Ask a super admin to enable it.';
+      e.style.display = 'block';
+    }
+
+    // Password toggle
+    document.getElementById('pw-eye').addEventListener('click', () => {
+      const pw  = document.getElementById('password');
+      const ico = document.getElementById('pw-icon');
+      pw.type = pw.type === 'password' ? 'text' : 'password';
+      ico.className = pw.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+    });
+
+    // Login form
+    document.getElementById('login-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errEl    = document.getElementById('login-err');
+      const btn      = document.getElementById('login-btn');
+
+      errEl.style.display = 'none';
+      btn.disabled = true;
+      document.getElementById('btn-lbl').style.display  = 'none';
+      document.getElementById('btn-spin').style.display = 'inline';
+
+      try {
+        const cred = await auth.signInWithEmailAndPassword(email, password);
+        const snap = await db.collection('users').doc(cred.user.uid).get();
+        const role = snap.data()?.role;
+
+        if (role !== 'admin' && role !== 'super_admin') {
+          await auth.signOut();
+          throw { code: 'auth/not-admin' };
+        }
+        if (snap.data()?.status === 'Disabled') {
+          await auth.signOut();
+          throw { code: 'auth/account-disabled' };
+        }
+
+        location.href = 'dashboard.html';
+
+      } catch (err) {
+        const msgs = {
+          'auth/user-not-found':    'Invalid email or password.',
+          'auth/wrong-password':    'Invalid email or password.',
+          'auth/invalid-email':     'Enter a valid email address.',
+          'auth/network-request-failed': 'No internet connection. Check it and try again.',
+          'auth/invalid-credential':'Invalid email or password.',
+          'auth/too-many-requests': 'Too many attempts. Try again later.',
+          'auth/not-admin':         'This account does not have admin access.',
+          'auth/account-disabled':  'This account has been disabled. Ask a super admin to enable it.',
+          'auth/user-disabled':     'This account has been disabled. Ask a super admin to enable it.'
+        };
+        errEl.textContent = msgs[err.code] || 'Login failed. Please try again.';
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        document.getElementById('btn-lbl').style.display  = 'inline';
+        document.getElementById('btn-spin').style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

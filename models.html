@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Models — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <script type="importmap">
+    { "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    } }
+  </script>
+  <style>
+    .mo-intro { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+    .mo-intro strong { color: var(--text); }
+    details.mo-how { margin-top: 10px; }
+    details.mo-how > summary { cursor: pointer; color: var(--orange); font-size: 13px; font-weight: 600; list-style: none; }
+    details.mo-how > summary::-webkit-details-marker { display: none; }
+    .mo-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 14px; }
+    .mo-step { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+    .mo-step b { display: block; color: var(--text); font-size: 13px; margin-bottom: 3px; }
+    .mo-step b span { color: var(--orange); margin-right: 6px; }
+
+    .mo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+    .mo-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: border-color .15s; text-align: left; padding: 0; color: var(--text); font: inherit; }
+    .mo-card:hover, .mo-card:focus-visible { border-color: var(--orange); outline: none; }
+    .mo-card.off { opacity: .55; }
+    .mo-thumb { height: 150px; background: radial-gradient(circle at 50% 45%, rgba(255,92,0,.14), transparent 70%); display: flex; align-items: center; justify-content: center; }
+    .mo-thumb img { max-width: 88%; max-height: 136px; object-fit: contain; }
+    .mo-thumb i { font-size: 44px; color: #444; }
+    .mo-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .mo-name { font-size: 14.5px; font-weight: 700; }
+    .mo-sub { font-size: 12px; color: var(--muted); }
+    .mo-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: auto; padding-top: 6px; }
+    .chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--border); white-space: nowrap; }
+    .chip.ok { color: #00E676; background: rgba(0,230,118,.08); border-color: rgba(0,230,118,.25); }
+    .chip.warn { color: var(--yellow); background: rgba(255,214,0,.08); border-color: rgba(255,214,0,.25); }
+    .chip.bad { color: #FF6B6B; background: rgba(255,68,68,.08); border-color: rgba(255,68,68,.25); }
+    .mo-lens { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+    .mo-lens > i { font-size: 24px; color: var(--orange); }
+    .mo-lens-text { flex: 1; min-width: 220px; }
+    .mo-lens-text .mo-sub { margin-top: 4px; line-height: 1.5; }
+    .mo-lens .fg-check { margin: 0; white-space: nowrap; font-weight: 600; }
+    .mo-add { border-style: dashed; align-items: center; justify-content: center; min-height: 250px; color: var(--muted); gap: 8px; }
+    .mo-add i { font-size: 30px; color: var(--orange); }
+
+    .mo-warn { border-color: rgba(255,214,0,.35); background: rgba(255,214,0,.05); margin-bottom: 16px; }
+    .mo-warn .card-title { color: var(--yellow); }
+    .mo-block { position: relative; margin-top: 10px; }
+    .mo-block pre { background: #121212; border: 1px solid var(--border); border-radius: 9px; padding: 42px 16px 14px; font-family: Consolas, 'Cascadia Mono', Menlo, monospace; font-size: 12.5px; line-height: 1.55; color: #E6E6E6; overflow-x: auto; white-space: pre; }
+    .mo-block .btn-ghost { position: absolute; top: 8px; right: 8px; padding: 4px 10px; font-size: 12px; }
+
+    details.mo-guide > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px; }
+    details.mo-guide > summary::-webkit-details-marker { display: none; }
+    details.mo-guide > summary .bi-chevron-down { margin-left: auto; color: var(--muted); transition: transform .18s; }
+    details.mo-guide[open] > summary .bi-chevron-down { transform: rotate(180deg); }
+    .mo-guide-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 18px; margin-top: 16px; }
+    @media (max-width: 1000px) { .mo-guide-grid { grid-template-columns: minmax(0,1fr); } }
+    .mo-guide h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 8px; }
+    .mo-guide ol, .mo-guide ul { padding-left: 20px; font-size: 13px; line-height: 1.6; }
+    .mo-guide li { margin-bottom: 6px; }
+    .mo-guide li::marker { color: var(--orange); }
+    .mo-guide code, .ed code { font-family: Consolas, 'Cascadia Mono', Menlo, monospace; font-size: 12px; background: rgba(255,255,255,.07); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; }
+    .mo-guide a { color: var(--orange); }
+    .mo-note { font-size: 12.5px; color: var(--muted); line-height: 1.55; border-left: 3px solid var(--yellow); padding: 4px 0 4px 12px; margin-top: 12px; }
+    .mo-note strong { color: var(--text); }
+
+    /* ── Editor ── */
+    .ed-overlay { position: fixed; inset: 0; z-index: 210; background: rgba(0,0,0,.72); backdrop-filter: blur(4px); display: none; }
+    .ed-overlay.show { display: block; }
+    .ed { position: absolute; inset: 18px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; }
+    .ed-hd { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+    .ed-hd h3 { font-size: 16px; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ed-main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(340px, 1fr); }
+    @media (max-width: 1000px) { .ed { inset: 0; border-radius: 0; } .ed-main { grid-template-columns: minmax(0,1fr); overflow-y: auto; } .ed-view { min-height: 360px; } }
+    .ed-view { position: relative; background: #101010; border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
+    .ed-view canvas { flex: 1; width: 100%; min-height: 0; display: block; touch-action: none; }
+    .ed-viewbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    .ed-viewbar .filter-bar { margin: 0; }
+    .ed-empty { position: absolute; inset: 52px 0 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--muted); text-align: center; padding: 20px; pointer-events: none; }
+    .ed-empty i { font-size: 46px; color: #3a3a3a; }
+    .ed-hint { position: absolute; left: 0; bottom: 0; right: 0; padding: 18px 14px 10px; font-size: 12px; color: #aaa; pointer-events: none; background: linear-gradient(transparent, rgba(16,16,16,.92)); }
+    .ed-side { overflow-y: auto; padding: 4px 20px 24px; }
+    .ed-sec { border-bottom: 1px solid var(--border); padding: 16px 0; }
+    .ed-sec:last-child { border-bottom: none; }
+    .ed-sec h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    .ed-sec h4 .num { width: 20px; height: 20px; border-radius: 50%; background: rgba(255,92,0,.15); color: var(--orange); font-size: 11px; display: inline-flex; align-items: center; justify-content: center; }
+    .ed-sec > p { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+    .ed .fg { margin-bottom: 12px; }
+    .ed .fg .hint { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.45; text-transform: none; letter-spacing: 0; font-weight: 400; }
+    .drop { border: 1.5px dashed var(--border); border-radius: 10px; padding: 16px; text-align: center; font-size: 13px; color: var(--muted); cursor: pointer; transition: border-color .15s, background .15s; }
+    .drop:hover, .drop.over { border-color: var(--orange); background: rgba(255,92,0,.05); }
+    .drop i { font-size: 22px; color: var(--orange); display: block; margin-bottom: 4px; }
+    .checks { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-top: 10px; font-size: 12.5px; }
+    .checks li { display: flex; gap: 8px; line-height: 1.45; }
+    .checks li i { flex-shrink: 0; margin-top: 1px; }
+    .checks .ok i { color: #00E676; } .checks .warn i { color: var(--yellow); } .checks .bad i { color: #FF6B6B; } .checks .info i { color: var(--muted); }
+    .art-tabs { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+    .art-box { position: relative; background: repeating-conic-gradient(#1b1b1b 0% 25%, #222 0% 50%) 50% / 18px 18px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; user-select: none; touch-action: none; }
+    .art-box img { display: block; width: 100%; height: 100%; object-fit: fill; pointer-events: none; }
+    .zone { position: absolute; border: 2px dashed var(--orange); background: rgba(255,92,0,.12); cursor: move; }
+    .zone .h { position: absolute; width: 14px; height: 14px; background: #fff; border: 3px solid var(--orange); border-radius: 50%; }
+    .zone .h.nw { left: -8px; top: -8px; cursor: nwse-resize; } .zone .h.ne { right: -8px; top: -8px; cursor: nesw-resize; }
+    .zone .h.sw { left: -8px; bottom: -8px; cursor: nesw-resize; } .zone .h.se { right: -8px; bottom: -8px; cursor: nwse-resize; }
+    .zone span { position: absolute; left: 6px; top: 4px; font-size: 11px; font-weight: 700; color: var(--orange); pointer-events: none; }
+    .art-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .sl { display: grid; grid-template-columns: 82px minmax(0,1fr) 64px; gap: 10px; align-items: center; margin-bottom: 8px; font-size: 12.5px; }
+    .sl input[type=range] { width: 100%; accent-color: var(--orange); }
+    .sl input[type=number] { width: 100%; padding: 5px 6px; border-radius: 6px; background: rgba(255,255,255,.04); border: 1px solid var(--border); color: var(--text); font-size: 12.5px; }
+    .ed-ft { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--border); }
+    .ed-ft .status { flex: 1; font-size: 12.5px; color: var(--muted); min-width: 0; }
+    .ed .readonly-note { font-size: 12.5px; color: var(--muted); background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">3D <span>Models</span></div>
+    <div class="topbar-right">
+      <button class="btn-grad" onclick="openEditor()"><i class="bi bi-plus-lg"></i> Add model</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="card mo-warn" id="mo-rule" hidden>
+      <div class="card-head" style="margin-bottom:8px;"><span class="card-title"><i class="bi bi-exclamation-triangle"></i> One-time Firestore setup</span></div>
+      <p class="mo-intro" style="color:var(--text);">
+        Firestore isn't letting this page read or save models yet. Until it does, the app shows only the five built-in shirts.
+        Open the <a id="mo-rules-link" href="#" target="_blank" rel="noopener" style="color:var(--orange);">Firestore rules</a>, paste this inside
+        <code>match /databases/{database}/documents { … }</code>, press Publish, then reload this page.
+      </p>
+      <div class="mo-block">
+        <button class="btn-ghost" type="button" onclick="copyText('mo-rule-text', this)"><i class="bi bi-clipboard"></i> Copy</button>
+<pre id="mo-rule-text">    // Models & Try-On page: app users read, shop staff change
+    match /models/{id} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &amp;&amp; get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data.role in ['admin', 'super_admin'];
+    }</pre>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <p class="mo-intro">
+        The items customers can design and try on in the app. The five shirts are built in.
+        To sell something else, like a cap or a tote, add its 3D model here, then add a product for it on <a href="products.html" style="color:var(--orange);">Products</a>.
+      </p>
+      <details class="mo-how">
+        <summary><i class="bi bi-question-circle"></i> How do I add a model?</summary>
+        <div class="mo-steps">
+          <div class="mo-step"><b><span>1</span>Upload a .glb</b>The 3D file of the item. The page checks it and builds the designer's front and back pictures from it.</div>
+          <div class="mo-step"><b><span>2</span>Mark the print area</b>Found automatically when the model has a part named <code>PrintFront</code>; otherwise drag the box.</div>
+          <div class="mo-step"><b><span>3</span>Fit it for try-on</b>Choose where it's worn and line it up on the mannequin. Then check it in the app's Try On.</div>
+          <div class="mo-step"><b><span>4</span>Sell it</b>On <a href="products.html" style="color:var(--orange);">Products</a>, add a product and pick this model. Presets for it are made in the <a href="design.html" style="color:var(--orange);">Design Studio</a>.</div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card mo-lens" id="mo-lens" hidden>
+      <i class="bi bi-camera-reels"></i>
+      <div class="mo-lens-text">
+        <div class="mo-name">Try-on for added models <span class="chip" id="mo-lens-chip">Off</span></div>
+        <p class="mo-sub" id="mo-lens-sub"></p>
+      </div>
+      <label class="fg-check"><input type="checkbox" id="mo-lens-on"> Turned on</label>
+    </div>
+
+    <div class="mo-grid" id="mo-grid"><div class="card"><div class="spinner"></div></div></div>
+
+    <details class="card mo-guide" id="guide" style="margin-top:16px;">
+      <summary><span class="card-title"><i class="bi bi-journal-text" style="color:var(--orange);margin-right:6px;"></i>Preparing a model, and when Lens Studio is needed</span><i class="bi bi-chevron-down"></i></summary>
+      <div class="mo-guide-grid">
+        <div>
+          <h4>The .glb file</h4>
+          <ol>
+            <li>Make or buy the item in Blender (or any 3D tool) and export it as <strong>glTF Binary (.glb)</strong>.</li>
+            <li><strong>Size in metres</strong>, <strong>Y up</strong>, and the <strong>front facing +Z</strong> (Blender's glTF export does this when the front faces −Y in Blender).</li>
+            <li>Put the <strong>origin where it meets the body</strong>: the centre of a cap's band, the bridge of a pair of glasses, the middle of a strap.</li>
+            <li>For prints, make the printable surface a <strong>separate part named <code>PrintFront</code></strong> (and <code>PrintBack</code> if the back is printable), lifted about 1 mm off the surface and
+              UV-mapped from the front so it fills the 0–1 square. The app and the try-on put the customer's design on exactly that part.</li>
+            <li>If customers choose a colour, make the main material <strong>white or light grey</strong>: the colour is multiplied over it.</li>
+            <li>Keep it light: under <strong>60,000 triangles</strong>, textures up to 2048 px, the file under <strong>8 MB</strong> (the app and try-on download it).</li>
+          </ol>
+          <p class="mo-note">A sample with the right setup is in the project at <code>lens-studio/models/SampleCap.glb</code>. Upload it here to see the whole flow.</p>
+        </div>
+        <div>
+          <h4>What works without Lens Studio</h4>
+          <ul>
+            <li><strong>Rigid items</strong> (caps, hats, glasses, necklaces, bags, watches): uploaded here, they work in the app's 3D view and designer straight away. The try-on Lens downloads the model and attaches it to the head or body.</li>
+            <li>They follow the head or body as one piece; they don't bend.</li>
+            <li>The try-on part needs the Lens published <strong>once</strong> with the script that downloads models (<code>lens-studio/FitFusionShirts</code>). After that, turn on <strong>Try-on for added models</strong> above; until then the app hides AR Try-On for them.</li>
+          </ul>
+          <h4 style="margin-top:14px;">What needs Lens Studio</h4>
+          <ul>
+            <li><strong>Fitted clothes that bend with the body</strong>, like the five shirts. A new shirt or jacket can still be added here (3D preview, designer and a rigid try-on), but for it to wrap around the wearer it must be added to the Lens:</li>
+          </ul>
+          <ol>
+            <li>Open <code>lens-studio/FitFusionShirts/FitFusionShirts.esproj</code> in Lens Studio.</li>
+            <li>Import the garment as an <strong>External Mesh</strong> on a Body Mesh (copy the setup of one of the objects under <strong>Shirts</strong>): one object with <strong>Shirt</strong>, <strong>Print Front</strong> and <strong>Print Back</strong> children.</li>
+            <li>Give the object a name with no spaces (for example <code>DenimJacket</code>) and put it under <strong>Shirts</strong>.</li>
+            <li>Publish the Lens and add it to the Camera Kit Lens group (see <a href="keys.html">App Keys</a>).</li>
+            <li>Here, open the model and type that name in <strong>Built into the Lens as</strong>. The app then asks the Lens for that object instead of the downloaded one.</li>
+          </ol>
+        </div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- ── Editor ── -->
+<div class="ed-overlay" id="ed-overlay" role="dialog" aria-modal="true" aria-labelledby="ed-title">
+  <div class="ed">
+    <div class="ed-hd">
+      <h3 id="ed-title">Add model</h3>
+      <span class="chip" id="ed-kind-chip" hidden></span>
+      <button class="modal-x" onclick="closeEditor()" aria-label="Close">&times;</button>
+    </div>
+    <div class="ed-main">
+      <div class="ed-view">
+        <div class="ed-viewbar">
+          <div class="filter-bar" id="ed-modes">
+            <button class="f-tab active" data-mode="model">3D model</button>
+            <button class="f-tab" data-mode="fit">Try-on fit</button>
+          </div>
+          <span style="font-size:12px;color:var(--muted);" id="ed-viewinfo"></span>
+        </div>
+        <canvas id="ed-canvas"></canvas>
+        <div class="ed-empty" id="ed-empty"><i class="bi bi-badge-3d"></i><div>Upload a .glb to see the model here.</div></div>
+        <div class="ed-hint" id="ed-hint">Drag to turn · scroll to zoom</div>
+      </div>
+
+      <div class="ed-side">
+        <div class="readonly-note" id="ed-builtin-note" hidden style="margin-top:14px;">
+          This is one of the five built-in shirts. Its 3D model, pictures and try-on are built into the app and the Lens, so only its name,
+          description, order, visibility and fabric finish change here.
+        </div>
+
+        <!-- 1. Details -->
+        <div class="ed-sec">
+          <h4><span class="num">1</span>Details</h4>
+          <div class="fg"><label for="f-label">Name *</label><input type="text" id="f-label" maxlength="40" placeholder="e.g. Classic Cap"></div>
+          <div class="fg"><label for="f-blurb">Short description</label><input type="text" id="f-blurb" maxlength="60" placeholder="e.g. Curved brim, adjustable strap"></div>
+          <div class="fg-row">
+            <div class="fg"><label for="f-kind">Type</label><select id="f-kind"></select></div>
+            <div class="fg"><label for="f-order">Order in the shop</label><input type="number" id="f-order" min="0" step="1"></div>
+          </div>
+          <label class="fg-check"><input type="checkbox" id="f-enabled" checked> Show in the app's “Shop by Style”</label>
+        </div>
+
+        <!-- 2. 3D model -->
+        <div class="ed-sec" id="sec-glb">
+          <h4><span class="num">2</span>3D model</h4>
+          <p>A .glb file. It's checked here and only uploaded when you press Save.</p>
+          <div class="drop" id="glb-drop" tabindex="0" role="button" aria-label="Choose a .glb file">
+            <i class="bi bi-cloud-arrow-up"></i><span id="glb-drop-text">Drop a .glb here or click to choose</span>
+          </div>
+          <input type="file" id="glb-file" accept=".glb,model/gltf-binary" hidden>
+          <ul class="checks" id="glb-checks"></ul>
+        </div>
+
+        <!-- 3. Designer pictures -->
+        <div class="ed-sec" id="sec-art">
+          <h4><span class="num">3</span>Designer pictures and print area</h4>
+          <p>What customers design on in the app's 2D view. The orange box is where their design goes.</p>
+          <div class="art-tabs">
+            <div class="filter-bar" style="margin:0;" id="art-sides">
+              <button class="f-tab active" data-side="front">Front</button>
+              <button class="f-tab" data-side="back">Back</button>
+            </div>
+            <label class="fg-check" style="font-size:12.5px;"><input type="checkbox" id="f-hasback"> The back can be printed too</label>
+          </div>
+          <div id="art-area"></div>
+          <div class="art-actions">
+            <button class="btn-ghost" type="button" id="btn-capture" onclick="captureSides(true)"><i class="bi bi-camera"></i> Make from the 3D model</button>
+            <button class="btn-ghost" type="button" onclick="document.getElementById('art-file').click()"><i class="bi bi-image"></i> Use my own picture</button>
+            <button class="btn-ghost" type="button" id="btn-zone-auto" onclick="autoZone()"><i class="bi bi-magic"></i> Find print area</button>
+          </div>
+          <input type="file" id="art-file" accept="image/png,image/webp,image/jpeg" hidden>
+          <div class="hint" style="font-size:12px;color:var(--muted);margin-top:8px;" id="art-hint"></div>
+        </div>
+
+        <!-- 4. Try-on fit -->
+        <div class="ed-sec" id="sec-fit">
+          <h4><span class="num">4</span>Try-on fit</h4>
+          <p>Where the AR try-on puts the model. Line it up on the mannequin (switch the view to <strong>Try-on fit</strong>), then check it on a real person in the app.</p>
+          <div class="fg"><label for="f-wornon">Worn on</label><select id="f-wornon"></select></div>
+          <div id="fit-sliders"></div>
+          <label class="fg-check" style="margin-top:6px;"><input type="checkbox" id="f-tint" checked> Customers can pick its colour</label>
+        </div>
+
+        <div class="ed-sec" id="sec-finish">
+          <h4><span class="num" id="finish-num">5</span>Finish</h4>
+          <div class="sl"><span>Shine</span><input type="range" id="f-rough" min="0" max="1" step="0.05"><span id="f-rough-v" style="color:var(--muted);"></span></div>
+          <div class="hint" style="font-size:12px;color:var(--muted);">Matte cotton is about 0.9; leather or plastic 0.4–0.6. Used by the try-on.</div>
+          <div class="fg" style="margin-top:12px;"><label for="f-pscale">Size in the app's 3D preview</label>
+            <div class="sl" style="margin:0;"><span>Scale</span><input type="range" id="f-pscale" min="0.3" max="2" step="0.05"><span id="f-pscale-v" style="color:var(--muted);"></span></div>
+          </div>
+        </div>
+
+        <!-- 6. Advanced -->
+        <div class="ed-sec" id="sec-adv">
+          <h4><span class="num">6</span>Advanced</h4>
+          <div class="fg"><label for="f-lensobj">Built into the Lens as</label><input type="text" id="f-lensobj" maxlength="40" placeholder="Leave empty (the Lens downloads the .glb)">
+            <div class="hint">Only for fitted clothes added to the Lens in Lens Studio (see the guide below the models). The name of its object under <strong>Shirts</strong>.</div>
+          </div>
+          <div id="ed-usage" style="font-size:12.5px;color:var(--muted);"></div>
+          <button class="btn-ghost" type="button" id="btn-delete" style="margin-top:12px;color:#FF6B6B;" onclick="deleteModel()"><i class="bi bi-trash3"></i> Delete this model</button>
+        </div>
+      </div>
+    </div>
+    <div class="ed-ft">
+      <div class="status" id="ed-status" role="status"></div>
+      <button class="btn-ghost" onclick="closeEditor()">Cancel</button>
+      <button class="btn-grad" id="ed-save" onclick="saveModel()"><i class="bi bi-check-lg"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script type="module">
+  import * as THREE from 'three';
+  import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+  import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+  const $ = id => document.getElementById(id);
+  const MAX_GLB = 10 * 1024 * 1024, WARN_GLB = 8 * 1024 * 1024, WARN_TRIS = 60000;
+  const CAPTURE_PX = 1024;
+
+  let models = [], products = [], denied = false;
+  let ed = null;          // the model being edited (see openEditor)
+
+  // ─────────────────────────────── Catalog grid ───────────────────────────────
+  async function init() {
+    $('mo-rules-link').href = `https://console.firebase.google.com/project/${firebaseConfig.projectId}/firestore/rules`;
+    try {
+      const snap = await db.collection('products').get();
+      products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) { products = []; }
+    await reload();
+    const want = new URLSearchParams(location.search).get('model');
+    if (want && models.find(m => m.id === want)) openEditor(want);
+  }
+
+  async function reload() {
+    models = await loadModels(true);
+    denied = modelsError() === 'permission-denied';
+    $('mo-rule').hidden = !denied;
+    if (modelsError() && !denied) toast("Couldn't load the models: " + modelsError(), 'err');
+    renderLens();
+    renderGrid();
+  }
+
+  /** The switch that tells the app the published try-on Lens can download added models. */
+  function renderLens() {
+    const on = !!tryOnSettings().lensSupportsModels;
+    $('mo-lens').hidden = denied;
+    $('mo-lens-on').checked = on;
+    $('mo-lens-chip').textContent = on ? 'On' : 'Off';
+    $('mo-lens-chip').className = 'chip ' + (on ? 'ok' : 'warn');
+    $('mo-lens-sub').innerHTML = on
+      ? 'The app offers AR Try-On for models added here; the try-on Lens downloads them. Turn this off if the Lens in your Lens group is an older version.'
+      : 'Turn on once the try-on Lens has been published with the script that downloads models (see the guide below). Until then the app hides AR Try-On for models added here. The shirts, and models built into the Lens, always work.';
+  }
+  $('mo-lens-on').addEventListener('change', async e => {
+    const on = e.target.checked;
+    try {
+      await db.collection('models').doc('_tryOn').set({
+        lensSupportsModels: on,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedBy: (auth.currentUser && auth.currentUser.email) || ''
+      }, { merge: true });
+      tryOnSettings().lensSupportsModels = on;
+      renderLens();
+      toast(on ? 'Try-on is on for added models.' : 'Try-on is off for added models.', 'ok');
+    } catch (err) {
+      e.target.checked = !on;
+      toast((err && err.code === 'permission-denied') ? 'Firestore refused the change. Add the rule shown at the top of the page.' : 'Not saved: ' + err.message, 'err');
+    }
+  });
+
+  function usedBy(id) { return products.filter(p => { const m = productModel(p, models); return m && m.id === id; }); }
+
+  function renderGrid() {
+    const card = m => {
+      const used = usedBy(m.id).length;
+      const chips = [];
+      chips.push(m.builtIn ? '<span class="chip">Built in</span>' : `<span class="chip">${esc(kindLabel(m.kind).split(' (')[0])}</span>`);
+      if (!m.builtIn) {
+        chips.push(m.modelFile && (m.modelFile.printFront) ? '<span class="chip ok">3D print</span>' : '<span class="chip warn">2D print only</span>');
+        chips.push(m.lensObjectName ? '<span class="chip ok">In the Lens</span>' : `<span class="chip">Try-on: ${esc(wornLabel(m.wornOn))}</span>`);
+      }
+      chips.push(used ? `<span class="chip ok">${used} product${used === 1 ? '' : 's'}</span>` : '<span class="chip warn">No product yet</span>');
+      if (!m.enabled) chips.push('<span class="chip">Hidden</span>');
+      return `<button class="mo-card${m.enabled ? '' : ' off'}" onclick="openEditor('${esc(m.id)}')" aria-label="Edit ${esc(m.label)}">
+        <div class="mo-thumb">${m.thumbUrl ? `<img src="${esc(m.thumbUrl)}" alt="" loading="lazy">` : '<i class="bi bi-badge-3d"></i>'}</div>
+        <div class="mo-body"><div class="mo-name">${esc(m.label)}</div><div class="mo-sub">${esc(m.blurb || '—')}</div><div class="mo-chips">${chips.join('')}</div></div>
+      </button>`;
+    };
+    $('mo-grid').innerHTML = models.map(card).join('') +
+      `<button class="mo-card mo-add" onclick="openEditor()"><i class="bi bi-plus-circle"></i><span>Add a model</span><span class="mo-sub">Cap, hat, glasses, bag…</span></button>`;
+  }
+
+  const kindLabel = id => (MODEL_KINDS.find(k => k.id === id) || MODEL_KINDS[MODEL_KINDS.length - 1]).label;
+  const wornLabel = id => id === 'body' ? 'Body' : ((WORN_ON.find(w => w.id === id) || {}).label || id).split(' (')[0];
+
+  // ─────────────────────────────── 3D view (three.js) ───────────────────────────────
+  const canvas = $('ed-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  const scene = new THREE.Scene();
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.4); sun.position.set(1, 2, 3); scene.add(sun);
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 2000);
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+
+  const modelRoot = new THREE.Group();      // the model as authored (metres), for the "3D model" view
+  const fitRoot = new THREE.Group();        // mannequin + model placed for try-on (centimetres)
+  scene.add(modelRoot, fitRoot);
+  let gltfScene = null;                      // the loaded model
+  let mode = 'model';
+
+  /** A rough mannequin in centimetres, standing on y = 0, facing +Z (towards the viewer), like the try-on's body. */
+  const ANCHORS = { head: [0, 165, 0], neck: [0, 150, 0], chest: [0, 132, 0], hips: [0, 100, 0], leftWrist: [25, 90, 0], rightWrist: [-25, 90, 0], body: [0, 125, 0] };
+  const mannequin = (() => {
+    const g = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 0.8, transparent: true, opacity: 0.55, depthWrite: false });
+    const add = (geo, x, y, z, sx = 1, sy = 1, sz = 1) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); g.add(m); return m; };
+    add(new THREE.SphereGeometry(1, 32, 24), 0, 165, 0, 7.5, 11.5, 9.5);                 // head
+    add(new THREE.SphereGeometry(1, 16, 12), 0, 164, 9.2, 1.2, 1.6, 1.4);                // nose, to show which way is front
+    add(new THREE.CylinderGeometry(5.5, 6, 12, 20), 0, 150, 0);                          // neck
+    add(new THREE.CapsuleGeometry(11, 26, 8, 20), 0, 124, 0, 1.6, 1, 1);                // torso
+    add(new THREE.CapsuleGeometry(4, 26, 6, 12), 21, 120, 0); add(new THREE.CapsuleGeometry(4, 26, 6, 12), -21, 120, 0);  // arms
+    add(new THREE.CapsuleGeometry(6, 70, 6, 12), 9, 55, 0); add(new THREE.CapsuleGeometry(6, 70, 6, 12), -9, 55, 0);      // legs
+    return g;
+  })();
+  fitRoot.add(mannequin);
+  const fitHolder = new THREE.Group();       // at the anchor
+  const fitModel = new THREE.Group();        // offset / rotation / scale from the sliders
+  fitHolder.add(fitModel); fitRoot.add(fitHolder);
+
+  function resize() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    if (canvas.width !== Math.round(w * renderer.getPixelRatio()) || canvas.height !== Math.round(h * renderer.getPixelRatio())) {
+      renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    }
+  }
+  (function loop() { requestAnimationFrame(loop); if (!$('ed-overlay').classList.contains('show')) return; resize(); controls.update(); renderer.render(scene, camera); })();
+
+  const isPrintNode = (name, side) => { const n = String(name || '').toLowerCase().replace(/[^a-z0-9]/g, ''); return n.includes('print' + side) || n.includes(side + 'print'); };
+  function printNodes(root, side) { const out = []; root.traverse(o => { if (o.isMesh && (isPrintNode(o.name, side) || (o.parent && isPrintNode(o.parent.name, side)))) out.push(o); }); return out; }
+
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll('#ed-modes .f-tab').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+    modelRoot.visible = m === 'model'; fitRoot.visible = m === 'fit';
+    frameView();
+  }
+  function frameView() {
+    if (mode === 'fit') {
+      const a = ANCHORS[ed && ed.wornOn] || ANCHORS.head;
+      const near = ['head', 'neck', 'leftWrist', 'rightWrist'].includes(ed && ed.wornOn);
+      controls.target.set(a[0], a[1], a[2]);
+      camera.position.set(a[0] + (near ? 38 : 60), a[1] + (near ? 14 : 20), a[2] + (near ? 80 : 120));
+      camera.near = 1; camera.far = 2000; camera.updateProjectionMatrix();
+      $('ed-hint').textContent = 'The grey mannequin stands in for the wearer. Drag to turn · scroll to zoom';
+    } else {
+      const box = gltfScene ? new THREE.Box3().setFromObject(modelRoot) : new THREE.Box3(new THREE.Vector3(-.2, -.2, -.2), new THREE.Vector3(.2, .2, .2));
+      const c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3()).length() || 1;
+      controls.target.copy(c);
+      camera.near = size / 100; camera.far = size * 100; camera.updateProjectionMatrix();
+      camera.position.set(c.x + size * 0.55, c.y + size * 0.25, c.z + size * 1.1);
+      $('ed-hint').textContent = 'Drag to turn · scroll to zoom';
+    }
+    controls.update();
+  }
+  document.querySelectorAll('#ed-modes .f-tab').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+  function clearModel() {
+    [modelRoot, fitModel].forEach(g => { while (g.children.length) g.remove(g.children[0]); });
+    gltfScene = null;
+  }
+  function showModel(sceneObj) {
+    clearModel();
+    gltfScene = sceneObj;
+    modelRoot.add(sceneObj);
+    const copy = sceneObj.clone(true); copy.scale.setScalar(100);   // metres → centimetres, as the Lens does
+    fitModel.add(copy);
+    // The print parts show in orange here, so it's clear where designs go
+    const printMat = new THREE.MeshStandardMaterial({ color: 0xFF5C00, transparent: true, opacity: 0.55, roughness: 0.9, depthWrite: false });
+    [sceneObj, copy].forEach(root => printNodes(root, 'front').concat(printNodes(root, 'back')).forEach(m => { m.material = printMat; }));
+    $('ed-empty').hidden = true;
+    applyFit(); setTint(); frameView();
+  }
+
+  /** Loads a .glb from an ArrayBuffer (a picked file) or a URL (a saved model). */
+  function loadGlb(source) {
+    return new Promise((resolve, reject) => {
+      const loader = new GLTFLoader();
+      loader.setCrossOrigin('anonymous');
+      const done = g => resolve(g.scene), fail = e => reject(e && e.message ? e : new Error(String(e)));
+      if (typeof source === 'string') loader.load(source, done, undefined, fail); else loader.parse(source, '', done, fail);
+    });
+  }
+
+  /** Places the try-on copy at the anchor with the slider values (same order as the Lens: scale, rotate, move). */
+  function applyFit() {
+    if (!ed) return;
+    const a = ANCHORS[ed.wornOn] || ANCHORS.head, f = ed.ar;
+    fitHolder.position.set(a[0], a[1], a[2]);
+    fitModel.position.set(f.x, f.y, f.z);
+    fitModel.rotation.set(THREE.MathUtils.degToRad(f.rotX), THREE.MathUtils.degToRad(f.rotY), THREE.MathUtils.degToRad(f.rotZ));
+    fitModel.scale.setScalar(f.scale);
+  }
+
+  /** Shows the customer's colour choice the way the app does it (multiplied over the model's own colour). */
+  function setTint() {
+    [modelRoot, fitModel].forEach(root => root.traverse(o => {
+      if (!o.isMesh || isPrintNode(o.name, 'front') || isPrintNode(o.name, 'back')) return;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      mats.forEach(m => { if (m && m.color) { if (!m.userData.c0) m.userData.c0 = m.color.clone(); m.color.copy(m.userData.c0); } });
+    }));
+  }
+
+  // ─────────────────────────────── Checking a .glb ───────────────────────────────
+  /** Reads the glTF JSON inside a .glb: names, triangle count, textures. Throws a readable error when it isn't one. */
+  function inspectGlb(buf) {
+    const dv = new DataView(buf);
+    if (buf.byteLength < 20 || dv.getUint32(0, true) !== 0x46546C67) throw new Error('This is not a .glb file (glTF Binary).');
+    if (dv.getUint32(4, true) !== 2) throw new Error('This .glb is glTF version ' + dv.getUint32(4, true) + '; version 2 is needed.');
+    const jsonLen = dv.getUint32(12, true);
+    const json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, jsonLen)));
+    const acc = json.accessors || [];
+    let tris = 0;
+    (json.meshes || []).forEach(m => (m.primitives || []).forEach(p => {
+      if (p.mode !== undefined && p.mode !== 4) return;
+      const n = p.indices !== undefined ? (acc[p.indices] || {}).count : (acc[(p.attributes || {}).POSITION] || {}).count;
+      tris += Math.floor((n || 0) / 3);
+    }));
+    const names = (json.nodes || []).map(n => n.name || '').concat((json.meshes || []).map(m => m.name || ''));
+    const maxTex = (json.images || []).length;
+    return {
+      triangles: tris, nodes: (json.nodes || []).length, textures: maxTex,
+      printFront: names.some(n => isPrintNode(n, 'front')), printBack: names.some(n => isPrintNode(n, 'back')),
+      skinned: (json.skins || []).length > 0, animations: (json.animations || []).length
+    };
+  }
+
+  function renderChecks() {
+    const out = [], li = (cls, icon, text) => out.push(`<li class="${cls}"><i class="bi ${icon}"></i><span>${text}</span></li>`);
+    const f = ed.modelFile;
+    if (!f) { $('glb-checks').innerHTML = ed.builtIn ? '' : '<li class="info"><i class="bi bi-info-circle"></i><span>No file yet.</span></li>'; return; }
+    const mb = (f.bytes / 1048576).toFixed(1) + ' MB';
+    li(f.bytes > WARN_GLB ? 'warn' : 'ok', f.bytes > WARN_GLB ? 'bi-exclamation-triangle' : 'bi-check-circle',
+      `${esc(f.name || 'model.glb')}, ${mb}` + (f.bytes > WARN_GLB ? ': large; customers download it before the 3D view and try-on open.' : ''));
+    li(f.triangles > WARN_TRIS ? 'warn' : 'ok', f.triangles > WARN_TRIS ? 'bi-exclamation-triangle' : 'bi-check-circle',
+      `${f.triangles.toLocaleString()} triangles` + (f.triangles > WARN_TRIS ? ': over 60,000 can slow the try-on on cheaper phones.' : ''));
+    if (f.size) {
+      const big = Math.max(...f.size);
+      const sz = f.size.map(n => (n * 100).toFixed(1)).join(' × ') + ' cm';
+      if (big > 3) li('bad', 'bi-x-circle', `${sz}: far too big. The file is probably in centimetres; export it in metres.`);
+      else if (big < 0.02) li('bad', 'bi-x-circle', `${sz}: far too small. The file is probably in millimetres or scaled down; export it in metres.`);
+      else li('ok', 'bi-check-circle', `Size ${sz}`);
+    }
+    li(f.printFront ? 'ok' : 'warn', f.printFront ? 'bi-check-circle' : 'bi-exclamation-triangle', f.printFront
+      ? 'Has a <code>PrintFront</code> part: designs show on the 3D model and in the try-on.'
+      : 'No <code>PrintFront</code> part: designs show in the 2D designer only, not on the 3D model or in the try-on.');
+    if (f.printBack) li('ok', 'bi-check-circle', 'Has a <code>PrintBack</code> part.');
+    if (f.skinned) li('info', 'bi-info-circle', 'It has a skeleton; the try-on moves it as one piece (see the guide for fitted clothes).');
+    $('glb-checks').innerHTML = out.join('');
+  }
+
+  async function takeGlb(file) {
+    if (!file) return;
+    if (!/\.glb$/i.test(file.name)) { toast('Choose a .glb file (glTF Binary). Export it from Blender with File → Export → glTF 2.0, format "glTF Binary".', 'warn'); return; }
+    if (file.size > MAX_GLB) { toast('That file is ' + (file.size / 1048576).toFixed(1) + ' MB. The limit is 10 MB; reduce the triangles or texture sizes.', 'err'); return; }
+    status('Reading ' + file.name + '…');
+    try {
+      const buf = await file.arrayBuffer();
+      const info = inspectGlb(buf);
+      const obj = await loadGlb(buf);
+      const size = new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3());
+      ed.glbFile = file;
+      ed.modelFile = Object.assign({ name: file.name, bytes: file.size, size: [size.x, size.y, size.z] }, info);
+      showModel(obj);
+      renderChecks();
+      $('glb-drop-text').textContent = 'Replace: drop another .glb or click';
+      // A new model gets its designer pictures and print areas straight away
+      await captureSides(false);
+      setDirty();
+      status('');
+    } catch (e) { status(''); toast("Couldn't read that model: " + e.message, 'err'); }
+  }
+
+  // ─────────────────────────────── Designer pictures ───────────────────────────────
+  const capRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  capRenderer.outputColorSpace = THREE.SRGBColorSpace;
+  capRenderer.setPixelRatio(1);
+  const capScene = new THREE.Scene();
+  capScene.environment = new THREE.PMREMGenerator(capRenderer).fromScene(new RoomEnvironment(), 0.04).texture;
+  // Soft, even light from the front, so the picture is a light grey the app can colour (it multiplies the colour over it)
+  capScene.add(new THREE.HemisphereLight(0xffffff, 0x9a9a9a, 1.3));
+  capScene.add(new THREE.AmbientLight(0xffffff, 0.35));
+  const capSun = new THREE.DirectionalLight(0xffffff, 1.0); capScene.add(capSun);
+
+  /** Renders the model straight from the front or back as a transparent PNG, sized to fit, plus where its
+   *  PrintFront / PrintBack part lands in that picture (null when it has none). */
+  async function capture(side) {
+    const obj = gltfScene.clone(true);
+    capScene.add(obj);
+    const prints = printNodes(obj, 'front').concat(printNodes(obj, 'back'));
+    prints.forEach(p => p.visible = false);
+    const box = new THREE.Box3().setFromObject(obj);
+    const size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+    const pad = 1.06, w = size.x * pad, h = size.y * pad;
+    const pxW = w >= h ? CAPTURE_PX : Math.round(CAPTURE_PX * w / h), pxH = h >= w ? CAPTURE_PX : Math.round(CAPTURE_PX * h / w);
+    const cam = new THREE.OrthographicCamera(-w / 2, w / 2, h / 2, -h / 2, 0.001, size.z * 4 + 10);
+    const dist = size.z * 2 + 1;
+    cam.position.set(c.x, c.y, side === 'front' ? box.max.z + dist : box.min.z - dist);
+    cam.lookAt(c.x, c.y, c.z);
+    capSun.position.set(c.x + 0.5, c.y + 1.5, side === 'front' ? c.z + 3 : c.z - 3);
+    capRenderer.setSize(pxW, pxH, false);
+    capRenderer.setClearColor(0x000000, 0);
+    capRenderer.render(capScene, cam);
+    const blob = await new Promise(r => capRenderer.domElement.toBlob(r, 'image/png'));
+    // Print area: the print part's box seen through the same camera
+    let zone = null;
+    const own = printNodes(obj, side);
+    if (own.length) {
+      own.forEach(p => p.visible = true);
+      const pb = new THREE.Box3(); own.forEach(p => pb.expandByObject(p));
+      const pts = [];
+      for (const x of [pb.min.x, pb.max.x]) for (const y of [pb.min.y, pb.max.y]) for (const z of [pb.min.z, pb.max.z]) pts.push(new THREE.Vector3(x, y, z).project(cam));
+      const xs = pts.map(p => (p.x + 1) / 2), ys = pts.map(p => (1 - p.y) / 2);
+      const cl = v => Math.min(1, Math.max(0, v));
+      zone = { left: cl(Math.min(...xs)), top: cl(Math.min(...ys)), right: cl(Math.max(...xs)), bottom: cl(Math.max(...ys)) };
+      if (zone.right - zone.left < 0.02 || zone.bottom - zone.top < 0.02) zone = null;
+    }
+    capScene.remove(obj);
+    return { blob, w: pxW, h: pxH, zone };
+  }
+
+  /** Makes both designer pictures from the model. [ask]: confirm first when pictures are already set. */
+  async function captureSides(ask) {
+    if (!gltfScene) { toast('Upload the .glb first.', 'warn'); return; }
+    if (ask && (ed.front || ed.back) && !confirm('Replace both pictures and print areas with new ones made from the 3D model?')) return;
+    status('Making the designer pictures…');
+    for (const side of ['front', 'back']) {
+      const shot = await capture(side);
+      const fallback = { left: 0.3, top: 0.28, right: 0.7, bottom: 0.68 };
+      ed[side] = { img: URL.createObjectURL(shot.blob), blob: shot.blob, w: shot.w, h: shot.h, zone: shot.zone || (ed[side] && ed[side].zone) || fallback, found: !!shot.zone, fromModel: true };
+    }
+    // The back is printable when the model says so (a PrintBack part)
+    ed.hasBack = !!(ed.modelFile && ed.modelFile.printBack) || (ed.hasBack && !!ed.back);
+    $('f-hasback').checked = ed.hasBack;
+    status(''); setDirty(); renderArt();
+  }
+
+  /** Puts the print area box back where the model's PrintFront / PrintBack part is. */
+  async function autoZone() {
+    if (!gltfScene) { toast('This needs the 3D model. Upload the .glb first.', 'warn'); return; }
+    const shot = await capture(artSide);
+    if (!shot.zone) { toast(`The model has no ${artSide === 'front' ? 'PrintFront' : 'PrintBack'} part, so drag the box instead.`, 'warn'); return; }
+    const cur = ed[artSide];
+    if (cur && cur.fromModel === false && !confirm('The print area is found on a picture made from the 3D model. Replace your own picture of this side with it?')) return;
+    if (cur && cur.fromModel !== false && cur.w === shot.w && cur.h === shot.h) cur.zone = shot.zone;
+    else ed[artSide] = { img: URL.createObjectURL(shot.blob), blob: shot.blob, w: shot.w, h: shot.h, zone: shot.zone, fromModel: true };
+    ed[artSide].found = true;
+    setDirty(); renderArt(); toast('Print area set from the model.', 'ok');
+  }
+
+  let artSide = 'front';
+  function renderArt() {
+    document.querySelectorAll('#art-sides .f-tab').forEach(b => b.classList.toggle('active', b.dataset.side === artSide));
+    const s = ed[artSide], area = $('art-area');
+    const backOff = artSide === 'back' && !ed.hasBack;
+    if (!s) {
+      area.innerHTML = `<div class="drop" style="cursor:default;"><i class="bi bi-image"></i>${ed.builtIn ? 'Built in' : 'No picture yet. Upload the .glb, or use your own picture.'}</div>`;
+    } else {
+      const maxW = area.clientWidth || 360, ratio = s.h / s.w, w = Math.min(maxW, 360 / ratio), h = w * ratio;
+      area.innerHTML = `<div class="art-box" id="art-box" style="width:${w}px;height:${h}px;${backOff ? 'opacity:.45;' : ''}">
+          <img src="${esc(s.img)}" alt="${artSide} picture">
+          ${backOff ? '' : `<div class="zone" id="zone"><span>Print area</span><i class="h nw"></i><i class="h ne"></i><i class="h sw"></i><i class="h se"></i></div>`}
+        </div>`;
+      placeZone();
+    }
+    const f = ed.modelFile;
+    $('art-hint').innerHTML = backOff ? 'Tick “The back can be printed too” to give the back a print area.'
+      : s && s.found ? 'The print area was found from the model\'s print part. Drag the box or its corners to change it.'
+      : f && !(artSide === 'front' ? f.printFront : f.printBack) ? 'Drag the box or its corners to where designs should go.'
+      : 'Drag the box or its corners to change where designs go.';
+    $('btn-capture').disabled = !gltfScene; $('btn-zone-auto').disabled = !gltfScene;
+  }
+  function placeZone() {
+    const s = ed[artSide], z = $('zone'); if (!s || !z) return;
+    z.style.left = (s.zone.left * 100) + '%'; z.style.top = (s.zone.top * 100) + '%';
+    z.style.width = ((s.zone.right - s.zone.left) * 100) + '%'; z.style.height = ((s.zone.bottom - s.zone.top) * 100) + '%';
+  }
+  // Dragging the print area box and its corners
+  let zdrag = null;
+  $('art-area').addEventListener('pointerdown', e => {
+    const z = e.target.closest('#zone'); if (!z || ed.builtIn) return;
+    const box = $('art-box').getBoundingClientRect(), s = ed[artSide];
+    const h = e.target.classList.contains('h') ? [...e.target.classList].find(c => c.length === 2) : 'move';
+    zdrag = { h, x0: e.clientX, y0: e.clientY, bw: box.width, bh: box.height, z0: Object.assign({}, s.zone) };
+    z.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  $('art-area').addEventListener('pointermove', e => {
+    if (!zdrag) return;
+    const s = ed[artSide], dx = (e.clientX - zdrag.x0) / zdrag.bw, dy = (e.clientY - zdrag.y0) / zdrag.bh, z = Object.assign({}, zdrag.z0), MIN = 0.05;
+    const cl = v => Math.min(1, Math.max(0, v));
+    if (zdrag.h === 'move') {
+      const w = z.right - z.left, h = z.bottom - z.top;
+      z.left = cl(Math.min(1 - w, z.left + dx)); z.top = cl(Math.min(1 - h, z.top + dy)); z.right = z.left + w; z.bottom = z.top + h;
+    } else {
+      if (zdrag.h.includes('w')) z.left = cl(Math.min(z.right - MIN, z.left + dx));
+      if (zdrag.h.includes('e')) z.right = cl(Math.max(z.left + MIN, z.right + dx));
+      if (zdrag.h.includes('n')) z.top = cl(Math.min(z.bottom - MIN, z.top + dy));
+      if (zdrag.h.includes('s')) z.bottom = cl(Math.max(z.top + MIN, z.bottom + dy));
+    }
+    s.zone = z; s.found = false; placeZone(); setDirty();
+  });
+  ['pointerup', 'pointercancel'].forEach(n => $('art-area').addEventListener(n, () => { zdrag = null; }));
+  document.querySelectorAll('#art-sides .f-tab').forEach(b => b.addEventListener('click', () => { artSide = b.dataset.side; renderArt(); }));
+  $('f-hasback').addEventListener('change', e => { ed.hasBack = e.target.checked; if (ed.hasBack) { artSide = 'back'; } setDirty(); renderArt(); });
+  $('art-file').addEventListener('change', async e => {
+    const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+    if (file.size > 8 * 1048576) { toast('Pictures can be up to 8 MB.', 'warn'); return; }
+    const url = URL.createObjectURL(file);
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; }).catch(() => null);
+    if (!img) { toast("That picture couldn't be opened.", 'err'); return; }
+    const old = ed[artSide];
+    ed[artSide] = { img: url, blob: file, w: img.naturalWidth, h: img.naturalHeight, zone: (old && old.zone) || { left: 0.3, top: 0.28, right: 0.7, bottom: 0.68 }, fromModel: false };
+    if (artSide === 'back') { ed.hasBack = true; $('f-hasback').checked = true; }
+    setDirty(); renderArt();
+  });
+
+  // ─────────────────────────────── Fit sliders ───────────────────────────────
+  const FIT = [
+    ['scale', 'Size', 0.2, 3, 0.01, '×'], ['x', 'Left / right', -40, 40, 0.5, 'cm'], ['y', 'Up / down', -40, 40, 0.5, 'cm'], ['z', 'Forward / back', -40, 40, 0.5, 'cm'],
+    ['rotX', 'Tilt', -180, 180, 1, '°'], ['rotY', 'Turn', -180, 180, 1, '°'], ['rotZ', 'Roll', -180, 180, 1, '°']
+  ];
+  function renderSliders() {
+    $('fit-sliders').innerHTML = FIT.map(([k, label, min, max, step, unit]) =>
+      `<div class="sl"><span>${label}</span><input type="range" data-k="${k}" min="${min}" max="${max}" step="${step}" value="${ed.ar[k]}" aria-label="${label}">
+       <input type="number" data-k="${k}" min="${min}" max="${max}" step="${step}" value="${ed.ar[k]}" aria-label="${label} (${unit})" title="${unit}"></div>`).join('') +
+      `<button class="btn-ghost" type="button" onclick="resetFit()" style="margin-top:4px;"><i class="bi bi-arrow-counterclockwise"></i> Back to the starting fit</button>`;
+    $('fit-sliders').querySelectorAll('input').forEach(i => i.addEventListener('input', () => {
+      const v = parseFloat(i.value); if (isNaN(v)) return;
+      ed.ar[i.dataset.k] = v;
+      $('fit-sliders').querySelectorAll(`input[data-k="${i.dataset.k}"]`).forEach(o => { if (o !== i) o.value = v; });
+      applyFit(); setDirty();
+      if (mode !== 'fit') setMode('fit');
+    }));
+  }
+  window.resetFit = () => { const r = ed.ar.roughness; ed.ar = startFit(ed.wornOn, ed.kind); ed.ar.roughness = r; renderSliders(); applyFit(); setDirty(); };
+
+  // ─────────────────────────────── Editor open / save ───────────────────────────────
+  window.openEditor = async (id) => {
+    if (denied && !id) { toast('Add the Firestore rule shown at the top first.', 'warn'); return; }
+    const m = id ? models.find(x => x.id === id) : null;
+    const kind = m ? m.kind : 'headwear', wornOn = m ? m.wornOn : 'head';
+    ed = {
+      id: m ? m.id : '', isNew: !m, builtIn: !!(m && m.builtIn), kind, wornOn, label: m ? m.label : '', blurb: m ? m.blurb : '',
+      enabled: m ? m.enabled : true, order: m ? m.order : (models.length ? Math.max(...models.map(x => x.order)) + 1 : 10),
+      modelUrl: m ? m.modelUrl : '', modelFile: m ? m.modelFile : null, glbFile: null,
+      front: m && m.front ? Object.assign({}, m.front, { zone: Object.assign({}, m.front.zone) }) : null,
+      back: m && m.back ? Object.assign({}, m.back, { zone: Object.assign({}, m.back.zone) }) : null,
+      hasBack: !!(m && m.back), tintable: m ? m.tintable : true, previewScale: m ? m.preview.scale : 1,
+      ar: m ? Object.assign({}, m.ar) : startFit(wornOn, kind), lensObjectName: m ? m.lensObjectName : '', dirty: false
+    };
+    // Built-in shirts keep their own fit; the sliders don't apply to them
+    $('ed-title').textContent = m ? m.label : 'Add model';
+    $('ed-builtin-note').hidden = !ed.builtIn;
+    ['sec-glb', 'sec-art', 'sec-fit', 'sec-adv'].forEach(s => $(s).hidden = ed.builtIn);
+    $('finish-num').textContent = ed.builtIn ? '2' : '5';
+    $('f-label').value = ed.label; $('f-blurb').value = ed.blurb; $('f-order').value = ed.order; $('f-enabled').checked = ed.enabled;
+    $('f-kind').innerHTML = MODEL_KINDS.map(k => `<option value="${k.id}">${esc(k.label)}</option>`).join(''); $('f-kind').value = ed.kind; $('f-kind').disabled = ed.builtIn;
+    $('f-wornon').innerHTML = WORN_ON.map(w => `<option value="${w.id}">${esc(w.label)}</option>`).join(''); $('f-wornon').value = ed.wornOn === 'body' ? 'chest' : ed.wornOn;
+    $('f-tint').checked = ed.tintable; $('f-lensobj').value = ed.lensObjectName;
+    $('f-rough').value = ed.ar.roughness; $('f-rough-v').textContent = (+ed.ar.roughness).toFixed(2);
+    $('f-pscale').value = ed.previewScale; $('f-pscale-v').textContent = (+ed.previewScale).toFixed(2) + '×';
+    $('btn-delete').hidden = ed.isNew || ed.builtIn;
+    const used = id ? usedBy(id) : [];
+    $('ed-usage').innerHTML = ed.isNew ? '' : used.length
+      ? `Used by ${used.length} product${used.length === 1 ? '' : 's'}: ${used.slice(0, 4).map(p => esc(p.name || p.id)).join(', ')}${used.length > 4 ? '…' : ''}.`
+      : `No product uses this model yet. <a href="products.html?addModel=${encodeURIComponent(id)}" style="color:var(--orange);">Add one</a>.`;
+    $('glb-drop-text').textContent = ed.modelUrl ? 'Replace: drop another .glb or click' : 'Drop a .glb here or click to choose';
+    artSide = 'front';
+    renderSliders(); renderChecks();
+    clearModel(); $('ed-empty').hidden = false;
+    $('ed-empty').querySelector('div').textContent = ed.builtIn ? 'A built-in shirt: its 3D model is part of the app.' : 'Upload a .glb to see the model here.';
+    $('ed-modes').hidden = ed.builtIn;
+    status('');
+    $('ed-overlay').classList.add('show');
+    setMode('model');
+    renderArt();
+    if (ed.modelUrl) {
+      status('Loading the 3D model…');
+      try { showModel(await loadGlb(ed.modelUrl)); status(''); renderArt(); }
+      catch (e) { status("Couldn't load the saved 3D model: " + e.message); }
+    }
+  };
+
+  window.closeEditor = () => {
+    if (ed && ed.dirty && !confirm('Leave without saving your changes?')) return;
+    $('ed-overlay').classList.remove('show'); ed = null; clearModel();
+  };
+
+  function setDirty() { if (ed) ed.dirty = true; }
+  function status(t) { $('ed-status').textContent = t; }
+
+  // Form fields
+  $('f-label').addEventListener('input', e => { ed.label = e.target.value; setDirty(); });
+  $('f-blurb').addEventListener('input', e => { ed.blurb = e.target.value; setDirty(); });
+  $('f-order').addEventListener('input', e => { ed.order = parseInt(e.target.value, 10) || 0; setDirty(); });
+  $('f-enabled').addEventListener('change', e => { ed.enabled = e.target.checked; setDirty(); });
+  $('f-kind').addEventListener('change', e => {
+    ed.kind = e.target.value; setDirty();
+    // A sensible place to wear it, unless one was chosen already
+    const guess = { headwear: 'head', eyewear: 'head', neckwear: 'neck', top: 'chest', accessory: 'chest' }[ed.kind];
+    if (guess && ed.isNew && !ed.wornTouched) { ed.wornOn = guess; $('f-wornon').value = guess; window.resetFit(); }
+  });
+  $('f-wornon').addEventListener('change', e => { ed.wornOn = e.target.value; ed.wornTouched = true; window.resetFit(); frameView(); });
+  $('f-tint').addEventListener('change', e => { ed.tintable = e.target.checked; setDirty(); });
+  $('f-lensobj').addEventListener('input', e => { ed.lensObjectName = e.target.value.replace(/[^A-Za-z0-9_]/g, ''); if (e.target.value !== ed.lensObjectName) e.target.value = ed.lensObjectName; setDirty(); });
+  $('f-rough').addEventListener('input', e => { ed.ar.roughness = +e.target.value; $('f-rough-v').textContent = (+e.target.value).toFixed(2); setDirty(); });
+  $('f-pscale').addEventListener('input', e => { ed.previewScale = +e.target.value; $('f-pscale-v').textContent = (+e.target.value).toFixed(2) + '×'; setDirty(); });
+
+  // .glb picking: click, keyboard, or drop
+  const drop = $('glb-drop');
+  drop.addEventListener('click', () => $('glb-file').click());
+  drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('glb-file').click(); } });
+  ['dragenter', 'dragover'].forEach(n => drop.addEventListener(n, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(n => drop.addEventListener(n, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => takeGlb(e.dataTransfer.files[0]));
+  $('glb-file').addEventListener('change', e => { takeGlb(e.target.files[0]); e.target.value = ''; });
+  ['dragover', 'drop'].forEach(n => window.addEventListener(n, e => e.preventDefault()));
+
+  const slug = t => String(t).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'model';
+
+  /** Uploads a model file: as a 3D asset first, as a plain file when the upload preset only takes images. */
+  async function uploadGlb(file, name) {
+    try { return await uploadToCloudinary(file, { folder: 'kustomoimprenta/models', resourceType: 'auto', name }); }
+    catch (e) {
+      try { return await uploadToCloudinary(file, { folder: 'kustomoimprenta/models', resourceType: 'raw', name }); }
+      catch (e2) { throw new Error(e.message + (e2.message !== e.message ? ' / ' + e2.message : '')); }
+    }
+  }
+
+  window.saveModel = async () => {
+    if (!ed) return;
+    const label = ed.label.trim();
+    if (!label) { toast('Give the model a name.', 'warn'); $('f-label').focus(); return; }
+    if (!ed.builtIn) {
+      if (!ed.modelUrl && !ed.glbFile) { toast('Upload the .glb file.', 'warn'); return; }
+      if (!ed.front) { toast('The model needs a front picture for the designer. Use “Make from the 3D model”.', 'warn'); return; }
+      if (ed.lensObjectName && SHIRT_STYLES.some(s => s.id === ed.lensObjectName) ) { /* reusing a built-in shirt's object is allowed */ }
+    }
+    const btn = $('ed-save'); btn.disabled = true;
+    try {
+      const meta = { updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: (auth.currentUser && auth.currentUser.email) || '' };
+      if (ed.builtIn) {
+        status('Saving…');
+        await db.collection('models').doc(ed.id).set(Object.assign({
+          builtIn: true, label, blurb: ed.blurb.trim(), enabled: ed.enabled, order: ed.order, ar: { roughness: ed.ar.roughness }
+        }, meta), { merge: true });
+      } else {
+        let id = ed.id;
+        if (!id) {
+          id = slug(label);
+          if (BUILTIN_ART[id] || models.some(m => m.id === id)) id = id + '-' + Math.random().toString(36).slice(2, 6);
+        }
+        const stamp = Date.now().toString(36);
+        let modelUrl = ed.modelUrl;
+        if (ed.glbFile) { status('Uploading the 3D model…'); modelUrl = await uploadGlb(ed.glbFile, `${id}-${stamp}.glb`); }
+        const side = async (s, name) => {
+          if (!s) return null;
+          let img = s.img;
+          if (s.blob) { status('Uploading the ' + name + ' picture…'); img = await uploadToCloudinary(s.blob, { folder: 'kustomoimprenta/models', name: `${id}-${name}-${stamp}.png` }); }
+          const r = n => Math.round(n * 10000) / 10000;
+          return { img, w: s.w, h: s.h, fromModel: s.fromModel !== false, zone: { left: r(s.zone.left), top: r(s.zone.top), right: r(s.zone.right), bottom: r(s.zone.bottom) } };
+        };
+        const front = await side(ed.front, 'front');
+        const back = ed.hasBack ? await side(ed.back || null, 'back') : null;
+        const mf = ed.modelFile ? Object.assign({}, ed.modelFile) : null;
+        const doc = Object.assign({
+          builtIn: false, label, blurb: ed.blurb.trim(), kind: ed.kind, wornOn: ed.wornOn, enabled: ed.enabled, order: ed.order,
+          modelUrl, modelFile: mf, thumbUrl: front ? front.img : '', front, back, tintable: ed.tintable,
+          preview: { scale: ed.previewScale }, ar: Object.assign({}, ed.ar), lensObjectName: ed.lensObjectName || ''
+        }, meta);
+        status('Saving…');
+        await db.collection('models').doc(id).set(doc);
+        ed.id = id;
+      }
+      ed.dirty = false; status('');
+      toast('Saved. The app picks it up the next time it opens.', 'ok');
+      const keepId = ed.id;
+      $('ed-overlay').classList.remove('show'); ed = null; clearModel();
+      await reload();
+      if (keepId && !models.find(m => m.id === keepId)) toast('Saved, but it can\'t be read back. Check the Firestore rule.', 'warn');
+    } catch (e) {
+      status('');
+      toast((e && e.code === 'permission-denied') ? 'Firestore refused the save. Add the rule shown at the top of the page.' : 'Not saved: ' + e.message, 'err');
+      if (e && e.code === 'permission-denied') { denied = true; $('mo-rule').hidden = false; }
+    } finally { btn.disabled = false; }
+  };
+
+  window.deleteModel = async () => {
+    if (!ed || ed.isNew || ed.builtIn) return;
+    const used = usedBy(ed.id);
+    const msg = used.length
+      ? `${used.length} product${used.length === 1 ? ' uses' : 's use'} this model. They will show as plain products (no designer or try-on) until you pick another model for them. Delete it anyway?`
+      : 'Delete this model? Customers will no longer see it.';
+    if (!confirm(msg)) return;
+    try {
+      await db.collection('models').doc(ed.id).delete();
+      ed.dirty = false; toast('Model deleted. Its files stay in Cloudinary under kustomoimprenta/models.', 'ok');
+      $('ed-overlay').classList.remove('show'); ed = null; clearModel(); await reload();
+    } catch (e) { toast('Not deleted: ' + e.message, 'err'); }
+  };
+
+  window.copyText = async (id, btn) => {
+    try { await navigator.clipboard.writeText($(id).textContent); } catch (e) { const r = document.createRange(); r.selectNodeContents($(id)); getSelection().removeAllRanges(); getSelection().addRange(r); document.execCommand('copy'); }
+    const old = btn.innerHTML; btn.innerHTML = '<i class="bi bi-check2"></i> Copied'; setTimeout(() => btn.innerHTML = old, 1600);
+  };
+  window.captureSides = captureSides; window.autoZone = autoZone;
+  window.addEventListener('keydown', e => { if (e.key === 'Escape' && $('ed-overlay').classList.contains('show')) window.closeEditor(); });
+  window.addEventListener('beforeunload', e => { if (ed && ed.dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  if (window.ADMIN_ROLE) init(); else window.onAuthReady = () => init();
+</script>
+</body>
+</html>

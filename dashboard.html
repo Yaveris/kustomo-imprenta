@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+<div id="toast-box"></div>
+
+<!-- ══ SIDEBAR ══ -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-brand">KustomoImprenta</div>
+    <span class="logo-sub">Admin Panel</span>
+  </div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info">
+      <div class="admin-avatar" id="admin-avatar">A</div>
+      <div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div>
+    </div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<!-- ══ MAIN ══ -->
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Dashboard <span>Overview</span></div>
+    <div class="topbar-right">
+      <span style="font-size:13px;color:var(--muted);" id="today-date"></span>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- Super Admin Banner (hidden for regular admin) -->
+    <div class="sa-banner sa-only" id="sa-banner">
+      <div>
+        <div class="sa-banner-label"><i class="bi bi-shield-fill-check"></i> &nbsp;Super Admin</div>
+        <div class="sa-banner-title">System Overview</div>
+        <div style="margin-top:8px;display:flex;gap:18px;flex-wrap:wrap;">
+          <span style="font-size:13px;color:rgba(255,255,255,.6);">Admins: <strong id="sa-admin-count" style="color:#fff;">—</strong></span>
+          <span style="font-size:13px;color:rgba(255,255,255,.6);">Customers: <strong id="sa-cust-count" style="color:#fff;">—</strong></span>
+        </div>
+      </div>
+      <div class="sa-banner-rev">
+        <div class="sa-banner-rev-label" title="GCash payments, plus balances marked as collected. Cancelled orders are left out.">Money received</div>
+        <div class="sa-banner-rev-val" id="sa-revenue">—</div>
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-icon si-orange"><i class="bi bi-bag-check-fill"></i></div><div><div class="stat-val" id="st-total">—</div><div class="stat-lbl">Total Orders</div></div></div>
+      <div class="stat-card"><div class="stat-icon si-yellow"><i class="bi bi-clock-fill"></i></div><div><div class="stat-val" id="st-pending">—</div><div class="stat-lbl">Pending</div></div></div>
+      <div class="stat-card"><div class="stat-icon si-blue"><i class="bi bi-gear-fill"></i></div><div><div class="stat-val" id="st-inprog">—</div><div class="stat-lbl">In Progress</div></div></div>
+      <div class="stat-card"><div class="stat-icon si-green"><i class="bi bi-check-circle-fill"></i></div><div><div class="stat-val" id="st-delivered">—</div><div class="stat-lbl">Delivered</div></div></div>
+      <div class="stat-card"><div class="stat-icon si-purple"><i class="bi bi-box-seam-fill"></i></div><div><div class="stat-val" id="st-products">—</div><div class="stat-lbl">Active Products</div></div></div>
+      <div class="stat-card"><div class="stat-icon si-pink"><i class="bi bi-currency-exchange"></i></div><div><div class="stat-val" id="st-revenue">—</div><div class="stat-lbl" title="GCash payments, plus balances marked as collected. Cancelled orders are left out.">Money received</div></div></div>
+    </div>
+
+    <!-- Sales chart + needs attention -->
+    <div class="dash-grid" style="margin-bottom:16px;align-items:start;">
+      <div class="card">
+        <div class="card-head"><span class="card-title">Orders placed, last 14 days</span><span class="note" id="sales-sum"></span></div>
+        <div style="padding:0 18px 16px;position:relative;">
+          <div class="sales-chart" id="sales-chart" role="img"></div>
+          <div class="sales-tip" id="sales-tip" hidden></div>
+          <details style="margin-top:8px;"><summary class="note" style="cursor:pointer;">Show as a table</summary><div id="sales-table" style="margin-top:8px;"></div></details>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">Needs attention</span></div>
+        <div style="padding:0 18px 16px;" id="attention"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Bottom Row -->
+    <div class="dash-grid">
+
+      <!-- Recent Orders -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Recent Orders</span>
+          <a href="orders.html" class="btn-ghost" style="font-size:12.5px;padding:6px 11px;">View All <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th>
+            </tr></thead>
+            <tbody id="recent-body"><tr><td colspan="6"><div class="spinner"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
+        <!-- Status Breakdown -->
+        <div class="card">
+          <div class="card-head" style="margin-bottom:14px;"><span class="card-title">Status Breakdown</span></div>
+          <div id="breakdown"><div class="spinner"></div></div>
+        </div>
+        <!-- Best sellers -->
+        <div class="card">
+          <div class="card-head"><span class="card-title">Best sellers, last 30 days</span></div>
+          <div style="padding:0 18px 16px;" id="best"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /page-content -->
+</div><!-- /main -->
+
+<style>
+  .sales-chart { display: flex; align-items: flex-end; gap: 2px; height: 170px; border-bottom: 1px solid var(--border); padding-top: 18px; }
+  .sales-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; cursor: default; position: relative; min-width: 0; }
+  .sales-bar { background: var(--orange); border-radius: 4px 4px 0 0; min-height: 0; transition: opacity .15s; }
+  .sales-col:hover, .sales-col:focus { background: rgba(255,255,255,.05); border-radius: 4px 4px 0 0; }
+  .sales-col:hover .sales-bar, .sales-col:focus .sales-bar { opacity: .8; }
+  .sales-col:focus { outline: 2px solid var(--orange); outline-offset: 2px; }
+  .sales-x { display: flex; gap: 2px; margin-top: 6px; }
+  .sales-x span { flex: 1; text-align: center; font-size: 10.5px; color: var(--muted); min-width: 0; overflow: hidden; }
+  .sales-tip { position: absolute; top: 0; background: #111; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px; pointer-events: none; white-space: nowrap; z-index: 2; }
+  .att-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 13px; }
+  .att-row:first-child { border-top: none; }
+  .att-row i { font-size: 16px; width: 20px; text-align: center; }
+  .att-row a { margin-left: auto; color: var(--orange); font-size: 12.5px; white-space: nowrap; }
+  .best-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 13px; }
+  .best-row .bar { height: 6px; border-radius: 3px; background: var(--orange); }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  document.getElementById('today-date').textContent =
+    new Date().toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  // Called by auth.js after role is known
+  window.onAuthReady = (user, role) => { loadDashboard(role); };
+
+  async function loadDashboard(role = 'admin') {
+    try {
+      const queries = [
+        db.collection('orders').get(),
+        db.collection('products').get(),
+        db.collection('chats').get().catch(() => null),
+        loadShopSettings()
+      ];
+      // Super admin also loads user counts
+      if (role === 'super_admin') {
+        queries.push(db.collection('users').where('role','in',['admin','super_admin']).get());
+        queries.push(db.collection('users').where('role','==','user').get());
+      }
+      const [oSnap, pSnap, cSnap, shop, adminSnap, custSnap] = await Promise.all(queries);
+
+      const orders = oSnap.docs.map(d => ({ id:d.id, ...d.data() }));
+      const products = pSnap.docs.map(d => ({ id:d.id, ...d.data() }));
+      const sc = {};
+      let revenue = 0;
+      orders.forEach(o => {
+        const s = o.status || 'Pending';
+        sc[s] = (sc[s] || 0) + 1;
+        // Money actually received: what was paid through GCash, plus balances staff marked as collected
+        if (s !== 'Cancelled') revenue += o.isDownpayment
+          ? +(o.downpaymentAmount || 0) + (o.balancePaidAt ? +(o.remainingAmount || 0) : 0)
+          : +(o.totalAmount || 0);
+      });
+
+      document.getElementById('st-total').textContent     = orders.length;
+      document.getElementById('st-pending').textContent   = sc.Pending || 0;
+      document.getElementById('st-inprog').textContent    = (sc.Processing||0)+(sc.Printing||0)+(sc.Ready||0);
+      document.getElementById('st-delivered').textContent = sc.Delivered || 0;
+      document.getElementById('st-products').textContent  = products.filter(p => p.isAvailable === true).length;
+      document.getElementById('st-revenue').textContent   = peso(revenue);
+      // Each card opens the matching list
+      [['st-total','orders.html'],['st-pending','orders.html?status=Pending'],['st-inprog','orders.html?status=Printing'],
+       ['st-delivered','orders.html?status=Delivered'],['st-products','products.html'],['st-revenue','orders.html']].forEach(([id, href]) => {
+        const card = document.getElementById(id).closest('.stat-card');
+        card.style.cursor = 'pointer'; card.tabIndex = 0; card.setAttribute('role', 'link');
+        card.onclick = () => location.href = href;
+        card.onkeydown = e => { if (e.key === 'Enter') location.href = href; };
+      });
+
+      // Super Admin banner stats
+      if (role === 'super_admin' && adminSnap && custSnap) {
+        document.getElementById('sa-admin-count').textContent = adminSnap.size;
+        document.getElementById('sa-cust-count').textContent  = custSnap.size;
+        document.getElementById('sa-revenue').textContent     = peso(revenue);
+      }
+
+      // Recent orders
+      const sorted = orders
+        .filter(o => o.orderedAt)
+        .sort((a,b) => b.orderedAt.toDate() - a.orderedAt.toDate())
+        .slice(0,10);
+
+      const tbody = document.getElementById('recent-body');
+      tbody.innerHTML = sorted.length === 0
+        ? '<tr><td colspan="6"><div class="empty"><i class="bi bi-bag-x"></i><p>No orders yet</p></div></td></tr>'
+        : sorted.map(o => {
+            const qty = (o.items||[]).reduce((s,i)=>s+(i.quantity||1),0);
+            return `<tr class="row-link" onclick="location.href='order-detail.html?id=${o.id}'">
+              <td><span style="font-family:monospace;font-size:12px;color:var(--muted);">${orderNo(o.id)}</span></td>
+              <td><strong>${esc(o.fullName||'—')}</strong><br><span style="font-size:12px;color:var(--muted);">${esc(o.city||'')}</span></td>
+              <td style="text-align:center;">${qty}</td>
+              <td style="color:var(--orange);font-weight:700;">${peso(o.totalAmount)}</td>
+              <td>${statusBadge(o.status)}</td>
+              <td style="font-size:12px;color:var(--muted);">${fmtDate(o.orderedAt,false)}</td>
+            </tr>`;
+          }).join('');
+
+      // Status breakdown bars
+      const total = orders.length || 1;
+      const statList = [
+        {k:'Pending',    cls:'b-pending'},
+        {k:'Processing', cls:'b-processing'},
+        {k:'Printing',   cls:'b-printing'},
+        {k:'Ready',      cls:'b-ready'},
+        {k:'Delivered',  cls:'b-delivered'},
+        {k:'Cancelled',  cls:'b-cancelled'},
+      ];
+      document.getElementById('breakdown').innerHTML = statList.map(s => {
+        const cnt = sc[s.k] || 0;
+        const pct = Math.round(cnt/total*100);
+        return `<a href="orders.html?status=${s.k}" style="display:block;margin-bottom:12px;color:inherit;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px;">
+            <span>${s.k === 'Ready' ? 'Ready for pickup' : s.k}</span><span style="font-weight:700;">${cnt}</span>
+          </div>
+          <div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;">
+            <div class="${s.cls}" style="height:100%;width:${pct}%;background:currentColor;border-radius:3px;transition:width .5s;"></div>
+          </div>
+        </a>`;
+      }).join('');
+
+      renderSales(orders);
+      renderBest(orders);
+      renderAttention(orders, products, cSnap, shop);
+    } catch(e) {
+      console.error(e);
+      toast('Failed to load dashboard: ' + e.message,'err');
+    }
+  }
+
+  const live = o => (o.status || 'Pending') !== 'Cancelled';
+  const dayKey = d => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+
+  /** One bar per day: the money in orders placed that day (cancelled ones left out). */
+  function renderSales(orders) {
+    const days = [];
+    for (let i = 13; i >= 0; i--) { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - i); days.push({ d, total: 0, count: 0 }); }
+    const byKey = Object.fromEntries(days.map(x => [dayKey(x.d), x]));
+    orders.filter(live).forEach(o => {
+      if (!o.orderedAt || !o.orderedAt.toDate) return;
+      const x = byKey[dayKey(o.orderedAt.toDate())];
+      if (x) { x.total += +(o.totalAmount || 0); x.count++; }
+    });
+    const max = Math.max(1, ...days.map(x => x.total));
+    const sum = days.reduce((t, x) => t + x.total, 0), n = days.reduce((t, x) => t + x.count, 0);
+    document.getElementById('sales-sum').textContent = `${peso(sum)} · ${n} order${n === 1 ? '' : 's'}`;
+    const label = d => d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
+    const chart = document.getElementById('sales-chart');
+    chart.setAttribute('aria-label', `Sales per day for the last 14 days, ${peso(sum)} in total`);
+    chart.innerHTML = days.map((x, i) => `<div class="sales-col" tabindex="0" data-i="${i}" aria-label="${label(x.d)}: ${peso(x.total)}, ${x.count} orders">
+        <div class="sales-bar" style="height:${x.total ? Math.max(2, x.total / max * 100) : 0}%;"></div></div>`).join('');
+    chart.insertAdjacentHTML('afterend', `<div class="sales-x">${days.map((x, i) => `<span>${i % 2 === 1 || i === 13 ? x.d.getDate() : ''}</span>`).join('')}</div>`);
+    const tip = document.getElementById('sales-tip');
+    const show = col => {
+      const x = days[+col.dataset.i];
+      tip.innerHTML = `<strong>${label(x.d)}</strong><br>${peso(x.total)} · ${x.count} order${x.count === 1 ? '' : 's'}`;
+      tip.hidden = false;
+      // Centred over the day, kept inside the card (offsetLeft already counts the card's padding)
+      const left = col.offsetLeft + col.offsetWidth / 2 - tip.offsetWidth / 2;
+      tip.style.left = Math.max(0, Math.min(chart.parentElement.clientWidth - tip.offsetWidth, left)) + 'px';
+    };
+    chart.querySelectorAll('.sales-col').forEach(col => {
+      col.addEventListener('mouseenter', () => show(col)); col.addEventListener('focus', () => show(col));
+      col.addEventListener('mouseleave', () => tip.hidden = true); col.addEventListener('blur', () => tip.hidden = true);
+    });
+    document.getElementById('sales-table').innerHTML = `<table class="tbl"><thead><tr><th>Day</th><th>Orders</th><th>Sales</th></tr></thead><tbody>${
+      days.slice().reverse().map(x => `<tr><td>${label(x.d)}</td><td>${x.count}</td><td>${peso(x.total)}</td></tr>`).join('')}</tbody></table>`;
+  }
+
+  /** Products by pieces ordered in the last 30 days. */
+  function renderBest(orders) {
+    const from = Date.now() - 30 * 86400000, qty = {};
+    orders.filter(live).forEach(o => {
+      if (!o.orderedAt || !o.orderedAt.toMillis || o.orderedAt.toMillis() < from) return;
+      (o.items || []).forEach(it => { const k = it.productName || 'Product'; qty[k] = (qty[k] || 0) + (Number(it.quantity) || 1); });
+    });
+    const top = Object.entries(qty).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const max = top.length ? top[0][1] : 1;
+    document.getElementById('best').innerHTML = top.length ? top.map(([name, n]) => `<div class="best-row">
+        <span style="flex:0 0 58%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(name)}">${esc(name)}</span>
+        <span style="flex:1;"><span class="bar" style="display:block;width:${Math.max(4, n / max * 100)}%;"></span></span>
+        <strong style="width:42px;text-align:right;">${n}</strong></div>`).join('')
+      : '<p class="note">No orders in the last 30 days.</p>';
+  }
+
+  /** What staff should look at today, each with a link to where it's fixed. */
+  function renderAttention(orders, products, cSnap, shop) {
+    const rows = [];
+    const stale = orders.filter(o => (o.status || 'Pending') === 'Pending' && o.orderedAt && o.orderedAt.toMillis && Date.now() - o.orderedAt.toMillis() > 2 * 86400000);
+    if (stale.length) rows.push(['bi-hourglass-split', '#FFD600', `${stale.length} order${stale.length === 1 ? '' : 's'} waiting in Pending for over 2 days`, 'orders.html?status=Pending', 'Open']);
+    const unread = cSnap ? cSnap.docs.filter(d => chatIsUnread(d.data())).length : 0;
+    if (unread) rows.push(['bi-chat-dots', 'var(--orange)', `${unread} conversation${unread === 1 ? '' : 's'} with something new`, 'chats.html', 'Reply']);
+    const out = [], low = [];
+    products.filter(p => p.isAvailable === true && p.inventory && typeof p.inventory === 'object').forEach(p => {
+      (p.sizes || Object.keys(p.inventory)).forEach(sz => {
+        const n = p.inventory[sz] || 0;
+        if (n <= 0) out.push(`${p.name} ${sz}`); else if (n <= shop.lowStockAt) low.push(`${p.name} ${sz} (${n})`);
+      });
+    });
+    if (out.length) rows.push(['bi-x-octagon', '#FF6B6B', `Out of stock: ${esc(out.slice(0, 4).join(', '))}${out.length > 4 ? ` and ${out.length - 4} more` : ''}`, 'products.html', 'Restock']);
+    if (low.length) rows.push(['bi-exclamation-triangle', '#FFD600', `Low stock: ${esc(low.slice(0, 4).join(', '))}${low.length > 4 ? ` and ${low.length - 4} more` : ''}`, 'products.html', 'Restock']);
+    // A shop that's just starting: point to the first things to set up
+    if (!products.length) rows.unshift(['bi-rocket-takeoff', 'var(--orange)', 'No products yet. Add your first product so customers can order.', 'products.html', 'Add']);
+    if (!products.length && (window.ADMIN_ROLE === 'super_admin')) rows.push(['bi-sliders', 'var(--muted)', 'Check the shipping fee and downpayment rules before taking orders.', 'settings.html', 'Settings']);
+    const hidden = products.filter(p => p.isAvailable !== true).length;
+    if (hidden) rows.push(['bi-eye-slash', 'var(--muted)', `${hidden} product${hidden === 1 ? ' is' : 's are'} switched off and not shown in the app`, 'products.html', 'Review']);
+    document.getElementById('attention').innerHTML = rows.length
+      ? rows.map(([icon, color, text, href, act]) => `<div class="att-row"><i class="bi ${icon}" style="color:${color};" aria-hidden="true"></i><span>${text}</span><a href="${href}">${act} <i class="bi bi-arrow-right" style="font-size:12px;width:auto;"></i></a></div>`).join('')
+      : '<div class="att-row"><i class="bi bi-check-circle" style="color:#00E676;" aria-hidden="true"></i><span>All caught up.</span></div>';
+  }
+</script>
+</body>
+</html>

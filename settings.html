@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shop Settings — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    .set-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 16px; }
+    .set-body { padding: 0 18px 18px; }
+    .set-body .fg { margin-bottom: 12px; }
+    .set-body .fg small { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+    .money { display: flex; align-items: center; gap: 6px; }
+    .money span { color: var(--muted); }
+    .money input { flex: 1; min-width: 0; }
+    .preview { border: 1px dashed var(--border); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.6; }
+    .preview b { color: var(--orange); }
+    .terms-row { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+    .terms-row .tr-head { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+    .terms-row .tr-head input { flex: 1; min-width: 0; font-weight: 700; }
+    .terms-row textarea { width: 100%; min-height: 90px; }
+    .save-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+  </style>
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Shop <span>Settings</span></div>
+    <div class="topbar-right"><span class="pill" id="state">—</span></div>
+  </div>
+
+  <div class="page-content">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="set-body" style="padding-top:16px;">
+        <p class="note">What the app charges at checkout. Changes reach customers' phones within a few seconds; an order already placed keeps the amounts it was placed with.
+          </p>
+      </div>
+    </div>
+
+    <div class="set-grid">
+      <div class="card">
+        <div class="card-head"><span class="card-title"><i class="bi bi-truck" style="color:var(--orange);margin-right:6px;"></i>Shipping</span></div>
+        <div class="set-body">
+          <div class="fg"><label for="s-fee">Shipping fee</label>
+            <div class="money"><span>₱</span><input type="number" id="s-fee" min="0" step="1"></div>
+            <small>Charged once per order.</small></div>
+          <div class="fg"><label for="s-free">Free shipping from</label>
+            <div class="money"><span>₱</span><input type="number" id="s-free" min="0" step="1"></div>
+            <small>Orders with at least this subtotal ship free. 0 = shipping is never free.</small></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-title"><i class="bi bi-wallet2" style="color:var(--orange);margin-right:6px;"></i>Downpayment</span></div>
+        <div class="set-body">
+          <label class="fg-check" style="margin-bottom:12px;"><input type="checkbox" id="s-dp-on"> Let big orders pay part now and the rest on delivery</label>
+          <div class="fg"><label for="s-dp-pct">Paid now</label>
+            <div class="money"><input type="number" id="s-dp-pct" min="10" max="90" step="5"><span>%</span></div>
+            <small>Between 10% and 90%.</small></div>
+          <div class="fg"><label for="s-dp-min">Offered from</label>
+            <div class="money"><input type="number" id="s-dp-min" min="1" step="1"><span>items in the cart</span></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-title"><i class="bi bi-box-seam" style="color:var(--orange);margin-right:6px;"></i>Stock alerts</span></div>
+        <div class="set-body">
+          <div class="fg"><label for="s-low">Low stock at</label>
+            <div class="money"><input type="number" id="s-low" min="0" step="1"><span>pieces or fewer</span></div>
+            <small>A size with stock at or below this is flagged on the Dashboard and the Products page. Only for this site; customers don't see it.</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="card-head"><span class="card-title">What customers see</span></div>
+      <div class="set-body"><div class="preview" id="preview"></div></div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="card-head"><span class="card-title"><i class="bi bi-file-earmark-text" style="color:var(--orange);margin-right:6px;"></i>Terms &amp; Privacy Policy</span>
+        <span class="pill" id="terms-state">—</span></div>
+      <div class="set-body">
+        <p class="note" style="margin-bottom:12px;">What customers read under <strong>Profile → Terms &amp; Privacy Policy</strong>. Until you save your own, the app shows its built-in starting text,
+          which is <strong>not legal advice</strong>: have the shop's own terms reviewed and put them here. If you change shipping or downpayment above, update the text to match.</p>
+        <div id="terms-list"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-ghost" type="button" onclick="addTerm()"><i class="bi bi-plus-lg"></i> Add section</button>
+          <button class="btn-ghost" type="button" onclick="useStarter()"><i class="bi bi-file-earmark-arrow-down"></i> Start from the built-in text</button>
+          <button class="btn-ghost" type="button" onclick="clearTerms()"><i class="bi bi-arrow-counterclockwise"></i> Use the built-in text in the app</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="save-bar">
+      <button class="btn-grad" id="save" onclick="save()"><i class="bi bi-check-lg"></i> Save settings</button>
+      <button class="btn-ghost" onclick="fill(SHOP_DEFAULTS);changed()">Back to the defaults</button>
+      <span class="note" id="saved-note"></span>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  const FIELDS = { shippingFee: 's-fee', freeShippingMin: 's-free', downpaymentPercent: 's-dp-pct', downpaymentMinItems: 's-dp-min', lowStockAt: 's-low' };
+  let dirty = false;
+
+  window.onAuthReady = async (user, role) => {
+    if (role !== 'super_admin') {
+      toast('Shop Settings are for Super Admins', 'err');
+      setTimeout(() => location.href = 'dashboard.html', 1500);
+      return;
+    }
+    try {
+      const snap = await db.collection('appConfig').doc('shop').get();
+      const d = snap.exists ? snap.data() : {};
+      fill(Object.assign({}, SHOP_DEFAULTS, d));
+      terms = Array.isArray(d.terms) ? d.terms.map(t => ({ title: String(t.title || ''), body: String(t.body || '') })) : [];
+      renderTerms();
+      $('state').textContent = snap.exists ? 'Saved' : 'Defaults';
+      $('state').className = 'pill ' + (snap.exists ? 'ok' : '');
+      if (d.updatedAt) $('saved-note').textContent = `Last saved ${fmtDate(d.updatedAt)}${d.updatedBy ? ' by ' + d.updatedBy : ''}.`;
+    } catch (e) {
+      fill(SHOP_DEFAULTS); renderTerms();
+      $('state').textContent = 'Not readable'; $('state').className = 'pill bad';
+      toast(e.code === 'permission-denied' ? "Couldn't read the settings: the database rules need updating (App Keys → For your developer)." : "Couldn't load: " + e.message, 'err');
+    }
+  };
+
+  // ── Terms & Privacy: sections of {title, body}, saved as appConfig/shop.terms (ShopSettings.terms in the app) ──
+  let terms = [];
+  /** The app's built-in starting text (TermsScreen.kt), with this page's current amounts filled in. */
+  function starterTerms() {
+    const v = read(), pesos = n => '₱' + Number(n).toLocaleString('en-PH', { maximumFractionDigits: 2 });
+    return [
+      ['Orders & Custom Prints', "Custom apparel is printed to order from the design you submit. Please review colors, text, sizes and placement before checkout. Because each item is made for you, customized orders can't be cancelled once printing has started."],
+      ['Design Ownership', "You confirm that you own or have permission to use any image, logo or text you upload. K's Print Express may decline designs that infringe on others' rights or contain offensive content."],
+      ['Payments', 'Payments are processed through GCash via PayMongo.' + (v.downpaymentEnabled ? ` Orders of ${v.downpaymentMinItems} or more items may be paid with a ${v.downpaymentPercent}% downpayment, with the balance due on delivery or pickup.` : '')],
+      ['Shipping & Delivery', (v.shippingFee <= 0 ? 'Shipping is free. ' : v.freeShippingMin > 0 ? `Shipping is free for orders of ${pesos(v.freeShippingMin)} and above; a ${pesos(v.shippingFee)} fee applies otherwise. ` : `A ${pesos(v.shippingFee)} shipping fee applies to each order. `) + 'Delivery times depend on order size and your location. Track progress in My Orders.'],
+      ['Returns & Reprints', 'If your item arrives damaged or misprinted, message the shop through the order chat within 7 days of delivery so we can arrange a reprint or refund.'],
+      ['Your Data', 'We store your name, contact details, saved address, body measurements you choose to enter or scan, uploaded designs and order history so we can fulfil your orders. Camera images used for AR try-on are processed on your device and are not uploaded.'],
+      ['Contact', "For questions about these terms or your data, message K's Print Express through Help & Support."]
+    ].map(([title, body]) => ({ title, body }));
+  }
+  function renderTerms() {
+    $('terms-state').textContent = terms.length ? terms.length + ' section' + (terms.length === 1 ? '' : 's') : 'Built-in text';
+    $('terms-state').className = 'pill ' + (terms.length ? 'ok' : 'warn');
+    $('terms-list').innerHTML = terms.map((t, i) => `<div class="terms-row">
+        <div class="tr-head">
+          <input class="inp" type="text" maxlength="80" value="${esc(t.title)}" placeholder="Section title" aria-label="Section ${i + 1} title" oninput="terms[${i}].title=this.value;changed()">
+          <button class="btn-icon" type="button" title="Move up" aria-label="Move section ${i + 1} up" ${i === 0 ? 'disabled' : ''} onclick="moveTerm(${i},-1)"><i class="bi bi-arrow-up"></i></button>
+          <button class="btn-icon" type="button" title="Move down" aria-label="Move section ${i + 1} down" ${i === terms.length - 1 ? 'disabled' : ''} onclick="moveTerm(${i},1)"><i class="bi bi-arrow-down"></i></button>
+          <button class="btn-icon del" type="button" title="Remove" aria-label="Remove section ${i + 1}" onclick="removeTerm(${i})"><i class="bi bi-trash3"></i></button>
+        </div>
+        <textarea class="inp" maxlength="4000" aria-label="Section ${i + 1} text" oninput="terms[${i}].body=this.value;changed()">${esc(t.body)}</textarea>
+      </div>`).join('');
+  }
+  function addTerm() { terms.push({ title: '', body: '' }); renderTerms(); changed(); }
+  function moveTerm(i, d) { const j = i + d; [terms[i], terms[j]] = [terms[j], terms[i]]; renderTerms(); changed(); }
+  function removeTerm(i) { terms.splice(i, 1); renderTerms(); changed(); }
+  function useStarter() {
+    if (terms.length && !confirm('Replace the sections below with the built-in starting text?')) return;
+    terms = starterTerms(); renderTerms(); changed();
+  }
+  function clearTerms() {
+    if (terms.length && !confirm('Remove your sections? The app then shows its built-in starting text.')) return;
+    terms = []; renderTerms(); changed();
+  }
+
+  function fill(v) {
+    Object.keys(FIELDS).forEach(k => $(FIELDS[k]).value = v[k]);
+    $('s-dp-on').checked = v.downpaymentEnabled !== false;
+    preview();
+  }
+  function read() {
+    const n = id => parseFloat($(id).value);
+    return {
+      shippingFee: n('s-fee'), freeShippingMin: n('s-free'), downpaymentEnabled: $('s-dp-on').checked,
+      downpaymentPercent: n('s-dp-pct'), downpaymentMinItems: Math.round(n('s-dp-min')), lowStockAt: Math.round(n('s-low'))
+    };
+  }
+  /** The reason the values can't be saved, or ''. */
+  function problem(v) {
+    if (terms.some(t => !t.title.trim() || !t.body.trim())) return 'Every Terms section needs a title and some text (or remove the empty one).';
+    if (!(v.shippingFee >= 0)) return 'Enter a shipping fee (0 or more).';
+    if (!(v.freeShippingMin >= 0)) return 'Enter the free-shipping amount (0 for never).';
+    if (!(v.downpaymentPercent >= 10 && v.downpaymentPercent <= 90)) return 'The downpayment must be between 10% and 90%.';
+    if (!(v.downpaymentMinItems >= 1)) return 'Downpayment needs at least 1 item.';
+    if (!(v.lowStockAt >= 0)) return 'Enter the low-stock number (0 or more).';
+    return '';
+  }
+  function preview() {
+    const v = read(), p = problem(v);
+    $('s-dp-pct').disabled = $('s-dp-min').disabled = !$('s-dp-on').checked;
+    if (p) { $('preview').innerHTML = `<span style="color:#FF6B6B;">${esc(p)}</span>`; return; }
+    const ex = 800, exShip = v.freeShippingMin > 0 && ex >= v.freeShippingMin ? 0 : v.shippingFee;
+    $('preview').innerHTML = [
+      `Shipping: <b>${v.shippingFee > 0 ? peso(v.shippingFee) : 'free'}</b>${v.shippingFee > 0 ? (v.freeShippingMin > 0 ? `, free from <b>${peso(v.freeShippingMin)}</b> (the cart shows how much more is needed)` : ', never free') : ''}.`,
+      v.downpaymentEnabled
+        ? `Carts with <b>${v.downpaymentMinItems}+ items</b> can pay <b>${v.downpaymentPercent}%</b> now through GCash and the rest on delivery or pickup.`
+        : 'Every order is paid in full.',
+      `<span style="color:var(--muted);">Example: a ${peso(ex)} cart pays ${peso(ex + exShip)} in total.</span>`
+    ].map(l => `<div>${l}</div>`).join('');
+  }
+  function changed() { dirty = true; $('state').textContent = 'Not saved'; $('state').className = 'pill warn'; preview(); }
+  document.querySelectorAll('input').forEach(i => i.addEventListener('input', changed));
+
+  async function save() {
+    const v = read(), p = problem(v);
+    if (p) { toast(p, 'warn'); return; }
+    $('save').disabled = true;
+    try {
+      await db.collection('appConfig').doc('shop').set(Object.assign(v, {
+        terms: terms.map(t => ({ title: t.title.trim(), body: t.body.trim() })),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: (auth.currentUser && auth.currentUser.email) || '' }), { merge: true });
+      dirty = false;
+      $('state').textContent = 'Saved'; $('state').className = 'pill ok';
+      $('saved-note').textContent = 'Saved just now. The app picks it up within a few seconds.';
+      toast('Settings saved', 'ok');
+    } catch (e) {
+      toast(e.code === 'permission-denied' ? "Not saved: the database rules need updating (App Keys → For your developer)." : 'Not saved: ' + e.message, 'err');
+    } finally { $('save').disabled = false; }
+  }
+  window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+</script>
+</body>
+</html>

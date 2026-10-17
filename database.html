@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Database — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Database <span id="d-path-title">Browse and edit</span></div>
+    <div class="topbar-right">
+      <div class="search-wrap"><i class="bi bi-search"></i><input type="text" id="d-q" placeholder="Search loaded records…"></div>
+      <button class="btn-grad" id="d-add-btn" onclick="openNew()"><i class="bi bi-plus-lg"></i> Add record</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="card" style="margin-bottom:16px;">
+      <div style="padding:14px 18px;font-size:13px;color:var(--muted);line-height:1.55;">
+        <strong style="color:var(--yellow);"><i class="bi bi-exclamation-triangle"></i> Changes here are live.</strong>
+        This edits the same data the app and the other admin pages use, with no undo. For everyday work, use Orders,
+        Products and Customers; use this page for fixes those pages can't make. Take an
+        <a href="export.html" style="color:var(--orange);">export</a> first if you're changing a lot.
+      </div>
+    </div>
+
+    <div class="filter-bar" id="d-tabs"></div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div style="padding:12px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+        <span id="d-crumb" style="font-size:13px;font-family:monospace;word-break:break-all;"></span>
+        <span style="flex:1;"></span>
+        <label for="d-field" style="font-size:12.5px;color:var(--muted);">Only where</label>
+        <input type="text" id="d-field" placeholder="field, e.g. status" style="width:150px;padding:7px 9px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:13px;">
+        <span style="font-size:12.5px;color:var(--muted);">is</span>
+        <input type="text" id="d-value" placeholder="value, e.g. Pending" style="width:150px;padding:7px 9px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:13px;">
+        <button class="btn-ghost" onclick="reload()">Apply</button>
+        <button class="btn-ghost" onclick="clearFilter()">Clear</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title">Records <span id="d-count" style="color:var(--muted);font-weight:400;font-size:13px;"></span></span></div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr id="d-head"><th>ID</th></tr></thead>
+          <tbody id="d-body"><tr><td><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+      <div style="padding:14px 18px;text-align:center;"><button class="btn-ghost" id="d-more" onclick="loadMore()" hidden>Load 50 more</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- View / edit one record -->
+<div class="overlay" id="d-overlay">
+  <div class="modal wide">
+    <div class="modal-hd"><h3 id="d-modal-title">Record</h3><button class="modal-x" onclick="closeDoc()">&times;</button></div>
+    <div class="modal-bd">
+      <div class="fg" id="d-id-wrap"><label for="d-new-id">Record ID (leave empty for an automatic one)</label><input type="text" id="d-new-id" placeholder="automatic"></div>
+      <div id="d-doc-path" style="font-size:12px;font-family:monospace;color:var(--muted);word-break:break-all;margin-bottom:12px;"></div>
+      <div id="d-notice" style="font-size:12.5px;color:var(--yellow);margin-bottom:12px;" hidden></div>
+      <div id="d-subs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
+      <div id="d-fields"></div>
+      <button class="btn-ghost" onclick="addFieldRow()"><i class="bi bi-plus-lg"></i> Add field</button>
+      <div id="d-error" style="font-size:13px;color:#FF4444;margin-top:12px;white-space:pre-line;" role="alert"></div>
+    </div>
+    <div class="modal-ft" style="justify-content:space-between;flex-wrap:wrap;">
+      <button id="d-del-btn" style="padding:8px 16px;border-radius:8px;background:rgba(255,68,68,.13);color:#FF4444;border:1px solid rgba(255,68,68,.26);font-size:13.5px;font-weight:600;" onclick="askDelete()"><i class="bi bi-trash3"></i> Delete record</button>
+      <div style="display:flex;gap:9px;">
+        <button class="btn-ghost" onclick="closeDoc()">Cancel</button>
+        <button class="btn-grad" id="d-save-btn" onclick="saveDoc()"><i class="bi bi-check-lg"></i> Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation: the ID has to be typed -->
+<div class="overlay" id="d-del-overlay">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-hd"><h3 style="color:#FF4444;">Delete this record?</h3><button class="modal-x" onclick="closeDelete()">&times;</button></div>
+    <div class="modal-bd">
+      <p style="font-size:13.5px;color:var(--muted);margin-bottom:12px;">This removes it for good from the app and the admin site. Anything stored under it (such as a chat's messages) is left behind and has to be deleted separately.</p>
+      <div class="fg"><label for="d-del-type">Type <strong id="d-del-word" style="color:var(--text);font-family:monospace;"></strong> to confirm</label><input type="text" id="d-del-type" autocomplete="off"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-ghost" onclick="closeDelete()">Keep it</button>
+      <button id="d-del-go" style="padding:8px 16px;border-radius:8px;background:rgba(255,68,68,.13);color:#FF4444;border:1px solid rgba(255,68,68,.26);font-size:13.5px;font-weight:600;" onclick="doDelete()" disabled><i class="bi bi-trash3"></i> Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  // ── What can be browsed ──
+  // The web SDK can't list collections, so the ones the app uses are named here. `cols` are the fields shown
+  // in the table; `subs` are collections kept under each record.
+  const COLLECTIONS = [
+    { path: 'products', label: 'Products', cols: ['name','category','shirtStyle','price','isAvailable'] },
+    { path: 'orders',   label: 'Orders',   cols: ['fullName','status','totalAmount','paymentMethod','orderedAt'] },
+    { path: 'users',    label: 'Accounts', cols: ['firstName','lastName','email','role','status'], subs: ['designs','shapes'] },
+    { path: 'chats',    label: 'Chats',    cols: ['customerName','orderId','lastMessageAt'], subs: ['messages'] },
+    { path: 'designPresets', label: 'Design presets', cols: ['name','isActive','models'] },
+    { path: 'models', label: 'Models', cols: ['label','kind','wornOn','enabled','order'] },
+    { path: 'categories', label: 'Categories', cols: ['name','order','showInApp','updatedAt'] }
+  ];
+  const SUB_COLS = { messages: ['senderRole','messageText','approvalStatus','sentAt'], designs: ['productName','size','quantity','savedAt'], shapes: ['name','createdAt'] };
+  const PAGE = 50;
+
+  let path = 'products';          // collection path being shown, e.g. "chats/abc/messages"
+  let docs = [];                  // loaded records: {id, data}
+  let lastSnap = null, hasMore = false;
+  let editing = null;             // {id, isNew}
+  let myRole = null, myUid = null;
+
+  const $ = id => document.getElementById(id);
+  const topOf = p => p.split('/')[0];
+  const lastOf = p => p.split('/').pop();
+  const confOf = p => COLLECTIONS.find(c => c.path === p);
+  const colsFor = p => (confOf(p) || {}).cols || SUB_COLS[lastOf(p)] || [];
+
+  // ── Showing values ──
+  const isTime = v => v && typeof v.toDate === 'function';
+  const isGeo  = v => v && typeof v.latitude === 'number' && typeof v.longitude === 'number' && Object.keys(v).length <= 3;
+  const isRef  = v => v && typeof v.path === 'string' && v.firestore;
+  function short(v){
+    if (v === null || v === undefined) return '<span style="color:var(--muted);">—</span>';
+    if (isTime(v)) return esc(fmtDate(v));
+    if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+    if (typeof v === 'number') return esc(String(v));
+    if (typeof v === 'string') return esc(v.length > 48 ? v.slice(0,48) + '…' : v);
+    if (Array.isArray(v)) return `<span style="color:var(--muted);">list of ${v.length}</span>`;
+    return '<span style="color:var(--muted);">group</span>';
+  }
+
+  // ── Values <-> the text the editor shows ──
+  // Dates inside lists and groups are written as {"__time__":"2026-10-09T12:00:00.000Z"} so they survive editing.
+  function toPlain(v){
+    if (v === null || v === undefined) return null;
+    if (isTime(v)) return { __time__: v.toDate().toISOString() };
+    if (isRef(v))  return { __ref__: v.path };
+    if (isGeo(v))  return { __geo__: [v.latitude, v.longitude] };
+    if (Array.isArray(v)) return v.map(toPlain);
+    if (typeof v === 'object') { const o = {}; Object.keys(v).sort().forEach(k => o[k] = toPlain(v[k])); return o; }
+    return v;
+  }
+  function fromPlain(v){
+    if (v === null) return null;
+    if (Array.isArray(v)) return v.map(fromPlain);
+    if (typeof v === 'object') {
+      const keys = Object.keys(v);
+      if (keys.length === 1 && keys[0] === '__time__') { const d = new Date(v.__time__); if (isNaN(d)) throw new Error('"' + v.__time__ + '" is not a date.'); return firebase.firestore.Timestamp.fromDate(d); }
+      if (keys.length === 1 && keys[0] === '__ref__') return db.doc(v.__ref__);
+      if (keys.length === 1 && keys[0] === '__geo__') return new firebase.firestore.GeoPoint(v.__geo__[0], v.__geo__[1]);
+      const o = {}; keys.forEach(k => o[k] = fromPlain(v[k])); return o;
+    }
+    return v;
+  }
+  function typeOf(v){
+    if (v === null || v === undefined) return 'empty';
+    if (isTime(v)) return 'date';
+    if (typeof v === 'boolean') return 'yesno';
+    if (typeof v === 'number') return 'number';
+    if (typeof v === 'string') return 'text';
+    return 'json';
+  }
+  const pad = n => String(n).padStart(2,'0');
+  const localInput = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
+  // ── Tabs and loading ──
+  function renderTabs(){
+    $('d-tabs').innerHTML = COLLECTIONS.map(c =>
+      `<button class="f-tab ${topOf(path)===c.path && path===c.path ? 'active':''}" onclick="openPath('${c.path}')">${esc(c.label)}</button>`).join('');
+    // Breadcrumb: each collection in the path is a link back to it
+    const parts = path.split('/'); let acc = '', html = '';
+    parts.forEach((p, i) => {
+      acc += (i ? '/' : '') + p;
+      html += (i ? ' <span style="color:var(--muted);">/</span> ' : '') +
+        (i % 2 === 0 && i < parts.length - 1 ? `<a href="#" onclick="openPath('${acc}');return false;" style="color:var(--orange);">${esc(p)}</a>` : esc(p));
+    });
+    $('d-crumb').innerHTML = html;
+  }
+  function openPath(p){ path = p; $('d-field').value = ''; $('d-value').value = ''; $('d-q').value = ''; reload(); }
+  function clearFilter(){ $('d-field').value = ''; $('d-value').value = ''; reload(); }
+
+  /** The value typed in the filter, as the type it most likely is in the database. */
+  function filterValue(text){
+    if (text === 'true') return true;
+    if (text === 'false') return false;
+    if (text !== '' && !isNaN(Number(text))) return Number(text);
+    return text;
+  }
+  function query(){
+    let q = db.collection(path);
+    const f = $('d-field').value.trim(), v = $('d-value').value.trim();
+    if (f) q = q.where(f, '==', filterValue(v));
+    return q;
+  }
+  async function reload(){
+    docs = []; lastSnap = null; hasMore = false;
+    renderTabs();
+    $('d-body').innerHTML = '<tr><td colspan="9"><div class="spinner"></div></td></tr>';
+    await loadMore();
+  }
+  async function loadMore(){
+    try {
+      let q = query().limit(PAGE);
+      if (lastSnap) q = q.startAfter(lastSnap);
+      const snap = await q.get();
+      snap.forEach(d => docs.push({ id: d.id, data: d.data() }));
+      lastSnap = snap.docs.length ? snap.docs[snap.docs.length - 1] : lastSnap;
+      hasMore = snap.docs.length === PAGE;
+      render();
+    } catch (e) {
+      const denied = /permission|insufficient/i.test(e.message);
+      $('d-body').innerHTML = `<tr><td colspan="9"><div class="empty"><i class="bi bi-lock"></i><p>${denied
+        ? "The database's security rules don't let this account read these records."
+        : "Couldn't load: " + esc(e.message)}</p></div></td></tr>`;
+      $('d-count').textContent = ''; $('d-more').hidden = true;
+    }
+  }
+  function render(){
+    const cols = colsFor(path);
+    const q = $('d-q').value.trim().toLowerCase();
+    const rows = q ? docs.filter(d => (d.id + ' ' + JSON.stringify(toPlain(d.data))).toLowerCase().includes(q)) : docs;
+    $('d-head').innerHTML = '<th>ID</th>' + cols.map(c => `<th>${esc(c)}</th>`).join('') + '<th>Fields</th><th></th>';
+    $('d-count').textContent = `(${rows.length}${hasMore ? '+' : ''})`;
+    $('d-more').hidden = !hasMore;
+    if (!rows.length) { $('d-body').innerHTML = `<tr><td colspan="${cols.length+3}"><div class="empty"><i class="bi bi-inbox"></i><p>No records${q || $('d-field').value ? ' match' : ' here yet'}</p></div></td></tr>`; return; }
+    $('d-body').innerHTML = rows.map(d => `<tr class="row-link" onclick="openDoc('${d.id.replace(/'/g,"\\'")}')">
+      <td style="font-family:monospace;font-size:12px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(d.id)}">${esc(d.id)}</td>
+      ${cols.map(c => `<td style="font-size:13px;">${short(d.data[c])}</td>`).join('')}
+      <td style="font-size:12.5px;color:var(--muted);">${Object.keys(d.data).length}</td>
+      <td><button class="btn-icon" aria-label="Edit"><i class="bi bi-pencil"></i></button></td></tr>`).join('');
+  }
+  $('d-q').addEventListener('input', render);
+
+  // ── The record editor ──
+  let rowSeq = 0;
+  function fieldRow(name, value){
+    const n = ++rowSeq, t = typeOf(value);
+    const types = [['text','Text'],['number','Number'],['yesno','Yes / No'],['date','Date & time'],['json','List or group'],['empty','Empty']];
+    return `<div class="d-row" data-n="${n}" style="display:grid;grid-template-columns:minmax(110px,1fr) 128px minmax(0,2fr) 34px;gap:8px;align-items:start;margin-bottom:10px;">
+      <input type="text" class="d-name" value="${esc(name)}" placeholder="field name" aria-label="Field name" style="padding:8px 9px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:13px;font-family:monospace;min-width:0;">
+      <select class="d-type" aria-label="Type" onchange="retype(${n})" style="padding:8px 6px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:12.5px;">
+        ${types.map(x => `<option value="${x[0]}" ${x[0]===t?'selected':''}>${x[1]}</option>`).join('')}</select>
+      <div class="d-val" style="min-width:0;">${valueInput(t, value)}</div>
+      <button class="btn-icon del" aria-label="Remove field" title="Remove field" onclick="this.closest('.d-row').remove()"><i class="bi bi-x-lg"></i></button></div>`;
+  }
+  const VS = 'width:100%;padding:8px 9px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);font-size:13px;box-sizing:border-box;';
+  function valueInput(t, v){
+    if (t === 'text') { const s = typeof v === 'string' ? v : ''; return s.length > 60 || s.includes('\n')
+        ? `<textarea class="d-in" rows="3" style="${VS}resize:vertical;">${esc(s)}</textarea>`
+        : `<input type="text" class="d-in" value="${esc(s)}" style="${VS}">`; }
+    if (t === 'number') return `<input type="number" class="d-in" step="any" value="${typeof v === 'number' ? v : ''}" style="${VS}">`;
+    if (t === 'yesno') return `<select class="d-in" style="${VS}"><option value="true" ${v===true?'selected':''}>Yes</option><option value="false" ${v===true?'':'selected'}>No</option></select>`;
+    if (t === 'date') return `<input type="datetime-local" class="d-in" step="1" value="${isTime(v) ? localInput(v.toDate()) : localInput(new Date())}" style="${VS}">`;
+    if (t === 'json') { const j = (v !== null && typeof v === 'object' && !isTime(v)) ? JSON.stringify(toPlain(v), null, 2) : '{}';
+      return `<textarea class="d-in" rows="${Math.min(12, Math.max(3, j.split('\n').length))}" spellcheck="false" style="${VS}font-family:monospace;font-size:12px;resize:vertical;">${esc(j)}</textarea>`; }
+    return `<div style="padding:8px 0;font-size:12.5px;color:var(--muted);">no value (null)</div>`;
+  }
+  function retype(n){
+    const row = document.querySelector(`.d-row[data-n="${n}"]`);
+    row.querySelector('.d-val').innerHTML = valueInput(row.querySelector('.d-type').value, null);
+  }
+  function addFieldRow(){ $('d-fields').insertAdjacentHTML('beforeend', fieldRow('', '')); const rows = document.querySelectorAll('.d-row'); rows[rows.length-1].querySelector('.d-name').focus(); }
+
+  /** Reads the form back into a document. Throws with a message naming the field that is wrong. */
+  function readForm(){
+    const out = {};
+    document.querySelectorAll('.d-row').forEach(row => {
+      const name = row.querySelector('.d-name').value.trim();
+      const t = row.querySelector('.d-type').value;
+      const input = row.querySelector('.d-in');
+      if (!name) throw new Error('A field has no name. Name it or remove it.');
+      if (/[.\/\[\]*`~]/.test(name)) throw new Error(`"${name}" can't be a field name (no dots, slashes or brackets).`);
+      if (name in out) throw new Error(`The field "${name}" appears twice.`);
+      if (t === 'text') out[name] = input.value;
+      else if (t === 'number') { const n = Number(input.value); if (input.value === '' || isNaN(n)) throw new Error(`"${name}" needs a number.`); out[name] = n; }
+      else if (t === 'yesno') out[name] = input.value === 'true';
+      else if (t === 'date') { const d = new Date(input.value); if (isNaN(d)) throw new Error(`"${name}" needs a date and time.`); out[name] = firebase.firestore.Timestamp.fromDate(d); }
+      else if (t === 'json') { let j; try { j = JSON.parse(input.value); } catch (e) { throw new Error(`"${name}" isn't valid: ${e.message}`); }
+        if (j === null || typeof j !== 'object') throw new Error(`"${name}" must be a list [ ] or a group { }.`); out[name] = fromPlain(j); }
+      else out[name] = null;
+    });
+    return out;
+  }
+
+  function showDoc(title, id, data, isNew){
+    editing = { id, isNew };
+    rowSeq = 0;
+    $('d-modal-title').textContent = title;
+    $('d-id-wrap').hidden = !isNew; $('d-new-id').value = '';
+    $('d-doc-path').textContent = isNew ? path + '/…' : path + '/' + id;
+    $('d-error').textContent = '';
+    $('d-del-btn').hidden = isNew;
+    const keys = Object.keys(data).sort();
+    $('d-fields').innerHTML = keys.map(k => fieldRow(k, data[k])).join('') || '<p style="font-size:13px;color:var(--muted);margin-bottom:10px;">No fields yet.</p>';
+    // Collections kept under this record
+    const subs = isNew ? [] : ((confOf(path) || {}).subs || []);
+    $('d-subs').innerHTML = subs.map(s => `<button class="btn-ghost" onclick="closeDoc();openPath('${path}/${id}/${s}')"><i class="bi bi-folder2-open"></i> Open its ${esc(s)}</button>`).join('');
+    // Guard rails on accounts
+    const notice = $('d-notice'); notice.hidden = true;
+    if (topOf(path) === 'users' && path === 'users' && !isNew) {
+      const theirRole = data.role;
+      if (id === myUid) { notice.hidden = false; notice.textContent = "This is your own account. Its role and status can't be changed here, and it can't be deleted, so you can't lock yourself out."; }
+      else if ((theirRole === 'admin' || theirRole === 'super_admin') && myRole !== 'super_admin') { notice.hidden = false; notice.textContent = "This is an admin account. Only a super admin can change or delete it."; }
+    }
+    $('d-overlay').classList.add('show');
+  }
+  function openDoc(id){ const d = docs.find(x => x.id === id); if (d) showDoc('Edit record', id, d.data, false); }
+  function openNew(){ showDoc('Add record', null, {}, true); addFieldRow(); }
+  function closeDoc(){ $('d-overlay').classList.remove('show'); editing = null; }
+
+  /** Rules this page enforces on top of the database's own: who may touch accounts and roles. */
+  function accountProblem(id, before, after, deleting){
+    if (path !== 'users') return '';
+    const wasAdmin = before && (before.role === 'admin' || before.role === 'super_admin');
+    if (id === myUid) {
+      if (deleting) return "You can't delete your own account.";
+      if ((after.role || null) !== (before.role || null) || (after.status || null) !== (before.status || null)) return "You can't change your own role or status.";
+    }
+    if (myRole !== 'super_admin') {
+      if (wasAdmin && id !== myUid) return 'Only a super admin can change or delete an admin account.';
+      if (!deleting && (after.role || 'user') !== ((before && before.role) || 'user')) return "Only a super admin can change an account's role.";
+    }
+    return '';
+  }
+
+  async function saveDoc(){
+    if (!editing) return;
+    let data;
+    try { data = readForm(); } catch (e) { $('d-error').textContent = e.message; return; }
+    const before = editing.isNew ? null : (docs.find(x => x.id === editing.id) || {}).data;
+    const newId = $('d-new-id').value.trim();
+    if (editing.isNew && newId && /[\/]/.test(newId)) { $('d-error').textContent = "A record ID can't contain a slash."; return; }
+    const problem = accountProblem(editing.isNew ? newId : editing.id, before || {}, data, false);
+    if (problem) { $('d-error').textContent = problem; return; }
+    const btn = $('d-save-btn'); btn.disabled = true;
+    try {
+      if (editing.isNew) {
+        const ref = newId ? db.collection(path).doc(newId) : db.collection(path).doc();
+        if (newId && (await ref.get()).exists) throw new Error('A record with that ID already exists. Open it to edit it.');
+        await ref.set(data);
+        docs.unshift({ id: ref.id, data });
+        toast('Record added', 'ok');
+      } else {
+        // Replaces the whole record, so a field removed in the form is removed in the database too
+        await db.collection(path).doc(editing.id).set(data);
+        const d = docs.find(x => x.id === editing.id); if (d) d.data = data;
+        toast('Record saved', 'ok');
+      }
+      closeDoc(); render();
+    } catch (e) {
+      $('d-error').textContent = /permission|insufficient/i.test(e.message)
+        ? "The database's security rules don't let this account make that change." : 'Not saved: ' + e.message;
+    } finally { btn.disabled = false; }
+  }
+
+  // ── Deleting ──
+  function askDelete(){
+    if (!editing || editing.isNew) return;
+    const before = (docs.find(x => x.id === editing.id) || {}).data;
+    const problem = accountProblem(editing.id, before || {}, {}, true);
+    if (problem) { $('d-error').textContent = problem; return; }
+    $('d-del-word').textContent = editing.id; $('d-del-type').value = ''; $('d-del-go').disabled = true;
+    $('d-del-overlay').classList.add('show'); $('d-del-type').focus();
+  }
+  $('d-del-type').addEventListener('input', () => { $('d-del-go').disabled = !editing || $('d-del-type').value.trim() !== editing.id; });
+  function closeDelete(){ $('d-del-overlay').classList.remove('show'); }
+  async function doDelete(){
+    if (!editing || $('d-del-type').value.trim() !== editing.id) return;
+    const id = editing.id; $('d-del-go').disabled = true;
+    try {
+      await db.collection(path).doc(id).delete();
+      docs = docs.filter(x => x.id !== id);
+      toast('Record deleted', 'ok'); closeDelete(); closeDoc(); render();
+    } catch (e) {
+      closeDelete();
+      $('d-error').textContent = /permission|insufficient/i.test(e.message)
+        ? "The database's security rules don't let this account delete that." : 'Not deleted: ' + e.message;
+    }
+  }
+
+  ['d-overlay','d-del-overlay'].forEach(id => $(id).addEventListener('click', e => { if (e.target === e.currentTarget) { id === 'd-overlay' ? closeDoc() : closeDelete(); } }));
+  window.onAuthReady = (user, role) => { myRole = role; myUid = user.uid; reload(); };
+</script>
+</body>
+</html>

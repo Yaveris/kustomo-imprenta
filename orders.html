@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orders — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Orders <span>Management</span></div>
+    <div class="topbar-right">
+      <div class="search-wrap"><i class="bi bi-search"></i><input type="text" id="q" placeholder="Search name, city, ID…"></div>
+      <select id="period" aria-label="Orders from" style="padding:8px 10px;border-radius:8px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);font-size:13px;">
+        <option value="all">Any time</option><option value="1">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option>
+      </select>
+      <button class="btn-ghost" onclick="exportCsv()" title="Download the orders shown as a spreadsheet"><i class="bi bi-filetype-csv"></i> Export</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="filter-bar">
+      <button class="f-tab active" data-s="all">All</button>
+      <button class="f-tab" data-s="Pending">Pending</button>
+      <button class="f-tab" data-s="Processing">Processing</button>
+      <button class="f-tab" data-s="Printing">Printing</button>
+      <button class="f-tab" data-s="Ready">Ready</button>
+      <button class="f-tab" data-s="Delivered">Delivered</button>
+      <button class="f-tab" data-s="Cancelled">Cancelled</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Orders <span id="count" style="color:var(--muted);font-weight:400;font-size:13px;"></span></span>
+        <span style="font-size:12px;color:var(--muted);">Click a row for full details</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr>
+            <th>Order ID</th><th>Customer</th><th>Contact</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Date</th><th>Update</th>
+          </tr></thead>
+          <tbody id="tbody"><tr><td colspan="9"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Status Modal -->
+<div class="overlay" id="status-overlay">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-hd"><h3>Update Status</h3><button class="modal-x" onclick="closeStatus()">&times;</button></div>
+    <div class="modal-bd">
+      <p style="font-size:13.5px;color:var(--muted);margin-bottom:14px;">Order: <strong id="m-oid" style="color:var(--text);font-family:monospace;"></strong></p>
+      <div class="fg"><label>New Status</label>
+        <select id="m-sel" style="border-radius:8px;padding:9px 13px;">
+          <option>Pending</option><option>Processing</option><option>Printing</option>
+          <option value="Ready">Ready for Pickup</option><option>Delivered</option><option>Cancelled</option>
+        </select>
+      </div>
+      <p class="note" id="m-cancel-note" hidden style="margin-top:8px;color:#FF6B6B;">Cancelling puts any stock taken for this order back. Refunds are made in PayMongo; the customer sees "Cancelled" in the app.</p>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-ghost" onclick="closeStatus()">Cancel</button>
+      <button class="btn-grad" onclick="saveStatus()"><i class="bi bi-check-lg"></i> Update</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  let all = [], filter = 'all', editId = null;
+
+  auth.onAuthStateChanged(u => {
+    if (!u) return;
+    db.collection('orders').orderBy('orderedAt','desc').onSnapshot(snap => {
+      all = snap.docs.map(d=>({id:d.id,...d.data()}));
+      render();
+    });
+  });
+
+  /** Orders placed in the chosen period. */
+  function inPeriod(o) {
+    const days = document.getElementById('period').value;
+    if (days === 'all') return true;
+    if (!o.orderedAt || !o.orderedAt.toDate) return false;
+    const from = new Date(); from.setHours(0, 0, 0, 0); from.setDate(from.getDate() - (Number(days) - 1));
+    return o.orderedAt.toDate() >= from;
+  }
+  let shown = [];
+  function render() {
+    const q = document.getElementById('q').value.trim().toLowerCase();
+    const timed = all.filter(inPeriod);
+    // How many orders each tab holds (in the chosen period)
+    document.querySelectorAll('.f-tab').forEach(b => {
+      const n = b.dataset.s === 'all' ? timed.length : timed.filter(o => (o.status || 'Pending') === b.dataset.s).length;
+      let c = b.querySelector('.cnt'); if (!c) { c = document.createElement('span'); c.className = 'cnt'; b.appendChild(c); }
+      c.textContent = n;
+    });
+    let rows = filter === 'all' ? timed : timed.filter(o=>(o.status||'Pending')===filter);
+    // The app shows customers "KI-" + the last 5 characters of the id; accept that form (older "FF-" and "#…") too
+    const idQ = q.replace(/^(ki-|ff-|#)/,'');
+    if (q) rows = rows.filter(o=>(o.fullName||'').toLowerCase().includes(q)||(o.city||'').toLowerCase().includes(q)||(o.barangay||'').toLowerCase().includes(q)||o.id.toLowerCase().includes(q)||(idQ&&o.id.toLowerCase().endsWith(idQ))||(o.payMongoSourceId||'').toLowerCase().includes(q));
+    shown = rows;
+    document.getElementById('count').textContent = `(${rows.length})`;
+
+    const tbody = document.getElementById('tbody');
+    if (!rows.length) { tbody.innerHTML='<tr><td colspan="9"><div class="empty"><i class="bi bi-bag-x"></i><p>No orders found</p></div></td></tr>'; return; }
+
+    tbody.innerHTML = rows.map(o=>{
+      const qty = (o.items||[]).reduce((s,i)=>s+(i.quantity||1),0);
+      const pay = o.isDownpayment
+        ? (o.balancePaidAt
+          ? `<span style="color:#00E676;font-size:12px;"><i class="bi bi-check-circle"></i> Paid in full</span>`
+          : `<span style="color:var(--yellow);font-size:12px;"><i class="bi bi-wallet2"></i> Balance due ${peso(o.remainingAmount)}</span>`)
+        : `<span style="font-size:12.5px;"><i class="bi ${/cash on delivery|cod/i.test(o.paymentMethod||'')?'bi-cash-coin':'bi-phone'}" style="color:var(--orange);"></i> ${esc(o.paymentMethod||'GCash')}</span>`;
+      return `<tr class="row-link" onclick="location.href='order-detail.html?id=${o.id}'">
+        <td><span style="font-family:monospace;font-size:12px;color:var(--muted);">${orderNo(o.id)}</span></td>
+        <td><strong>${esc(o.fullName||'—')}</strong><br><span style="font-size:12px;color:var(--muted);">${esc([o.barangay,o.city].filter(Boolean).join(', '))}</span></td>
+        <td style="font-size:12.5px;color:var(--muted);">${esc(o.phone||'—')}</td>
+        <td style="text-align:center;font-weight:600;">${qty}</td>
+        <td style="color:var(--orange);font-weight:700;">${peso(o.totalAmount)}</td>
+        <td>${pay}</td>
+        <td>${statusBadge(o.status||'Pending')}</td>
+        <td style="font-size:12px;color:var(--muted);white-space:nowrap;">${fmtDate(o.orderedAt,false)}</td>
+        <td><button class="btn-icon" title="Update status" aria-label="Update the status of ${orderNo(o.id)}" onclick="event.stopPropagation();openStatus('${o.id}')"><i class="bi bi-pencil-square"></i></button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.querySelectorAll('.f-tab').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('.f-tab').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active'); filter=b.dataset.s; render();
+    });
+  });
+  document.getElementById('q').addEventListener('input', render);
+  document.getElementById('period').addEventListener('change', render);
+
+  const pad2 = n => String(n).padStart(2, '0');
+  const localStamp = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  /** The orders shown, as a spreadsheet: one row per item so quantities and sizes can be totalled. */
+  function exportCsv() {
+    if (!shown.length) { toast('No orders to export', 'warn'); return; }
+    const rows = [['Order No.', 'Order ID', 'Ordered', 'Status', 'Customer', 'Phone', 'Address', 'Barangay', 'City', 'Payment', 'Downpayment', 'Balance collected',
+      'Subtotal', 'Shipping', 'Total', 'Item', 'Size', 'Qty', 'Item price']];
+    shown.forEach(o => {
+      const base = [orderNo(o.id), o.id, o.orderedAt && o.orderedAt.toDate ? localStamp(o.orderedAt.toDate()) : '',
+        o.status || 'Pending', o.fullName || '', o.phone || '', o.streetAddress || '', o.barangay || '', o.city || '',
+        o.paymentMethod || 'GCash', o.isDownpayment ? (o.downpaymentAmount || 0) : '', o.isDownpayment ? (o.balancePaidAt ? 'Yes' : 'No') : '', o.subtotal || 0, o.shippingFee || 0, o.totalAmount || 0];
+      const items = o.items && o.items.length ? o.items : [{}];
+      items.forEach(it => rows.push(base.concat([it.productName || '', it.size || '', it.quantity || '', it.price || ''])));
+    });
+    const d = new Date();
+    downloadCsv(`kustomoimprenta-orders-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.csv`, rows);
+  }
+
+  function openStatus(id) {
+    const o = all.find(x => x.id === id); if (!o) return;
+    editId=id;
+    document.getElementById('m-oid').textContent=orderNo(id);
+    document.getElementById('m-sel').value=o.status||'Pending';
+    document.getElementById('m-cancel-note').hidden=true;
+    document.getElementById('status-overlay').classList.add('show');
+  }
+  document.getElementById('m-sel').addEventListener('change', e => { document.getElementById('m-cancel-note').hidden = e.target.value !== 'Cancelled'; });
+  function closeStatus() { document.getElementById('status-overlay').classList.remove('show'); editId=null; }
+  async function saveStatus() {
+    if (!editId) return;
+    const s=document.getElementById('m-sel').value, id=editId;
+    const o = all.find(x => x.id === id);
+    if (o && (o.status || 'Pending') === s) { closeStatus(); return; }
+    const q = statusChangeQuestion(orderNo(id), o && o.status, s);
+    if (q && !confirm(q)) return;
+    try {
+      closeStatus();
+      await setOrderStatus(id, s);
+      toast(`Status updated to "${s}"`, 'ok');
+    } catch(e) { toast('Failed: '+e.message,'err'); }
+  }
+  document.getElementById('status-overlay').addEventListener('click',e=>{ if(e.target===e.currentTarget)closeStatus(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeStatus(); });
+  // Opened from the Dashboard with a status to show (orders.html?status=Pending)
+  (() => { const want = new URLSearchParams(location.search).get('status'); const b = want && document.querySelector(`.f-tab[data-s="${want}"]`);
+    if (b) { document.querySelectorAll('.f-tab').forEach(x => x.classList.remove('active')); b.classList.add('active'); filter = want; } })();
+</script>
+</body>
+</html>

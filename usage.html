@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usage — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Usage <span>of outside services</span></div>
+    <div class="topbar-right">
+      <select id="u-month" style="padding:7px 10px;border-radius:8px;background:var(--card-bg);color:var(--text);border:1px solid var(--border);font-size:13px;"></select>
+      <button class="btn-ghost" onclick="loadUsage()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="card" style="margin-bottom:16px;">
+      <div style="padding:14px 18px;font-size:13px;color:var(--muted);line-height:1.55;">
+        <strong style="color:var(--text);">These are estimates.</strong>
+        The app counts its own uploads and address searches and this page adds them up across customers.
+        Counting started with the app update that added this page, so anything used before that, or outside the app, is not included.
+        For the exact figures, use the link on each card.
+      </div>
+    </div>
+
+    <div id="u-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">
+      <div class="card"><div class="spinner"></div></div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="card-head"><span class="card-title">Database size</span>
+        <a id="u-fb-link" href="https://console.firebase.google.com/" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--orange);">Open Firebase usage <i class="bi bi-box-arrow-up-right"></i></a></div>
+      <div style="padding:0 18px 18px;">
+        <div class="info-grid" id="u-counts" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr));margin-bottom:10px;"></div>
+        <p style="font-size:12.5px;color:var(--muted);line-height:1.5;">
+          Firebase's free plan allows 50,000 reads and 20,000 writes a day and 1 GiB stored. Reads and writes per day
+          can only be seen in the Firebase console; the counts above show how much is stored.
+        </p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="card-head"><span class="card-title">Limits used on this page</span>
+        <button class="btn-ghost" onclick="resetLimits()">Reset to defaults</button></div>
+      <div style="padding:0 18px 18px;">
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Change these if your plan is different. They are saved in this browser only.</p>
+        <div id="u-limits" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="card-head"><span class="card-title">Not tracked here</span></div>
+      <div style="padding:0 18px 18px;font-size:13px;color:var(--muted);line-height:1.6;">
+        <div><strong style="color:var(--text);">PayMongo</strong> has no usage limit; it charges a fee per payment.
+          <a href="https://dashboard.paymongo.com/" target="_blank" rel="noopener" style="color:var(--orange);">Open PayMongo</a></div>
+        <div><strong style="color:var(--text);">Snap Camera Kit</strong> (AR try-on) has no usage limit to watch.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  // The app keeps its counts on each customer's user document: users/{uid}.usage["2026-10"].{key}
+  // (UsageMeter in the app's Repositories.kt). This page adds them up.
+
+  /** Free-plan allowances this page measures against. Editable below; saved in this browser. */
+  const DEFAULT_LIMITS = { cloudinaryGb: 25, placesSearches: 10000, placesDetails: 10000 };
+  const LIMIT_LABELS = {
+    cloudinaryGb: 'Cloudinary credits a month (1 credit = 1 GB)',
+    placesSearches: 'Address searches a month',
+    placesDetails: 'Address lookups a month'
+  };
+  function loadLimits(){
+    try{ return Object.assign({}, DEFAULT_LIMITS, JSON.parse(localStorage.getItem('ff-usage-limits')||'{}')); }
+    catch(e){ return Object.assign({}, DEFAULT_LIMITS); }
+  }
+  let limits = loadLimits();
+  function saveLimits(){ try{ localStorage.setItem('ff-usage-limits', JSON.stringify(limits)); }catch(e){} }
+  function resetLimits(){ limits = Object.assign({}, DEFAULT_LIMITS); saveLimits(); renderLimits(); renderCards(); }
+
+  const monthKey = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  const monthName = k => { const [y,m]=k.split('-').map(Number); return new Date(y,m-1,1).toLocaleDateString('en-PH',{month:'long',year:'numeric'}); };
+  const num = n => Number(n||0).toLocaleString('en-PH');
+  function fmtBytes(b){
+    b = Number(b||0);
+    if (b >= 1073741824) return (b/1073741824).toFixed(2) + ' GB';
+    if (b >= 1048576) return (b/1048576).toFixed(1) + ' MB';
+    if (b >= 1024) return (b/1024).toFixed(0) + ' KB';
+    return b + ' B';
+  }
+
+  /** Totals of every customer's counts: { "2026-10": {cloudinaryBytes: …}, … } */
+  let byMonth = {}, customersCounting = 0;
+
+  /** One bar: how much of a limit is used, with a word for the state so colour isn't the only signal. */
+  function meter(used, limit, usedText, limitText){
+    const pct = limit > 0 ? Math.min(100, used / limit * 100) : 0;
+    const state = pct >= 90 ? ['Almost at the limit', '#FF4444'] : pct >= 70 ? ['Getting close', '#FFD600'] : ['OK', '#00E676'];
+    return `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px;">
+        <span style="font-size:22px;font-weight:800;">${usedText}</span>
+        <span style="font-size:12.5px;color:var(--muted);">of ${limitText}</span></div>
+      <div style="height:9px;border-radius:99px;background:var(--border);overflow:hidden;" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct.toFixed(0)}">
+        <div style="height:100%;width:${pct}%;background:${state[1]};border-radius:99px;"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12.5px;">
+        <span style="color:${state[1]};font-weight:700;">${state[0]}</span>
+        <span style="color:var(--muted);">${pct < 0.1 && used > 0 ? 'under 0.1' : pct.toFixed(1)}%</span></div>`;
+  }
+  function card(title, link, linkText, body, note){
+    return `<div class="card"><div class="card-head"><span class="card-title">${title}</span>
+        <a href="${link}" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--orange);white-space:nowrap;">${linkText} <i class="bi bi-box-arrow-up-right"></i></a></div>
+      <div style="padding:0 18px 18px;">${body}
+        <p style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:12px;">${note}</p></div></div>`;
+  }
+
+  function renderCards(){
+    const key = document.getElementById('u-month').value;
+    const m = byMonth[key] || {};
+    // Stored images stay until deleted, so storage is everything uploaded so far, not just this month
+    const allBytes = Object.values(byMonth).reduce((s, x) => s + (x.cloudinaryBytes||0), 0);
+    const allUploads = Object.values(byMonth).reduce((s, x) => s + (x.cloudinaryUploads||0), 0);
+    const gbLimit = Number(limits.cloudinaryGb)||0;
+    const maps = 'https://console.cloud.google.com/google/maps-apis/metrics?project=' + firebaseConfig.projectId;
+    document.getElementById('u-cards').innerHTML =
+      card('Cloudinary image storage', 'https://console.cloudinary.com/', 'Open Cloudinary',
+        meter(allBytes, gbLimit*1073741824, fmtBytes(allBytes), gbLimit + ' GB'),
+        `${num(allUploads)} images uploaded by the app so far, ${num(m.cloudinaryUploads)} of them in ${monthName(key)}
+         (${fmtBytes(m.cloudinaryBytes)}). Cloudinary's credits also cover viewing (bandwidth) and image changes,
+         which this page can't see, so the real figure is higher.`) +
+      card('Address search', maps, 'Open Google Maps usage',
+        meter(m.placesSearches||0, Number(limits.placesSearches)||0, num(m.placesSearches), num(limits.placesSearches)),
+        `Suggestions shown while a customer types an address, in ${monthName(key)}. Resets each month.`) +
+      card('Address lookups', maps, 'Open Google Maps usage',
+        meter(m.placesDetails||0, Number(limits.placesDetails)||0, num(m.placesDetails), num(limits.placesDetails)),
+        `Each time a customer picks a suggestion or searches inside the map, in ${monthName(key)}. Resets each month.`) +
+      card('Map views', maps, 'Open Google Maps usage',
+        `<div style="font-size:22px;font-weight:800;margin-bottom:6px;">${num(m.mapLoads)}</div>
+         <div style="font-size:12.5px;color:#00E676;font-weight:700;">No limit</div>`,
+        `Times the address map was opened in ${monthName(key)}. Maps inside an Android app are not limited by Google.`);
+    document.getElementById('u-cards').insertAdjacentHTML('beforeend',
+      customersCounting ? '' : `<div class="card" style="grid-column:1/-1;"><div class="empty"><i class="bi bi-bar-chart-line"></i>
+        <p>No counts yet. They appear once customers use the updated app to upload a design or search an address.</p></div></div>`);
+  }
+
+  function renderLimits(){
+    document.getElementById('u-limits').innerHTML = Object.keys(DEFAULT_LIMITS).map(k =>
+      `<label style="font-size:12.5px;color:var(--muted);display:block;" for="lim-${k}">${LIMIT_LABELS[k]}
+         <input type="number" id="lim-${k}" min="0" step="1" value="${limits[k]}" style="display:block;width:100%;margin-top:5px;" onchange="setLimit('${k}',this.value)"></label>`).join('');
+  }
+  function setLimit(k, v){ const n = parseFloat(v); if (!isNaN(n) && n >= 0) { limits[k] = n; saveLimits(); renderCards(); } }
+
+  /** Number of documents in a collection, without downloading them where the SDK allows. */
+  async function countOf(name){
+    try { return (await db.collection(name).count().get()).data().count; }
+    catch (e) { try { return (await db.collection(name).get()).size; } catch (e2) { return null; } }
+  }
+
+  async function loadUsage(){
+    try {
+      const snap = await db.collection('users').get();
+      byMonth = {}; customersCounting = 0;
+      snap.forEach(doc => {
+        const usage = doc.data().usage;
+        if (!usage || typeof usage !== 'object') return;
+        customersCounting++;
+        Object.keys(usage).forEach(month => {
+          const src = usage[month]; if (!src || typeof src !== 'object') return;
+          const dst = byMonth[month] = byMonth[month] || {};
+          Object.keys(src).forEach(k => { if (typeof src[k] === 'number') dst[k] = (dst[k]||0) + src[k]; });
+        });
+      });
+      // Month picker: this month first, then any earlier month that has counts
+      const now = monthKey(new Date());
+      const months = [...new Set([now, ...Object.keys(byMonth)])].sort().reverse();
+      const sel = document.getElementById('u-month'), keep = sel.value;
+      sel.innerHTML = months.map(k => `<option value="${k}">${monthName(k)}</option>`).join('');
+      sel.value = months.includes(keep) ? keep : now;
+      renderCards();
+    } catch (e) {
+      document.getElementById('u-cards').innerHTML = `<div class="card"><div class="empty"><i class="bi bi-exclamation-triangle"></i><p>Couldn't load the counts: ${esc(e.message)}</p></div></div>`;
+    }
+    const names = [['products','Products'],['categories','Categories'],['models','Added models'],['orders','Orders'],['users','Accounts'],['chats','Chats']];
+    const counts = await Promise.all(names.map(n => countOf(n[0])));
+    document.getElementById('u-counts').innerHTML = names.map((n, i) =>
+      `<div class="ii"><label>${n[1]}</label><span style="font-size:18px;font-weight:700;">${counts[i] === null ? '—' : num(counts[i])}</span></div>`).join('');
+  }
+
+  document.getElementById('u-month').addEventListener('change', renderCards);
+  renderLimits();
+  window.onAuthReady = () => {
+    document.getElementById('u-fb-link').href = `https://console.firebase.google.com/project/${firebaseConfig.projectId}/usage`;
+    loadUsage();
+  };
+</script>
+</body>
+</html>

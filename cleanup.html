@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clean Up — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    .cu-warn { display: flex; gap: 12px; align-items: flex-start; border-color: rgba(255,68,68,.35); margin-bottom: 16px; padding: 16px 18px; }
+    .cu-warn > i { font-size: 22px; color: #FF6B6B; }
+    .cu-sec { margin-bottom: 16px; }
+    .cu-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .cu-head .card-title { margin-right: auto; }
+    .cu-opts { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 0 18px 10px; }
+    .cu-opts .fg-check { font-size: 12.5px; }
+    .cu-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 0 18px 10px; }
+    .cu-tools input[type=search] { flex: 1; min-width: 160px; }
+    .cu-list { max-height: 340px; overflow: auto; border-top: 1px solid var(--border); }
+    .cu-row { display: flex; align-items: center; gap: 10px; padding: 9px 18px; border-bottom: 1px solid var(--border); font-size: 13px; cursor: pointer; }
+    .cu-row:hover { background: rgba(255,255,255,.03); }
+    .cu-row input { width: 16px; height: 16px; accent-color: #FF4444; flex-shrink: 0; }
+    .cu-row .main { flex: 1; min-width: 0; }
+    .cu-row .main strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cu-row .sub { font-size: 12px; color: var(--muted); }
+    .cu-row .side { text-align: right; font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .cu-empty { padding: 16px 18px; font-size: 13px; color: var(--muted); }
+    .cu-bar { position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      background: #111; border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-top: 8px; }
+    .cu-bar .sum { flex: 1; min-width: 200px; font-size: 13px; }
+    .btn-danger { padding: 9px 16px; border-radius: 8px; background: rgba(255,68,68,.15); color: #FF6B6B; border: 1px solid rgba(255,68,68,.35); font-size: 13.5px; font-weight: 700; }
+    .btn-danger:disabled { opacity: .4; cursor: default; }
+    #log { white-space: pre-line; font-size: 12.5px; color: var(--muted); max-height: 220px; overflow: auto; margin-top: 10px; }
+  </style>
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Clean Up <span>Delete test data</span></div>
+    <div class="topbar-right"><a href="export.html" class="btn-ghost"><i class="bi bi-download"></i> Export a copy first</a></div>
+  </div>
+
+  <div class="page-content">
+    <div class="card cu-warn">
+      <i class="bi bi-exclamation-octagon" aria-hidden="true"></i>
+      <div class="note" style="color:var(--text);">
+        <strong>Deleting here can't be undone.</strong> Download a copy on the <a href="export.html" style="color:var(--orange);">Export</a> page first.
+        Tick what was made for testing, then press <strong>Delete selected</strong> at the bottom.
+        Admin accounts, the built-in shirts and the keys on App Keys are never touched here.
+        <div style="margin-top:6px;">Two things this page can't remove: <strong>sign-in accounts</strong> (delete them in
+          <a id="auth-link" href="#" target="_blank" rel="noopener" style="color:var(--orange);">Firebase → Authentication</a>) and
+          <strong>uploaded images</strong> (delete the <code>kustomoimprenta/…</code> folders in the <a href="https://console.cloudinary.com/" target="_blank" rel="noopener" style="color:var(--orange);">Cloudinary console</a>).</div>
+      </div>
+    </div>
+
+    <!-- Fresh start -->
+    <div class="card cu-sec" id="fresh">
+      <div class="card-head cu-head"><span class="card-title"><i class="bi bi-stars"></i> Fresh start for the shop</span></div>
+      <div class="cu-opts" style="padding-bottom:16px;">
+        <p class="note" style="margin:0 0 10px;color:var(--text);">Handing the system over? This ticks <strong>everything</strong> below: every order, customer profile, product, design preset,
+          category and added model, the staff's own test designs, the usage counts, and Shop Settings (back to the defaults).
+          Nothing is deleted until you press <strong>Delete selected</strong> and type DELETE.</p>
+        <button class="btn-grad" type="button" onclick="freshStart()"><i class="bi bi-check2-all"></i> Tick everything for a fresh start</button>
+      </div>
+    </div>
+
+    <!-- Orders -->
+    <div class="card cu-sec">
+      <div class="card-head cu-head"><span class="card-title"><i class="bi bi-bag-check"></i> Orders <span class="note" id="n-orders"></span></span></div>
+      <div class="cu-opts">
+        <label class="fg-check"><input type="checkbox" id="o-chats" checked> Also delete each order's chat and messages</label>
+        <label class="fg-check"><input type="checkbox" id="o-stock" checked> Put back the stock they took</label>
+      </div>
+      <div class="cu-tools">
+        <input type="search" class="inp" id="q-orders" placeholder="Search name, order no., city…" aria-label="Search orders">
+        <label class="note" for="o-before">Placed before</label><input type="date" class="inp" id="o-before">
+        <button class="btn-ghost" onclick="selectBefore()">Tick these</button>
+        <button class="btn-ghost" onclick="tickAll('orders', true)">Tick all shown</button>
+        <button class="btn-ghost" onclick="tickAll('orders', false)">Untick all</button>
+      </div>
+      <div class="cu-list" id="list-orders"></div>
+    </div>
+
+    <!-- Customers -->
+    <div class="card cu-sec">
+      <div class="card-head cu-head"><span class="card-title"><i class="bi bi-people"></i> Customer profiles <span class="note" id="n-customers"></span></span></div>
+      <div class="cu-opts">
+        <label class="fg-check"><input type="checkbox" id="c-orders"> Also tick their orders above</label>
+        <label class="fg-check"><input type="checkbox" id="c-subs" checked> Also delete their saved designs and shapes</label>
+      </div>
+      <div class="cu-tools">
+        <input type="search" class="inp" id="q-customers" placeholder="Search name or email…" aria-label="Search customers">
+        <button class="btn-ghost" onclick="tickAll('customers', true)">Tick all shown</button>
+        <button class="btn-ghost" onclick="tickAll('customers', false)">Untick all</button>
+      </div>
+      <div class="cu-list" id="list-customers"></div>
+      <p class="note" style="padding:10px 18px 14px;">A customer whose profile is deleted but who still has a sign-in account gets a fresh, empty profile the next time they sign in.</p>
+    </div>
+
+    <!-- Products -->
+    <div class="card cu-sec">
+      <div class="card-head cu-head"><span class="card-title"><i class="bi bi-box-seam"></i> Products <span class="note" id="n-products"></span></span></div>
+      <div class="cu-tools">
+        <input type="search" class="inp" id="q-products" placeholder="Search products…" aria-label="Search products">
+        <button class="btn-ghost" onclick="tickAll('products', true)">Tick all shown</button>
+        <button class="btn-ghost" onclick="tickAll('products', false)">Untick all</button>
+      </div>
+      <div class="cu-list" id="list-products"></div>
+      <p class="note" style="padding:10px 18px 14px;">Orders keep their own copy of each item's name and price, so past orders still read correctly.</p>
+    </div>
+
+    <!-- Presets -->
+    <div class="card cu-sec">
+      <div class="card-head cu-head"><span class="card-title"><i class="bi bi-palette"></i> Design presets <span class="note" id="n-presets"></span></span>
+        <button class="btn-ghost" onclick="tickAll('presets', true)">Tick all</button></div>
+      <div class="cu-list" id="list-presets"></div>
+    </div>
+
+    <!-- Categories -->
+    <div class="card cu-sec">
+      <div class="card-head cu-head"><span class="card-title"><i class="bi bi-tags"></i> Categories <span class="note" id="n-categories"></span></span>
+        <button class="btn-ghost" onclick="tickAll('categories', true)">Tick all</button></div>
+      <div class="cu-list" id="list-categories"></div>
+    </div>
+
+    <!-- Added models -->
+    <div class="card cu-sec">
+      <div class="card-head cu-head"><span class="card-title"><i class="bi bi-badge-3d"></i> Added models <span class="note" id="n-models"></span></span>
+        <button class="btn-ghost" onclick="tickAll('models', true)">Tick all</button></div>
+      <div class="cu-list" id="list-models"></div>
+      <p class="note" style="padding:10px 18px 14px;">Models added on the 3D Models page. The shirts built into the app always stay.</p>
+    </div>
+
+    <!-- Staff designs + shop settings -->
+    <div class="card cu-sec">
+      <div class="card-head"><span class="card-title"><i class="bi bi-person-gear"></i> Staff test work &amp; settings</span></div>
+      <div class="cu-opts" style="padding-bottom:16px;">
+        <label class="fg-check"><input type="checkbox" id="s-designs"> Delete the saved designs and shapes in the staff accounts (<span id="n-staffdesigns">…</span>)</label>
+        <label class="fg-check"><input type="checkbox" id="shop-reset"> Reset Shop Settings to the defaults (shipping, downpayment, low-stock level, and the Terms text goes back to the app's built-in one)</label>
+      </div>
+    </div>
+
+    <!-- Orphans + counts -->
+    <div class="card cu-sec">
+      <div class="card-head cu-head"><span class="card-title"><i class="bi bi-chat-square"></i> Chats left over from deleted orders <span class="note" id="n-orphans"></span></span>
+        <button class="btn-ghost" onclick="tickAll('orphans', true)">Tick all</button></div>
+      <div class="cu-list" id="list-orphans"></div>
+    </div>
+    <div class="card cu-sec">
+      <div class="card-head"><span class="card-title"><i class="bi bi-bar-chart-line"></i> Usage counts</span></div>
+      <div class="cu-opts" style="padding-bottom:16px;">
+        <label class="fg-check"><input type="checkbox" id="u-reset"> Reset the Usage page's counts (uploads and address searches made while testing)</label>
+      </div>
+    </div>
+
+    <div class="cu-bar">
+      <div class="sum" id="sum">Nothing ticked.</div>
+      <button class="btn-danger" id="go" disabled onclick="openConfirm()"><i class="bi bi-trash3"></i> Delete selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm -->
+<div class="overlay" id="confirm-overlay">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-hd"><h3 style="color:#FF6B6B;">Delete for good?</h3><button class="modal-x" onclick="closeConfirm()">&times;</button></div>
+    <div class="modal-bd">
+      <div id="c-summary" style="font-size:13.5px;line-height:1.6;"></div>
+      <div class="fg" style="margin-top:14px;"><label for="c-type">Type DELETE to confirm</label><input type="text" id="c-type" autocomplete="off"></div>
+      <div id="log"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-ghost" id="c-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-danger" id="c-go" disabled onclick="runDelete()"><i class="bi bi-trash3"></i> Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  const data = { orders: [], customers: [], products: [], presets: [], categories: [], models: [], orphans: [] };
+  const picked = { orders: new Set(), customers: new Set(), products: new Set(), presets: new Set(), categories: new Set(), models: new Set(), orphans: new Set() };
+  let chats = [], staff = [], staffDesigns = 0, running = false;
+  const ms = t => (t && t.toMillis) ? t.toMillis() : 0;
+  $('auth-link').href = `https://console.firebase.google.com/project/${firebaseConfig.projectId}/authentication/users`;
+
+  window.onAuthReady = (user, role) => {
+    if (role !== 'super_admin') { toast('Clean Up is for Super Admins', 'err'); setTimeout(() => location.href = 'dashboard.html', 1500); return; }
+    load();
+  };
+
+  // Firestore collection behind each list, and the page that owns its rule
+  const SOURCES = { orders: 'orders', users: 'users', products: 'products', designPresets: 'designPresets', chats: 'chats', categories: 'categories', models: 'models' };
+  const LABEL = { orders: 'Orders', users: 'Customer profiles', products: 'Products', designPresets: 'Design presets', chats: 'Chats', categories: 'Categories', models: 'Added models' };
+  let blocked = [];
+
+  /** Reads every list on its own, so one Firestore rule that's missing only blanks out its own section. */
+  async function load() {
+    blocked = [];
+    const got = {};
+    await Promise.all(Object.keys(SOURCES).map(async k => {
+      try { got[k] = (await db.collection(SOURCES[k]).get()).docs; }
+      catch (e) { got[k] = []; blocked.push({ k, msg: e.code === 'permission-denied' ? 'permission-denied' : (e.message || String(e)) }); }
+    }));
+    const o = got.orders, u = got.users, p = got.products, d = got.designPresets, c = got.chats, cat = got.categories, mod = got.models;
+    data.categories = cat.map(x => ({ id: x.id, ...x.data() })).sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+    // Only models the shop added: not the built-in shirts' settings, not the try-on switch
+    data.models = mod.map(x => ({ id: x.id, ...x.data() })).filter(x => x.id !== '_tryOn' && x.builtIn !== true);
+    staff = u.filter(x => x.data().role === 'admin' || x.data().role === 'super_admin').map(x => x.id);
+    if (!staff.includes(auth.currentUser.uid)) staff.push(auth.currentUser.uid);
+    countStaffDesigns();
+    data.orders = o.map(x => ({ id: x.id, ...x.data() })).sort((a, b) => ms(b.orderedAt) - ms(a.orderedAt));
+    // Staff accounts are never offered here
+    data.customers = u.map(x => ({ id: x.id, ...x.data() })).filter(x => x.role !== 'admin' && x.role !== 'super_admin')
+      .sort((a, b) => ms(b.createdAt) - ms(a.createdAt));
+    data.products = p.map(x => ({ id: x.id, ...x.data() })).sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    data.presets = d.map(x => ({ id: x.id, ...x.data() }));
+    chats = c.map(x => ({ id: x.id, ...x.data() }));
+    const orderIds = new Set(data.orders.map(x => x.id));
+    // Without the orders list every chat would look left over, so don't offer any then
+    data.orphans = got.orders.length || !blocked.some(b => b.k === 'orders') ? chats.filter(x => !x.orderId || !orderIds.has(x.orderId)) : [];
+    Object.keys(picked).forEach(k => picked[k].forEach(id => { if (!data[k].some(x => x.id === id)) picked[k].delete(id); }));
+    renderAll();
+    showBlocked();
+  }
+
+  /** Says which lists Firestore wouldn't show, and what to do about it. */
+  function showBlocked() {
+    let box = $('blocked');
+    if (!blocked.length) { if (box) box.remove(); return; }
+    if (!box) { box = document.createElement('div'); box.id = 'blocked'; box.className = 'card cu-warn'; $('fresh').before(box); }
+    const rulesUrl = `https://console.firebase.google.com/project/${firebaseConfig.projectId}/firestore/rules`;
+    const denied = blocked.filter(b => b.msg === 'permission-denied').map(b => LABEL[b.k]);
+    const other = blocked.filter(b => b.msg !== 'permission-denied');
+    box.innerHTML = `<i class="bi bi-shield-exclamation" aria-hidden="true"></i><div class="note" style="color:var(--text);">
+      ${denied.length ? `<strong>Firestore wouldn't show: ${esc(denied.join(', '))}.</strong> Those sections stay empty and nothing in them is deleted.
+      Their rule isn't published yet: copy the rule block from <a href="keys.html#rules" style="color:var(--orange);">App Keys → One-time Firestore setup</a>
+      into <a href="${rulesUrl}" target="_blank" rel="noopener" style="color:var(--orange);">Firebase → Firestore → Rules</a>, publish, then reload this page.` : ''}
+      ${other.map(b => `<div>${esc(LABEL[b.k])}: ${esc(b.msg)}</div>`).join('')}</div>`;
+  }
+
+  const name = c => `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email || 'No name';
+  const ordersOf = uid => data.orders.filter(o => o.userId === uid);
+  const ROW = {
+    orders: o => [`${orderNo(o.id)} · ${esc(o.fullName || '—')}`, `${esc(o.city || '')} ${o.items ? '· ' + o.items.reduce((s, i) => s + (Number(i.quantity) || 1), 0) + ' item(s)' : ''}`, `${peso(o.totalAmount)}<br>${esc(o.status || 'Pending')} · ${fmtDate(o.orderedAt, false)}`],
+    customers: c => [esc(name(c)), esc(c.email || '—'), `${ordersOf(c.id).length} order(s)<br>joined ${fmtDate(c.createdAt, false)}`],
+    products: p => [esc(p.name || '—'), esc(p.category || '—'), `${peso(p.price)}<br>${p.isAvailable === true ? 'for sale' : 'switched off'}`],
+    presets: p => [esc(p.name || 'Preset'), esc(p.description || ''), p.isActive === false ? 'hidden' : 'shown'],
+    categories: c => [esc(c.name || c.id), esc(c.description || ''), c.showInApp === false ? 'hidden in app' : 'shown in app'],
+    models: m => [esc(m.label || m.name || m.id), esc(m.blurb || ''), m.enabled === false ? 'switched off' : 'in use'],
+    orphans: c => [esc(c.customerName || 'Customer'), c.orderId ? 'Order ' + orderNo(c.orderId) + ' no longer exists' : 'No order', fmtDate(c.lastMessageAt, false)]
+  };
+  const SEARCH = {
+    orders: o => [o.fullName, o.city, o.barangay, o.id, orderNo(o.id)].join(' '),
+    customers: c => [name(c), c.email, c.phone].join(' '),
+    products: p => [p.name, p.category].join(' ')
+  };
+  function shown(k) {
+    const q = ($('q-' + k) ? $('q-' + k).value : '').trim().toLowerCase();
+    return q ? data[k].filter(x => SEARCH[k](x).toLowerCase().includes(q)) : data[k];
+  }
+  function render(k) {
+    const list = shown(k), el = $('list-' + k);
+    $('n-' + k).textContent = `(${picked[k].size} of ${data[k].length} ticked)`;
+    el.innerHTML = list.length ? list.map(x => {
+      const [a, b, side] = ROW[k](x);
+      return `<label class="cu-row"><input type="checkbox" data-k="${k}" data-id="${esc(x.id)}" ${picked[k].has(x.id) ? 'checked' : ''}>
+        <span class="main"><strong>${a}</strong><span class="sub">${b}</span></span><span class="side">${side}</span></label>`;
+    }).join('') : `<div class="cu-empty">${data[k].length ? 'Nothing matches the search.' : 'None.'}</div>`;
+  }
+  function renderAll() { Object.keys(picked).forEach(render); summary(); }
+
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (!t.dataset || !t.dataset.k) return;
+    const k = t.dataset.k, id = t.dataset.id;
+    t.checked ? picked[k].add(id) : picked[k].delete(id);
+    // Ticking a customer can tick their orders too
+    if (k === 'customers' && t.checked && $('c-orders').checked) { ordersOf(id).forEach(o => picked.orders.add(o.id)); render('orders'); }
+    render(k); summary();
+  });
+  ['orders', 'customers', 'products'].forEach(k => $('q-' + k).addEventListener('input', () => render(k)));
+  ['o-chats', 'o-stock', 'c-subs', 'u-reset', 's-designs', 'shop-reset'].forEach(id => $(id).addEventListener('change', summary));
+
+  /** How many saved designs and shapes the staff accounts hold (shown next to that option). */
+  async function countStaffDesigns() {
+    try {
+      const counts = await Promise.all(staff.flatMap(uid => ['designs', 'shapes'].map(n => db.collection('users').doc(uid).collection(n).get().then(s => s.size))));
+      staffDesigns = counts.reduce((a, b) => a + b, 0);
+      $('n-staffdesigns').textContent = staffDesigns + ' saved';
+    } catch (e) { $('n-staffdesigns').textContent = 'couldn\'t count them'; }
+  }
+
+  /** Ticks everything a shop that's starting out shouldn't inherit. */
+  function freshStart() {
+    ['orders', 'customers', 'products', 'presets', 'categories', 'models', 'orphans'].forEach(k => data[k].forEach(x => picked[k].add(x.id)));
+    ['o-chats', 'o-stock', 'c-subs', 'u-reset', 's-designs', 'shop-reset'].forEach(id => $(id).checked = true);
+    ['orders', 'customers', 'products'].forEach(k => $('q-' + k).value = '');
+    renderAll();
+    toast('Everything is ticked. Check the lists, then press Delete selected.', 'ok');
+    $('go').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  $('c-orders').addEventListener('change', e => {
+    if (e.target.checked) { picked.customers.forEach(uid => ordersOf(uid).forEach(o => picked.orders.add(o.id))); render('orders'); summary(); }
+  });
+
+  function tickAll(k, on) { shown(k).forEach(x => on ? picked[k].add(x.id) : picked[k].delete(x.id)); render(k); summary(); }
+  function selectBefore() {
+    const v = $('o-before').value;
+    if (!v) { toast('Pick a date first', 'warn'); return; }
+    const until = new Date(v + 'T00:00:00').getTime();
+    let n = 0;
+    data.orders.forEach(o => { if (ms(o.orderedAt) && ms(o.orderedAt) < until) { picked.orders.add(o.id); n++; } });
+    render('orders'); summary(); toast(n + ' order' + (n === 1 ? '' : 's') + ' ticked', 'ok');
+  }
+
+  function parts() {
+    const out = [], n = k => picked[k].size, pl = (c, w, many) => `${c} ${c === 1 ? w : (many || w + 's')}`;
+    if (n('orders')) out.push(pl(n('orders'), 'order') + ($('o-chats').checked ? ' with their chats' : ''));
+    if (n('customers')) out.push(pl(n('customers'), 'customer profile') + ($('c-subs').checked ? ' with their saved designs' : ''));
+    if (n('products')) out.push(pl(n('products'), 'product'));
+    if (n('presets')) out.push(pl(n('presets'), 'design preset'));
+    if (n('categories')) out.push(pl(n('categories'), 'category', 'categories'));
+    if (n('models')) out.push(pl(n('models'), 'added model'));
+    if (n('orphans')) out.push(pl(n('orphans'), 'left-over chat'));
+    if ($('s-designs').checked) out.push('the staff accounts\' saved designs and shapes');
+    if ($('shop-reset').checked) out.push('Shop Settings (back to the defaults)');
+    if ($('u-reset').checked) out.push('the usage counts');
+    return out;
+  }
+  function summary() {
+    const p = parts();
+    $('sum').innerHTML = p.length ? 'Will delete: <strong>' + esc(p.join(', ')) + '</strong>' : 'Nothing ticked.';
+    $('go').disabled = !p.length || running;
+  }
+
+  function openConfirm() {
+    const p = parts(); if (!p.length) return;
+    const stockNote = picked.orders.size && $('o-stock').checked ? '<br>Stock these orders took is put back first.' : '';
+    $('c-summary').innerHTML = '<ul style="padding-left:18px;">' + p.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' + stockNote;
+    $('c-type').value = ''; $('c-go').disabled = true; $('log').textContent = '';
+    $('confirm-overlay').classList.add('show');
+    setTimeout(() => $('c-type').focus(), 50);
+  }
+  function closeConfirm() { if (running) return; $('confirm-overlay').classList.remove('show'); }
+  $('c-type').addEventListener('input', e => { $('c-go').disabled = e.target.value.trim() !== 'DELETE' || running; });
+
+  const log = line => { $('log').textContent += line + '\n'; $('log').scrollTop = $('log').scrollHeight; };
+  /** Deletes every document under `ref` (a collection), in batches. */
+  async function deleteAll(ref) {
+    const snap = await ref.get();
+    for (let i = 0; i < snap.docs.length; i += 400) {
+      const b = db.batch(); snap.docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit();
+    }
+    return snap.docs.length;
+  }
+  async function deleteChat(id) {
+    const chat = db.collection('chats').doc(id);
+    await deleteAll(chat.collection('messages'));
+    await chat.delete();
+  }
+  /** Puts back what an order took from stock (only if it was taken). Quiet; returns true when something changed. */
+  async function putBackStock(orderId) {
+    const orderRef = db.collection('orders').doc(orderId);
+    return db.runTransaction(async tx => {
+      const o = (await tx.get(orderRef)).data();
+      if (!o || !o.stockDeducted) return false;
+      const back = {};
+      (o.items || []).forEach(it => { if (!it.productId || !it.size) return;
+        back[it.productId] = back[it.productId] || {}; back[it.productId][it.size] = (back[it.productId][it.size] || 0) + (Number(it.quantity) || 0); });
+      const ids = Object.keys(back), prods = await Promise.all(ids.map(id => tx.get(db.collection('products').doc(id))));
+      prods.forEach((p, i) => {
+        const inv = p.exists ? p.data().inventory : null; if (!inv || typeof inv !== 'object') return;
+        const ch = {}; Object.keys(back[ids[i]]).forEach(sz => { if (typeof inv[sz] === 'number') ch['inventory.' + sz] = inv[sz] + back[ids[i]][sz]; });
+        if (Object.keys(ch).length) tx.update(p.ref, ch);
+      });
+      tx.update(orderRef, { stockDeducted: false });
+      return true;
+    });
+  }
+
+  async function runDelete() {
+    if ($('c-type').value.trim() !== 'DELETE') return;
+    running = true; $('c-go').disabled = true; $('c-cancel').disabled = true; $('go').disabled = true;
+    const failed = [];
+    const step = async (label, fn) => { try { await fn(); log('✓ ' + label); } catch (e) { failed.push(label); log('✗ ' + label + ': ' + (e.code === 'permission-denied' ? 'Firestore refused (check the rules allow staff to delete this)' : e.message)); } };
+    // Products first, so stock put back below never lands on a product that is about to go
+    for (const id of picked.products) { const p = data.products.find(x => x.id === id); await step('Product ' + (p ? p.name : id), () => db.collection('products').doc(id).delete()); }
+    for (const id of picked.orders) {
+      await step('Order ' + orderNo(id), async () => {
+        if ($('o-stock').checked) await putBackStock(id).catch(() => {});
+        if ($('o-chats').checked) for (const c of chats.filter(c => c.orderId === id)) await deleteChat(c.id);
+        await db.collection('orders').doc(id).delete();
+      });
+    }
+    for (const uid of picked.customers) {
+      const c = data.customers.find(x => x.id === uid);
+      await step('Customer ' + (c ? name(c) : uid), async () => {
+        if ($('c-subs').checked) { await deleteAll(db.collection('users').doc(uid).collection('designs')); await deleteAll(db.collection('users').doc(uid).collection('shapes')); }
+        await db.collection('users').doc(uid).delete();
+      });
+    }
+    for (const id of picked.presets) { const p = data.presets.find(x => x.id === id); await step('Preset ' + (p ? p.name : id), () => db.collection('designPresets').doc(id).delete()); }
+    for (const id of picked.categories) { const c = data.categories.find(x => x.id === id); await step('Category ' + (c ? c.name : id), () => db.collection('categories').doc(id).delete()); }
+    for (const id of picked.models) { const m = data.models.find(x => x.id === id); await step('Model ' + (m ? (m.label || m.name) : id), () => db.collection('models').doc(id).delete()); }
+    for (const id of picked.orphans) await step('Left-over chat ' + id, () => deleteChat(id));
+    if ($('s-designs').checked) {
+      await step('Staff saved designs and shapes', async () => {
+        for (const uid of staff) { await deleteAll(db.collection('users').doc(uid).collection('designs')); await deleteAll(db.collection('users').doc(uid).collection('shapes')); }
+      });
+      $('s-designs').checked = false;
+    }
+    if ($('shop-reset').checked) {
+      await step('Shop Settings reset', () => db.collection('appConfig').doc('shop').delete());
+      $('shop-reset').checked = false;
+    }
+    if ($('u-reset').checked) {
+      await step('Usage counts', async () => {
+        const users = await db.collection('users').get();
+        const withUsage = users.docs.filter(d => d.data().usage);
+        for (let i = 0; i < withUsage.length; i += 400) {
+          const b = db.batch(); withUsage.slice(i, i + 400).forEach(d => b.update(d.ref, { usage: firebase.firestore.FieldValue.delete() })); await b.commit();
+        }
+      });
+      $('u-reset').checked = false;
+    }
+    Object.keys(picked).forEach(k => picked[k].clear());
+    log(failed.length ? `Done, but ${failed.length} item(s) couldn't be deleted (see above).` : 'All done.');
+    toast(failed.length ? `${failed.length} item(s) couldn't be deleted` : 'Deleted', failed.length ? 'warn' : 'ok');
+    running = false; $('c-cancel').disabled = false; $('c-cancel').textContent = 'Close';
+    await load();
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeConfirm(); });
+  $('confirm-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+</script>
+</body>
+</html>

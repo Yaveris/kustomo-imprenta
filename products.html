@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Products — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Products <span>Catalog</span></div>
+    <div class="topbar-right">
+      <div class="search-wrap"><i class="bi bi-search"></i><input type="text" id="q" placeholder="Search products…"></div>
+      <button class="btn-grad" onclick="openAdd()"><i class="bi bi-plus-lg"></i> Add Product</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="filter-bar" id="cat-tabs"></div>
+    <!-- Models the app can show that no available product uses yet -->
+    <div class="card" id="missing-styles" style="display:none;margin-bottom:16px;">
+      <div class="card-head"><span class="card-title">Shirts not for sale yet</span></div>
+      <div style="padding:0 18px 16px;">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Customers can't buy these yet. Click one to add it as a product.</p>
+        <div id="missing-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        <div id="bulk-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);">
+          <span style="font-size:13px;">Or add them all at ₱</span>
+          <input type="number" id="bulk-price" min="20" step="0.01" placeholder="e.g. 350" style="width:110px;" aria-label="Price for each">
+          <span style="font-size:13px;">each</span>
+          <button class="btn-grad" id="bulk-btn" onclick="addAllMissing()"><i class="bi bi-plus-lg"></i> Add all</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Products <span id="count" style="color:var(--muted);font-weight:400;font-size:13px;"></span></span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Sizes &amp; stock</th><th title="The design customers see first when they open this product in the app's designer">Starting design</th><th title="Shown in the app when on">For sale</th><th>Actions</th></tr></thead>
+          <tbody id="tbody"><tr><td colspan="8"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="overlay" id="prod-overlay">
+  <div class="modal wide">
+    <div class="modal-hd"><h3 id="modal-title">Add Product</h3><button class="modal-x" onclick="closeModal()">&times;</button></div>
+    <div class="modal-bd">
+      <input type="hidden" id="edit-id">
+      <div class="fg-row">
+        <div class="fg"><label>Name *</label><input type="text" id="p-name" placeholder="e.g. Classic Cotton Tee" maxlength="80"></div>
+        <div class="fg"><label for="p-cat">Category *</label>
+          <select id="p-cat"></select>
+          <div id="p-newcat-row" hidden style="display:flex;gap:6px;margin-top:6px;">
+            <input type="text" id="p-newcat" maxlength="40" placeholder="New category name" style="flex:1;min-width:0;">
+            <button class="btn-ghost" type="button" onclick="addNewCat()">Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="fg"><label for="p-style">Model</label>
+        <select id="p-style"><option value="">Auto: a shirt is read from the name; anything else has none</option></select>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">What the app shows for this product in the 3D preview, the designer and the AR try-on. Add new ones on <a href="models.html" style="color:var(--orange);">Models &amp; Try-On</a>.</div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Price (₱) *</label><input type="number" id="p-price" placeholder="499" min="20" step="0.01"></div>
+        <div class="fg"><label>Was (₱, optional)</label><input type="number" id="p-orig" placeholder="699, shown crossed out" min="0" step="0.01"></div>
+      </div>
+      <div class="fg"><label>Description</label><textarea id="p-desc" placeholder="Short product description…"></textarea></div>
+      <div class="fg"><label for="p-img">Photo</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="url" id="p-img" placeholder="https://… or upload one" style="flex:1;min-width:0;">
+          <label class="btn-ghost" style="white-space:nowrap;cursor:pointer;margin:0;" id="p-upload-lbl"><i class="bi bi-upload"></i> Upload<input type="file" id="p-file" accept="image/png,image/jpeg,image/webp" hidden></label>
+        </div>
+        <img id="p-prev" alt="" style="display:none;margin-top:8px;max-height:110px;max-width:100%;border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Leave it empty to show the model's picture in the app.</div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label>Tag</label>
+          <select id="p-tag"><option value="">None</option><option value="New">New</option><option value="Sale">Sale</option><option value="Hot">Hot</option></select>
+        </div>
+        <div class="fg" style="display:flex;align-items:center;padding-top:26px;">
+          <label class="fg-check"><input type="checkbox" id="p-avail" checked> Available for sale</label>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Available Sizes</label>
+        <div class="size-pills">
+          <span class="sz" data-v="XS">XS</span><span class="sz" data-v="S">S</span>
+          <span class="sz" data-v="M">M</span><span class="sz" data-v="L">L</span>
+          <span class="sz" data-v="XL">XL</span><span class="sz" data-v="XXL">XXL</span>
+          <span class="sz" data-v="One Size">One Size</span>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Stock per size (optional)</label>
+        <div id="stock-row" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Leave every box empty for made-to-order (the app shows "Available"). Once any box is filled, the app shows each size's count, and a size left empty or at 0 shows "Out of Stock". The app does not lower these numbers when orders come in.</div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-grad" id="save-btn" onclick="saveProduct()"><i class="bi bi-check-lg"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm -->
+<div class="overlay" id="del-overlay">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-hd"><h3 style="color:#FF4444;">Delete Product</h3><button class="modal-x" onclick="closeDel()">&times;</button></div>
+    <div class="modal-bd"><p style="font-size:14px;color:var(--muted);">Delete <strong id="del-name" style="color:var(--text);"></strong>? This cannot be undone.</p></div>
+    <div class="modal-ft">
+      <button class="btn-ghost" onclick="closeDel()">Cancel</button>
+      <button style="padding:8px 16px;border-radius:8px;background:rgba(255,68,68,.13);color:#FF4444;border:1px solid rgba(255,68,68,.26);font-size:13.5px;font-weight:600;" onclick="confirmDel()"><i class="bi bi-trash3"></i> Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  let loaded=false, all=[], cat=new URLSearchParams(location.search).get('cat')||'all', delId=null, models=[], shop=SHOP_DEFAULTS, catsDenied=false;
+
+  auth.onAuthStateChanged(async u=>{
+    if(!u)return;
+    [models]=await Promise.all([loadModels(),loadCategories()]);
+    catsDenied=categoriesError()==='permission-denied';
+    loadShopSettings().then(s=>{shop=s;render();});
+    // Model choices in the Add/Edit form: every model in the catalog
+    document.getElementById('p-style').insertAdjacentHTML('beforeend',
+      models.map(m=>`<option value="${esc(m.id)}">${esc(m.label)}${m.builtIn?'':' ('+esc(MODEL_KINDS.find(k=>k.id===m.kind)?.label.split(' (')[0]||'Custom')+')'}${m.enabled?'':' (hidden)'}</option>`).join(''));
+    let first=true;
+    db.collection('products').orderBy('name').onSnapshot(snap=>{
+      all=snap.docs.map(d=>({id:d.id,...d.data()})); loaded=true; render();
+      if(first){first=false;const want=new URLSearchParams(location.search).get('addModel');if(want)openAddForStyle(want);}
+    });
+  });
+
+  const modelOf=p=>productModel(p,models);
+  /** Filter tabs: the categories in the Categories page's order (those with products), with how many are in each. */
+  function renderCatTabs(){
+    const present=new Set(all.map(productCategory).filter(Boolean));
+    const cats=categoryChoices(all).filter(c=>present.has(c));
+    // A category asked for in the link (products.html?cat=…) is kept until the products have loaded
+    if(cat!=='all'&&!cats.includes(cat)&&loaded)cat='all';
+    const n=c=>c==='all'?all.length:all.filter(p=>productCategory(p)===c).length;
+    document.getElementById('cat-tabs').innerHTML=[['all','All']].concat(cats.map(c=>[c,c])).map(([c,l])=>
+      `<button class="f-tab${c===cat?' active':''}" data-c="${esc(c)}">${esc(l)}<span class="cnt">${n(c)}</span></button>`).join('')+
+      `<a href="categories.html" class="f-tab" style="margin-left:auto;"><i class="bi bi-tags"></i> Manage categories</a>`;
+    document.querySelectorAll('#cat-tabs .f-tab[data-c]').forEach(b=>b.addEventListener('click',()=>{cat=b.dataset.c;render();}));
+  }
+  /** The Category picker: every category, the product's own one kept even when it isn't in the list. */
+  function fillCatSelect(current){
+    const names=categoryChoices(all);
+    if(current&&!names.includes(current))names.push(current);
+    document.getElementById('p-cat').innerHTML='<option value="">Select…</option>'+
+      names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'<option value="__new">＋ New category…</option>';
+    document.getElementById('p-cat').value=current||'';
+    document.getElementById('p-newcat-row').hidden=true;
+  }
+  document.getElementById('p-cat').addEventListener('change',e=>{
+    const isNew=e.target.value==='__new';
+    document.getElementById('p-newcat-row').hidden=!isNew;
+    if(isNew)setTimeout(()=>document.getElementById('p-newcat').focus(),30);
+  });
+  /** Adds the typed category to the Categories list (when Firestore allows it) and picks it. */
+  async function addNewCat(){
+    const name=document.getElementById('p-newcat').value.trim().replace(/\s+/g,' ');
+    if(!name){toast('Type the new category\'s name','warn');return;}
+    const existing=categoryChoices(all).find(n=>n.toLowerCase()===name.toLowerCase());
+    if(!existing&&!catsDenied){
+      try{
+        const list=_categoryList||[];
+        let id=categoryId(name),k=2;while(list.some(c=>c.id===id))id=categoryId(name)+'-'+k++;
+        await db.collection('categories').doc(id).set({name,description:'',showInApp:true,order:list.reduce((m,c)=>Math.max(m,c.order),0)+10,
+          createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:auth.currentUser.email||''});
+        await loadCategories(true);
+        toast(`"${name}" added to Categories`,'ok');
+      }catch(e){toast('Saved on this product only; it couldn\'t be added to Categories: '+e.message,'warn');}
+    }
+    fillCatSelect(existing||name);
+  }
+
+  /** Lists the models no available product uses; each button opens the Add form filled in for that model. */
+  function renderMissingStyles(){
+    const used=new Set(all.filter(p=>p.isAvailable===true).map(modelOf).filter(Boolean).map(m=>m.id));
+    const missing=models.filter(m=>m.enabled&&!used.has(m.id));
+    missingStyles=SHIRT_STYLES.filter(s=>missing.some(m=>m.id===s.id));
+    const priceBox=document.getElementById('bulk-price');
+    if(!priceBox.value){const tee=all.find(p=>productCategory(p)==='Tees'&&p.price>0);if(tee)priceBox.value=tee.price;}
+    document.getElementById('missing-styles').style.display=missing.length?'':'none';
+    document.getElementById('bulk-row').style.display=missingStyles.length>1?'':'none';
+    document.getElementById('missing-list').innerHTML=missing.map(m=>
+      `<button class="btn-ghost" onclick="openAddForStyle('${esc(m.id)}')"><i class="bi bi-plus-lg"></i> ${esc(m.label)}</button>`).join('');
+  }
+
+  let missingStyles=[];
+  /** One product per missing style, all at the price typed in the box. Ids are fixed ("style-MaleVNeckShirt"),
+   *  so pressing it twice cannot make duplicates. */
+  async function addAllMissing(){
+    const price=parseFloat(document.getElementById('bulk-price').value);
+    if(isNaN(price)||price<20){toast('Enter a price of at least ₱20 first','warn');document.getElementById('bulk-price').focus();return;}
+    if(!missingStyles.length)return;
+    const btn=document.getElementById('bulk-btn'); btn.disabled=true;
+    try{
+      const batch=db.batch();
+      missingStyles.forEach(s=>batch.set(db.collection('products').doc('style-'+s.id),{
+        name:s.suggestedName,category:productCategory({category:'Tees'})||'Tees',shirtStyle:s.id,price,originalPrice:null,
+        description:s.description,imageUrl:null,tag:'New',isAvailable:true,sizes:['XS','S','M','L','XL','XXL'],
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()}));
+      const n=missingStyles.length;
+      await batch.commit();
+      toast(n+' product'+(n===1?'':'s')+' added','ok');
+    }catch(e){toast('Could not add them: '+e.message,'err');}
+    finally{btn.disabled=false;}
+  }
+
+  function render(){
+    renderCatTabs();
+    renderMissingStyles();
+    const q=document.getElementById('q').value.trim().toLowerCase();
+    let rows=cat==='all'?all:all.filter(p=>productCategory(p)===cat);
+    if(q)rows=rows.filter(p=>(p.name||'').toLowerCase().includes(q)||(p.description||'').toLowerCase().includes(q)||(p.category||'').toLowerCase().includes(q));
+    document.getElementById('count').textContent=`(${rows.length})`;
+    const tbody=document.getElementById('tbody');
+    if(!rows.length){tbody.innerHTML=all.length?'<tr><td colspan="8"><div class="empty"><i class="bi bi-search"></i><p>No products match</p></div></td></tr>':'<tr><td colspan="8"><div class="empty"><i class="bi bi-box-seam"></i><p>No products yet. Press <strong>Add Product</strong> to add your first one.</p></div></td></tr>';return;}
+    tbody.innerHTML=rows.map(p=>{
+      // Stock per size, flagged when low (Shop Settings) or gone
+      const hasInv=p.inventory&&typeof p.inventory==='object';
+      const szs=((p.sizes||[]).map(v=>{if(!hasInv)return esc(v);const n=p.inventory[v]||0;
+        return `<span class="${n<=0?'stock-out':n<=shop.lowStockAt?'stock-low':''}" title="${n<=0?'Out of stock':n<=shop.lowStockAt?'Low stock':''}">${esc(v)} (${n})</span>`;}).join(', '))||'—';
+      return `<tr>
+        <td>${safeUrl(p.imageUrl)?`<img src="${safeUrl(p.imageUrl)}" class="prod-thumb" alt="" onerror="this.style.display='none'">`:(modelOf(p)&&modelOf(p).thumbUrl?`<img src="${esc(modelOf(p).thumbUrl)}" class="prod-thumb" alt="" style="object-fit:contain;background:rgba(255,255,255,.04);">`:'<div style="width:40px;height:40px;border-radius:7px;background:rgba(255,92,0,.1);display:flex;align-items:center;justify-content:center;font-size:19px;">🛍️</div>')}</td>
+        <td><strong>${esc(p.name||'—')}</strong>${p.tag?` <span class="tag tag-${esc(p.tag.toLowerCase())}">${esc(p.tag)}</span>`:''}${p.description?`<div style="font-size:12px;color:var(--muted);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.description)}</div>`:''}</td>
+        <td style="font-size:13px;">${esc(p.category||'—')}${p.category&&productCategory(p)!==p.category?`<div style="font-size:11.5px;color:var(--muted);">shown as ${esc(productCategory(p))}</div>`:''}</td>
+        <td style="color:var(--orange);font-weight:700;white-space:nowrap;">${peso(p.price)}${p.originalPrice?`<div style="color:var(--muted);font-size:12px;font-weight:400;text-decoration:line-through;">${peso(p.originalPrice)}</div>`:''}${(()=>{const m=modelOf(p);return !m&&p.shirtStyle?`<div style="color:#FF6B6B;font-size:11.5px;font-weight:400;">3D model missing</div>`:'';})()}</td>
+        <td style="font-size:12px;color:var(--muted);">${szs}</td>
+        <td style="font-size:12.5px;">${modelOf(p)?`<a href="design.html?product=${p.id}" style="color:var(--orange);">${p.defaultCustomization?'Edit':'Create'}</a>`:'<span style="color:var(--muted);" title="Only products with a model can be designed">—</span>'}${p.defaultCustomization?` <button class="btn-icon del" title="Remove the starting design" aria-label="Remove the starting design" onclick="clearDefaultDesign('${p.id}')" style="margin-left:4px;"><i class="bi bi-x-lg"></i></button>`:''}</td>
+        <td><label class="avail" title="Shown in the app when on"><input type="checkbox" ${p.isAvailable===true?'checked':''} onchange="toggleAvail('${p.id}',this.checked)" aria-label="${esc(p.name||'Product')} for sale"><span class="avail-sl"></span></label></td>
+        <td><div style="display:flex;gap:5px;">
+          <button class="btn-icon" title="Edit" aria-label="Edit ${esc(p.name||'product')}" onclick="openEdit('${p.id}')"><i class="bi bi-pencil"></i></button>
+          <button class="btn-icon" title="Duplicate" aria-label="Duplicate ${esc(p.name||'product')}" onclick="openDuplicate('${p.id}')"><i class="bi bi-copy"></i></button>
+          <button class="btn-icon del" title="Delete" aria-label="Delete ${esc(p.name||'product')}" onclick="openDel('${p.id}')"><i class="bi bi-trash3"></i></button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('q').addEventListener('input',render);
+
+  document.querySelectorAll('.sz').forEach(s=>s.addEventListener('click',()=>s.classList.toggle('on')));
+  // Stock boxes, one per size (saved as the product's `inventory` map, which the app's size picker reads)
+  const ALL_SIZES=[...document.querySelectorAll('.sz')].map(s=>s.dataset.v);
+  document.getElementById('stock-row').innerHTML=ALL_SIZES.map(v=>
+    `<label style="display:flex;align-items:center;gap:5px;font-size:12.5px;">${v}<input type="number" class="stock-in" data-v="${v}" min="0" step="1" placeholder="—" style="width:64px;"></label>`).join('');
+  const setStock=inv=>document.querySelectorAll('.stock-in').forEach(i=>{const n=(inv||{})[i.dataset.v];i.value=(typeof n==='number')?n:'';});
+  /** The inventory map to save, or null when no box is filled (made-to-order). Only offered sizes are kept. */
+  function getStock(sizes){
+    const filled={};
+    document.querySelectorAll('.stock-in').forEach(i=>{const n=parseInt(i.value,10);if(i.value!==''&&!isNaN(n)&&n>=0)filled[i.dataset.v]=n;});
+    if(!Object.keys(filled).length)return null;
+    const inv={};
+    (sizes.length?sizes:ALL_SIZES).forEach(v=>{inv[v]=filled[v]||0;});
+    return inv;
+  }
+  const getSizes=()=>[...document.querySelectorAll('.sz.on')].map(s=>s.dataset.v);
+  const setSizes=arr=>document.querySelectorAll('.sz').forEach(s=>s.classList.toggle('on',arr.includes(s.dataset.v)));
+
+  function openAdd(){
+    document.getElementById('modal-title').textContent='Add Product';
+    document.getElementById('edit-id').value='';
+    ['p-name','p-desc','p-img'].forEach(i=>document.getElementById(i).value='');
+    fillCatSelect(cat!=='all'?cat:'');
+    showPreview();
+    document.getElementById('p-price').value='';
+    document.getElementById('p-orig').value='';
+    document.getElementById('p-tag').value='';
+    document.getElementById('p-style').value='';
+    document.getElementById('p-avail').checked=true;
+    setSizes([]);
+    setStock(null);
+    document.getElementById('prod-overlay').classList.add('show');
+  }
+  /** Add form started for one model: name, category and model filled in, price left to enter. */
+  function openAddForStyle(modelId){
+    const m=models.find(x=>x.id===modelId); if(!m)return;
+    const s=SHIRT_STYLES.find(x=>x.id===modelId);
+    openAdd();
+    document.getElementById('p-name').value=s?s.suggestedName:m.label;
+    document.getElementById('p-desc').value=s?s.description:(m.blurb||'');
+    // The model's usual category, matched to the shop's own spelling when it has one
+    const want=s?'Tees':((MODEL_KINDS.find(k=>k.id===m.kind)||{}).category||'Accessories');
+    fillCatSelect(productCategory({category:want})||want);
+    document.getElementById('p-style').value=m.id;
+    setSizes(m.kind==='top'||s?['S','M','L','XL']:['One Size']);
+    document.getElementById('p-price').focus();
+  }
+  function openEdit(id){
+    const p=all.find(x=>x.id===id); if(!p)return;
+    document.getElementById('modal-title').textContent='Edit Product';
+    document.getElementById('edit-id').value=p.id;
+    document.getElementById('p-name').value=p.name||'';
+    fillCatSelect(productCategory(p));
+    document.getElementById('p-price').value=p.price||'';
+    document.getElementById('p-orig').value=p.originalPrice||'';
+    document.getElementById('p-desc').value=p.description||'';
+    document.getElementById('p-img').value=p.imageUrl||'';
+    showPreview();
+    document.getElementById('p-tag').value=p.tag||'';
+    document.getElementById('p-style').value=models.some(m=>m.id===p.shirtStyle)?p.shirtStyle:'';
+    document.getElementById('p-avail').checked=p.isAvailable!==false;
+    setSizes(p.sizes||[]);
+    setStock(p.inventory);
+    document.getElementById('prod-overlay').classList.add('show');
+  }
+  /** Add form filled in from another product, as a new product (a new colour or cut of the same thing). */
+  function openDuplicate(id){
+    const p=all.find(x=>x.id===id); if(!p)return;
+    openEdit(id);
+    document.getElementById('modal-title').textContent='Duplicate Product';
+    document.getElementById('edit-id').value='';
+    document.getElementById('p-name').value=(p.name||'')+' (copy)';
+    document.getElementById('p-avail').checked=false;
+    document.getElementById('p-name').select();
+  }
+  function closeModal(){document.getElementById('prod-overlay').classList.remove('show');}
+
+  function showPreview(){
+    const u=safeUrl(document.getElementById('p-img').value.trim()), img=document.getElementById('p-prev');
+    if(u){img.src=document.getElementById('p-img').value.trim();img.style.display='';}else{img.removeAttribute('src');img.style.display='none';}
+  }
+  document.getElementById('p-img').addEventListener('input',showPreview);
+  document.getElementById('p-prev').addEventListener('error',e=>{e.target.style.display='none';});
+  document.getElementById('p-file').addEventListener('change',async e=>{
+    const f=e.target.files[0]; e.target.value=''; if(!f)return;
+    if(f.size>8*1048576){toast('Photos can be up to 8 MB','warn');return;}
+    const lbl=document.getElementById('p-upload-lbl'), save=document.getElementById('save-btn');
+    lbl.style.opacity='.5'; save.disabled=true; toast('Uploading the photo…');
+    try{document.getElementById('p-img').value=await uploadToCloudinary(f,{folder:'kustomoimprenta/products'});showPreview();toast('Photo uploaded','ok');}
+    catch(err){toast('Upload failed: '+err.message,'err');}
+    finally{lbl.style.opacity='';save.disabled=false;}
+  });
+
+  async function saveProduct(){
+    const name=document.getElementById('p-name').value.trim();
+    const cat2=document.getElementById('p-cat').value==='__new'?'':document.getElementById('p-cat').value;
+    const price=parseFloat(document.getElementById('p-price').value);
+    const orig=parseFloat(document.getElementById('p-orig').value)||null;
+    const desc=document.getElementById('p-desc').value.trim();
+    const img=document.getElementById('p-img').value.trim();
+    const tag=document.getElementById('p-tag').value;
+    const style=document.getElementById('p-style').value;
+    const avail=document.getElementById('p-avail').checked;
+    const sizes=getSizes();
+    if(!name){toast('Name is required','warn');return;}
+    if(name.length>80){toast('Keep the name under 80 characters','warn');return;}
+    if(!cat2){toast('Category is required','warn');return;}
+    if(isNaN(price)||price<20){toast('Enter a price of at least ₱20 (the lowest amount GCash accepts)','warn');return;}
+    if(price>100000){toast('That price looks too high. Check it again.','warn');return;}
+    if(document.querySelectorAll('.stock-in').length&&[...document.querySelectorAll('.stock-in')].some(i=>i.value!==''&&(!/^\d+$/.test(i.value.trim())||+i.value>100000))){toast('Stock must be a whole number from 0 up','warn');return;}
+    if(orig!==null&&orig<=price){toast('The original price should be higher than the price (it shows as crossed out)','warn');return;}
+    if(img&&!safeUrl(img)){toast('The photo must be an https:// link','warn');return;}
+    if(!sizes.length){toast('Pick at least one size','warn');return;}
+
+    const btn=document.getElementById('save-btn'); btn.disabled=true;
+    const data={name,category:cat2,price,originalPrice:orig,description:desc,imageUrl:img||null,tag:tag||'',shirtStyle:style||'',isAvailable:avail,sizes};
+    const eid=document.getElementById('edit-id').value;
+    const inv=getStock(sizes);
+    if(inv)data.inventory=inv;
+    else if(eid)data.inventory=firebase.firestore.FieldValue.delete();
+    try{
+      if(eid){await db.collection('products').doc(eid).update(data);toast('Product updated','ok');}
+      else{data.createdAt=firebase.firestore.FieldValue.serverTimestamp();await db.collection('products').add(data);toast('Product added','ok');}
+      closeModal();
+    }catch(e){toast('Save failed: '+e.message,'err');}
+    finally{btn.disabled=false;}
+  }
+
+  /** Removes the design a product opens with in the app's designer. It is set from the app: sign in there with an
+   *  admin account, make the design on that product, then Designs → "Use this design as the product's starting design". */
+  async function clearDefaultDesign(id){
+    try{await db.collection('products').doc(id).update({defaultCustomization:firebase.firestore.FieldValue.delete()});toast('Starting design removed','ok');}
+    catch(e){toast('Not removed: '+e.message,'err');}
+  }
+
+  async function toggleAvail(id,v){
+    try{await db.collection('products').doc(id).update({isAvailable:v});toast(v?'Product enabled':'Product disabled','ok');}
+    catch(e){toast('Not changed: '+e.message,'err');render();}
+  }
+
+  function openDel(id){const p=all.find(x=>x.id===id);if(!p)return;delId=id;document.getElementById('del-name').textContent=p.name||'this product';document.getElementById('del-overlay').classList.add('show');}
+  function closeDel(){document.getElementById('del-overlay').classList.remove('show');delId=null;}
+  async function confirmDel(){
+    if(!delId)return;
+    try{await db.collection('products').doc(delId).delete();toast('Product deleted','ok');closeDel();}
+    catch(e){toast('Delete failed: '+e.message,'err');}
+  }
+
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeDel();}});
+  ['prod-overlay','del-overlay'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target===e.currentTarget){id==='prod-overlay'?closeModal():closeDel();}});});
+</script>
+</body>
+</html>
