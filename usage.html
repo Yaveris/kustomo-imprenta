@@ -85,7 +85,7 @@
   // (UsageMeter in the app's Repositories.kt). This page adds them up.
 
   /** Free-plan allowances this page measures against. Editable below; saved in this browser. */
-  const DEFAULT_LIMITS = { cloudinaryGb: 25, placesSearches: 10000, placesDetails: 10000 };
+  const DEFAULT_LIMITS = { cloudinaryGb: 25 };
   const LIMIT_LABELS = {
     cloudinaryGb: 'Cloudinary credits a month (1 credit = 1 GB)',
     placesSearches: 'Address searches a month',
@@ -140,23 +140,17 @@
     const allBytes = Object.values(byMonth).reduce((s, x) => s + (x.cloudinaryBytes||0), 0);
     const allUploads = Object.values(byMonth).reduce((s, x) => s + (x.cloudinaryUploads||0), 0);
     const gbLimit = Number(limits.cloudinaryGb)||0;
-    const maps = 'https://console.cloud.google.com/google/maps-apis/metrics?project=' + firebaseConfig.projectId;
     document.getElementById('u-cards').innerHTML =
       card('Cloudinary image storage', 'https://console.cloudinary.com/', 'Open Cloudinary',
         meter(allBytes, gbLimit*1073741824, fmtBytes(allBytes), gbLimit + ' GB'),
         `${num(allUploads)} images uploaded by the app so far, ${num(m.cloudinaryUploads)} of them in ${monthName(key)}
          (${fmtBytes(m.cloudinaryBytes)}). Cloudinary's credits also cover viewing (bandwidth) and image changes,
          which this page can't see, so the real figure is higher.`) +
-      card('Address search', maps, 'Open Google Maps usage',
-        meter(m.placesSearches||0, Number(limits.placesSearches)||0, num(m.placesSearches), num(limits.placesSearches)),
-        `Suggestions shown while a customer types an address, in ${monthName(key)}. Resets each month.`) +
-      card('Address lookups', maps, 'Open Google Maps usage',
-        meter(m.placesDetails||0, Number(limits.placesDetails)||0, num(m.placesDetails), num(limits.placesDetails)),
-        `Each time a customer picks a suggestion or searches inside the map, in ${monthName(key)}. Resets each month.`) +
-      card('Map views', maps, 'Open Google Maps usage',
-        `<div style="font-size:22px;font-weight:800;margin-bottom:6px;">${num(m.mapLoads)}</div>
-         <div style="font-size:12.5px;color:#00E676;font-weight:700;">No limit</div>`,
-        `Times the address map was opened in ${monthName(key)}. Maps inside an Android app are not limited by Google.`);
+      card('Maps & address search', 'https://operations.osmfoundation.org/policies/', 'OpenStreetMap rules',
+        `<div style="font-size:22px;font-weight:800;margin-bottom:6px;">${num((m.placesSearches||0) + (m.placesDetails||0))}</div>
+         <div style="font-size:12.5px;color:#00E676;font-weight:700;">Free · no key</div>`,
+        `Address searches and map lookups in ${monthName(key)}, plus ${num(m.mapLoads)} map views. They run on OpenStreetMap's free
+         services, which ask apps to keep use light; a shop's checkout is well within that.`);
     document.getElementById('u-cards').insertAdjacentHTML('beforeend',
       customersCounting ? '' : `<div class="card" style="grid-column:1/-1;"><div class="empty"><i class="bi bi-bar-chart-line"></i>
         <p>No counts yet. They appear once customers use the updated app to upload a design or search an address.</p></div></div>`);

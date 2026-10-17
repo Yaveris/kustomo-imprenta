@@ -170,7 +170,7 @@
 
     <div class="card">
       <p class="k-intro">
-        The accounts the app uses for AR try-on, photo uploads and address search. Changes here reach the app right away.
+        The accounts the app uses for AR try-on and photo uploads. Changes here reach the app right away. Maps and address search need no key.
         Payments (PayMongo) and the other settings at the bottom are built into the app, so your developer changes those.
       </p>
       <div class="k-status" id="k-status"><span class="k-pill">Checking…</span></div>
@@ -303,8 +303,17 @@
       </div>
     </section>
 
-    <!-- ── Google key (address search) ─────────────────────────────────── -->
-    <section class="card k-card" id="maps">
+    <!-- ── Maps & address search: OpenStreetMap, nothing to set ─────────── -->
+    <section class="card k-card" id="osm">
+      <div class="card-head">
+        <span class="card-title"><i class="bi bi-geo-alt"></i>Maps &amp; address search</span>
+        <span class="k-pill own">No key needed</span>
+      </div>
+      <p class="k-intro" style="margin:0;">The delivery map and address suggestions in the app use OpenStreetMap, which is free and needs no key or billing account.</p>
+    </section>
+
+    <!-- Google key (address search): no longer used since the app moved to OpenStreetMap; kept hidden for its script -->
+    <section class="card k-card" id="maps" hidden>
       <div class="card-head">
         <span class="card-title"><i class="bi bi-geo-alt"></i>Google key · address search</span>
         <span class="k-pill" id="maps-state">—</span>
@@ -359,21 +368,6 @@
       <p class="k-why"><strong>Why it isn't a box on this page:</strong> the secret key can take and refund money. The app reads this page's keys, so a key saved here could be read by any customer account. A safer setup for later is a small payment server that holds the key instead of the app.</p>
     </details>
 
-    <!-- ── Google map picture ─────────────────────────────────────────── -->
-    <details class="card k-card" id="maps-build">
-      <summary>
-        <span class="card-title"><i class="bi bi-map"></i>Google map picture · delivery pin map</span>
-        <i class="bi bi-chevron-down k-chev"></i>
-        <span class="k-sum">The map drawn in checkout reads its key from the app file. Address search uses the key from <a href="#maps">Google key</a> above.</span>
-      </summary>
-      <div class="k-steps">
-        <ol>
-          <li>Use the same Google key as above (with <strong>Maps SDK for Android</strong> turned on for it).</li>
-          <li>Put it after <code>maps.api.key=</code> in <code>local.properties</code> and build the new app.</li>
-        </ol>
-      </div>
-      <p class="k-why">Google's map only reads its key from the app file when the app starts, so this one part can't be swapped from here. Google doesn't charge for the map inside an Android app, so the key that's built in can stay until the next app update.</p>
-    </details>
 
     <!-- ── Firebase ───────────────────────────────────────────────────── -->
     <details class="card k-card" id="firebase">
@@ -446,8 +440,6 @@
 <pre id="lp-block"># KustomoImprenta keys (see the admin site's App Keys page)
 # PayMongo secret key: sk_test_… or sk_live_…
 paymongo.secret.key=
-# Google key for the map picture (address search can be changed on App Keys)
-maps.api.key=
 # Cloudinary, used while App Keys has none saved
 cloudinary.cloud.name=
 cloudinary.upload.preset=</pre>
@@ -794,20 +786,13 @@ service cloud.firestore {
       'Test key: checkout works, but no real money moves. Put the shop\'s live key in before taking real orders.', 'paymongo');
     else row('warn', 'PayMongo secret key', pmWhere, 'This doesn\'t look like a PayMongo secret key (sk_test_… or sk_live_…).', 'paymongo');
 
-    // Google: address search uses the key saved here, else the build's
+    // Maps and address search: OpenStreetMap in the app, no key
     const plRep = newest('placesCheck', 'placesAt');
-    const ownMaps = !!current.mapsApiKey;
-    const mapsWhere = ownMaps ? 'Saved on this page' : 'Built into the app · local.properties';
-    const plFresh = !!plRep && (ownMaps ? plRep.placesKey === 'admin' && tsMs(plRep.placesAt) >= tsMs(current.mapsUpdatedAt) : (!!build && plRep.version === build.version && plRep.placesKey !== 'admin'));
-    if (!ownMaps && !build) row('unk', 'Google key (address search)', mapsWhere, noReport, 'maps');
-    else if (!ownMaps && build.mapsKey === 'missing') row('bad', 'Google key (address search)', mapsWhere, 'No key saved here and none in this build, so address suggestions are turned off.', 'maps');
-    else if (plFresh && plRep.placesCheck === 'denied') row('bad', 'Google key (address search)', mapsWhere,
-      `Google refused the key when an address was searched (${seenOn(plRep.placesAt)}). Turn on Places API (New) for it and check its Android restriction.`, 'maps');
-    else if (plFresh && plRep.placesCheck === 'ok') row('ok', 'Google key (address search)', mapsWhere, `Address search worked (${seenOn(plRep.placesAt)}).`, 'maps');
-    else if (plFresh && plRep.placesCheck === 'error') row('warn', 'Google key (address search)', mapsWhere, `Address search failed (${seenOn(plRep.placesAt)}). Check the key's settings in Google Cloud.`, 'maps');
-    else row('unk', 'Google key (address search)', mapsWhere, 'Search an address in the app once to check it.', 'maps');
-    if (build) row(build.mapsKey === 'missing' ? 'bad' : 'ok', 'Google map picture', 'Built into the app · local.properties',
-      build.mapsKey === 'missing' ? 'No key in this build, so the delivery map is turned off (address search still works with the key above).' : 'A key is in this build.', 'maps-build');
+    const osmFresh = !!plRep && plRep.placesKey === 'osm';
+    if (osmFresh && plRep.placesCheck === 'error') row('warn', 'Maps & address search', 'OpenStreetMap · no key',
+      `Address search failed (${seenOn(plRep.placesAt)}). OpenStreetMap's free search may have been busy; it usually works again shortly.`, 'osm');
+    else if (osmFresh && plRep.placesCheck === 'ok') row('ok', 'Maps & address search', 'OpenStreetMap · no key', `Address search worked (${seenOn(plRep.placesAt)}).`, 'osm');
+    else row('ok', 'Maps & address search', 'OpenStreetMap · no key', 'Nothing to set up. Search an address in the app once to see it working here.', 'osm');
 
     const pid = firebaseConfig.projectId;
     if (build && build.firebaseProject && build.firebaseProject !== pid) {

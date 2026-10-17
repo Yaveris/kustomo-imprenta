@@ -144,9 +144,10 @@
         <div class="ii"><label>Zip Code</label><span>${esc(c.zipCode||'—')}</span></div>
         <div class="ii"><label>Height</label><span>${c.heightCm?c.heightCm+' cm':'—'}</span></div>
         <div class="ii"><label>Weight</label><span>${c.weightKg?c.weightKg+' kg':'—'}</span></div>
-        <div class="ii"><label>Rec. Size</label><span>${esc(c.recommendedSize||'—')}</span></div>
+        <div class="ii"><label>Shirt size</label><span>${esc(c.recommendedSize||'—')}</span></div>
         <div class="ii"><label>Order value</label><span>${peso(orders.filter(o=>o.status!=='Cancelled').reduce((t,o)=>t+(+o.totalAmount||0),0))}</span></div>
         <div class="ii"><label>Joined</label><span>${fmtDate(c.createdAt,false)}</span></div>
+        <div class="ii"><label>Terms &amp; Privacy</label><span>${c.termsAcceptedAt?'Agreed '+fmtDate(c.termsAcceptedAt,false)+(c.termsVersion==='shop'?' (shop’s own text)':c.termsVersion?' (version '+esc(c.termsVersion)+')':''):'<span style="color:var(--muted);">No record (joined before sign-up agreement)</span>'}</span></div>
         <div class="ii"><label>Account</label><span style="color:${c.status==='Disabled'?'#FF4444':'#00E676'};font-weight:700;">${c.status==='Disabled'?'Disabled':'Active'}</span></div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
