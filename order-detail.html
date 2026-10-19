@@ -137,13 +137,13 @@
     const style = shirtStyleLabel(c.shirtStyle);
     const views = c.views || {};
     const sides = Object.keys(views).map(k => renderSide(k, views[k] || {})).filter(Boolean);
-    // The app appends Fit Scan measurements to the notes as "[Scanned Measurements - …]"
+    // The app's Fit Scan adds the customer's measurements to the notes: "[Scanned Measurements - …]" from the camera,
+    // "[Entered Measurements - …]" when typed in (older versions: "[Manual Entry - …]")
     const notes = it.notes || '';
-    const marker = '[Scanned Measurements - ';
-    const at = notes.indexOf(marker);
-    const customerNotes = (at === -1 ? notes : notes.slice(0, at)).trim();
-    const end = at === -1 ? -1 : notes.indexOf(']', at);
-    const measurements = at === -1 ? '' : notes.slice(at + marker.length, end === -1 ? undefined : end).trim();
+    const fit = notes.match(/\[(Scanned Measurements|Entered Measurements|Typed Measurements|Manual Entry) - ([^\]]*)\]/);
+    const customerNotes = (fit ? notes.replace(fit[0], '') : notes).trim().replace(/^(AR Scanned Fit|Manual Entry Fit)$/, '');
+    const measurements = fit ? fit[2].trim() : '';
+    const fitLabel = fit && fit[1].startsWith('Scanned') ? 'Fit Scan (camera)' : 'Fit Scan (typed in)';
     const thumb = safeUrl(it.imageUrl);
     return `
       <div class="item-row" style="align-items:flex-start;">
@@ -153,7 +153,7 @@
           <div class="item-meta">Size: ${esc(it.size||'—')} · Qty: ${it.quantity||1}${style?` · Style: ${esc(style)}`:''}${color?` · Colour: <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${color};border:1px solid var(--border);vertical-align:middle;"></span> ${color}`:''}${it.customText?` · Text: "${esc(it.customText)}"`:''}</div>
           ${sides.length ? `<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">${sides.join('')}</div>` : ''}
           ${customerNotes ? `<div style="font-size:13.5px;margin-top:8px;"><span style="color:var(--muted);">Notes:</span> ${esc(customerNotes)}</div>` : ''}
-          ${measurements ? `<div style="font-size:13.5px;margin-top:4px;"><span style="color:var(--muted);">Scanned measurements:</span> ${esc(measurements)}</div>` : ''}
+          ${measurements ? `<div style="font-size:13.5px;margin-top:4px;"><span style="color:var(--muted);"><i class="bi bi-rulers"></i> ${fitLabel}:</span> ${esc(measurements)}</div>` : ''}
         </div>
         <div class="item-price">${peso((it.price||0)*(it.quantity||1))}</div>
       </div>`;

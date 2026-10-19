@@ -144,7 +144,7 @@
         <div class="ii"><label>Zip Code</label><span>${esc(c.zipCode||'—')}</span></div>
         <div class="ii"><label>Height</label><span>${c.heightCm?c.heightCm+' cm':'—'}</span></div>
         <div class="ii"><label>Weight</label><span>${c.weightKg?c.weightKg+' kg':'—'}</span></div>
-        <div class="ii"><label>Shirt size</label><span>${esc(c.recommendedSize||'—')}</span></div>
+        <div class="ii"><label>Shirt size</label><span>${esc(c.recommendedSize||'—')}${c.fitScan&&c.fitScan.chestCm?`<div style="font-size:13px;color:var(--muted);">From Fit Scan${c.fitScan.source==='typed'?' (typed in)':''}: chest ${c.fitScan.source==='typed'?'':'about '}${Math.round(c.fitScan.chestCm)} cm around${c.fitScan.shoulderCm?`, shoulders ${Math.round(c.fitScan.shoulderCm)} cm`:''}${c.fitScan.savedAt?' · '+fmtDate(c.fitScan.savedAt,false):''}</div>`:''}</span></div>
         <div class="ii"><label>Order value</label><span>${peso(orders.filter(o=>o.status!=='Cancelled').reduce((t,o)=>t+(+o.totalAmount||0),0))}</span></div>
         <div class="ii"><label>Joined</label><span>${fmtDate(c.createdAt,false)}</span></div>
         <div class="ii"><label>Terms &amp; Privacy</label><span>${c.termsAcceptedAt?'Agreed '+fmtDate(c.termsAcceptedAt,false)+(c.termsVersion==='shop'?' (shop’s own text)':c.termsVersion?' (version '+esc(c.termsVersion)+')':''):'<span style="color:var(--muted);">No record (joined before sign-up agreement)</span>'}</span></div>
