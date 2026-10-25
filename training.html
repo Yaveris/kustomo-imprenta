@@ -282,7 +282,8 @@
           <tr><td>⏳ Pending</td><td>Paid and waiting for you.</td><td>Check the items, sizes and designs. Ask in the chat if anything is unclear.</td></tr>
           <tr><td>⚙️ Processing</td><td>Accepted, being prepared.</td><td>Download the print files and get the shirts ready.</td></tr>
           <tr><td>🖨️ Printing</td><td>On the press.</td><td>Print. From here, the order can't be cancelled by the customer.</td></tr>
-          <tr><td>📦 Ready</td><td>Packed, waiting for pickup or delivery.</td><td>Assign a driver (lesson 8).</td></tr>
+          <tr><td>📦 Ready</td><td>Packed, waiting for pickup or delivery.</td><td>Get the driver ready (lesson 8).</td></tr>
+          <tr><td>🚚 Out for delivery</td><td>On its way with a driver.</td><td>Press it and pick the employee driving; the customer is told who is coming.</td></tr>
           <tr><td>✅ Delivered</td><td>In the customer's hands.</td><td>Collect any balance first and mark it.</td></tr>
           <tr><td>✖️ Cancelled</td><td>Not going ahead.</td><td>Refund through PayMongo if paid. Stock goes back automatically.</td></tr>
         </tbody>
@@ -324,8 +325,8 @@
       <ol>
         <li><b>Set the shop's location once</b> (<a href="getting-started.html">Getting Started</a>, step 2). Every order then shows the distance from your door.</li>
         <li>When the order is <b>Ready</b>, open its <b>Delivery</b> box: the address, the map, the distance by road and a <b class="ui">Directions</b> button for Google Maps.</li>
-        <li><b>Assign a driver</b>: their name, phone and plate or booking number (a Lalamove booking number works too). Drivers you've used before are suggested.</li>
-        <li>Press <b class="ui">Tell the customer</b>. It writes a message with the driver's details in the order chat; check it and press send.</li>
+        <li>Keep your drivers on the <a href="employees.html">Employees</a> page: just a name and mobile number each (they don't sign in).</li>
+        <li>When it leaves, press <b class="ui">Out for delivery</b> on the order and pick the employee driving. The customer is told in the chat who is coming and their number. Someone else (a Lalamove rider)? Type their name, phone and booking number instead.</li>
         <li>Paid with a <b>downpayment</b>? The order shows the <b>Balance on delivery</b>. Once the driver collects it, press <b class="ui">Mark as collected</b>.</li>
         <li>When it arrives, set the status to <b>Delivered</b>.</li>
       </ol>
@@ -390,8 +391,10 @@
       them: ['Sees Processing: the shop accepted it.'] },
     { s: 'Printing', e: '🖨️', you: ['Set Printing, then print.', 'From now on, the order can\'t be cancelled for a change of mind.'],
       them: ['Sees Printing.'] },
-    { s: 'Ready', e: '📦', you: ['Pack it and set Ready.', 'Assign a driver and press Tell the customer, then send the message.'],
-      them: ['Sees Ready, and in the chat who is coming and when.'] },
+    { s: 'Ready', e: '📦', you: ['Pack it and set Ready.'],
+      them: ['Sees Ready.'] },
+    { s: 'Out for delivery', e: '🚚', you: ['Press Out for delivery and pick the employee driving.', 'The customer is told in the chat automatically.'],
+      them: ['Sees Out for delivery, and in the chat who is coming and their number.'] },
     { s: 'Delivered', e: '✅', you: ['Collect any downpayment balance and press Mark as collected.', 'Set Delivered.'],
       them: ['Sees Delivered. Can still chat within 7 days about a damaged or wrong print.'] }
   ];
@@ -468,8 +471,8 @@
       a: ['A screenshot of the order page', 'The print file (PNG) of each side, in the order\'s items', 'Ask the customer to email it'], ok: 1,
       why: 'Each side has a print file at its real printed size. Screenshots are too small and blurry.' },
     { q: 'An order is Ready. What do you do before the driver leaves?',
-      a: ['Assign the driver and press Tell the customer, then send the message', 'Set it to Delivered', 'Nothing; the app tells the customer'], ok: 0,
-      why: 'The driver is assigned on the order page, and Tell the customer writes their details in the chat for you to send.' },
+      a: ['Press Out for delivery and pick the employee driving', 'Set it to Delivered', 'Nothing; the app tells the customer'], ok: 0,
+      why: 'Out for delivery asks who is driving and tells the customer their name and number in the chat.' },
     { q: 'An order was paid with a downpayment. What happens on delivery?',
       a: ['The rest is paid with GCash later', 'The driver collects the balance shown on the order; then you press Mark as collected', 'The customer pays nothing more'], ok: 1,
       why: 'The order shows the Balance on delivery. Mark it collected once the driver has the money, then set Delivered.' }

@@ -33,6 +33,27 @@
     .om-req.cancel { background:rgba(255,68,68,.1); border:1px solid rgba(255,107,107,.4); color:#FFB3B3; }
     .om-req.change { background:rgba(255,214,0,.08); border:1px solid rgba(255,214,0,.35); color:#F2DE8A; }
     .om-req a { margin-left:auto; color:var(--orange); font-weight:700; }
+    /* Status buttons: the order's status lit in its colour, the others greyed until pointed at */
+    .om-status { grid-column:1 / -1; border-top:1px solid var(--border); padding-top:12px; }
+    .stb-row { display:flex; flex-wrap:wrap; gap:8px; }
+    .stb { display:inline-flex; align-items:center; gap:7px; padding:8px 13px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.03); color:#9a9a9a; font-size:14px; font-weight:600; cursor:pointer; opacity:.55; filter:grayscale(1); transition:opacity .12s, filter .12s, border-color .12s; }
+    .stb:hover, .stb:focus-visible { opacity:1; filter:none; color:var(--c); border-color:var(--c); }
+    .stb.on { opacity:1; filter:none; color:var(--c); background:rgba(255,255,255,.06); background:color-mix(in srgb, var(--c) 20%, transparent); border:2px solid var(--c); cursor:default; font-weight:800; }
+    .stb i { color:var(--c); }
+    .stb:disabled { cursor:wait; }
+    .drv-pick { margin-top:12px; padding:12px 14px; border-radius:12px; border:1px solid rgba(0,184,212,.45); background:rgba(0,184,212,.06); }
+    .drv-pick h5 { font-size:14.5px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+    .drv-list { display:flex; flex-wrap:wrap; gap:8px; }
+    .drv-opt { display:flex; align-items:center; gap:9px; padding:8px 12px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text); cursor:pointer; text-align:left; font-size:14px; }
+    .drv-opt:hover { border-color:#00B8D4; }
+    .drv-opt.cur { border-color:#00B8D4; background:rgba(0,184,212,.12); }
+    .drv-opt .av { width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font-weight:800; color:#fff; background:linear-gradient(135deg,#00B8D4,#378ADD); flex-shrink:0; }
+    .drv-opt small { display:block; color:var(--muted); font-size:12.5px; }
+    .drv-other { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto; gap:8px; margin-top:10px; }
+    @media (max-width:800px) { .drv-other { grid-template-columns:minmax(0,1fr); } }
+    .drv-other input { padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg); color:var(--text); font-size:14px; min-width:0; }
+    .drv-foot { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:10px; font-size:13.5px; color:var(--muted); }
+    .drv-foot label { display:flex; gap:6px; align-items:center; cursor:pointer; }
     /* Bottom of an opened order: status changes and the chat, each folded until opened */
     .om-fold { grid-column:1 / -1; border-top:1px solid var(--border); padding-top:12px; }
     .om-tgl { display:flex; gap:8px; flex-wrap:wrap; }
@@ -87,6 +108,7 @@
       <button class="f-tab" data-s="Processing">Processing</button>
       <button class="f-tab" data-s="Printing">Printing</button>
       <button class="f-tab" data-s="Ready">Ready</button>
+      <button class="f-tab" data-s="Delivering">Out for delivery</button>
       <button class="f-tab" data-s="Delivered">Delivered</button>
       <button class="f-tab" data-s="Cancelled">Cancelled</button>
       <button class="f-tab" data-s="nodriver" title="Orders not delivered or cancelled that have no driver yet" style="margin-left:auto;"><i class="bi bi-person-dash"></i> No driver yet</button>
@@ -118,7 +140,7 @@
       <div class="fg"><label>New Status</label>
         <select id="m-sel" style="border-radius:8px;padding:9px 13px;">
           <option>Pending</option><option>Processing</option><option>Printing</option>
-          <option value="Ready">Ready for Pickup</option><option>Delivered</option><option>Cancelled</option>
+          <option value="Ready">Ready for Pickup</option><option value="Delivering">Out for delivery (pick a driver)</option><option>Delivered</option><option>Cancelled</option>
         </select>
       </div>
       <p class="note" id="m-cancel-note" hidden style="margin-top:8px;color:#FF6B6B;">Cancelling puts any stock taken for this order back. Refunds are made in PayMongo; the customer sees "Cancelled" in the app.</p>
@@ -155,6 +177,7 @@
     }, e => {
       document.getElementById('tbody').innerHTML = `<tr><td colspan="9"><div class="empty"><i class="bi bi-exclamation-triangle"></i><p>Couldn't load the orders: ${esc(e.message)}</p></div></td></tr>`;
     });
+    watchEmployees((list, err) => { emps = list || []; empsErr = list ? null : err; if (pickFor) render(); });
     // Customers' cancel and design-change requests, shown on their orders
     db.collection('chats').onSnapshot(snap => {
       requests = {}; chatOf = {}; chatInfo = {};
@@ -232,7 +255,9 @@
 
   // ── An order, opened in place ─────────────────────────────────────────────────────────────────────
   function toggleOrder(id) {
-    if (opened.has(id)) opened.delete(id); else opened.add(id);
+    // One order open at a time: opening one closes the others
+    if (opened.has(id)) opened.delete(id); else { opened.clear(); opened.add(id); }
+    if (pickFor && !opened.has(pickFor)) pickFor = null;
     syncChats();
     render();
   }
@@ -282,18 +307,79 @@
         <div class="om-line" style="display:flex;justify-content:space-between;font-weight:800;"><span>Total</span><span style="color:var(--orange);">${peso(o.totalAmount)}</span></div>
         ${o.isDownpayment ? `<div class="om-line" style="display:flex;justify-content:space-between;color:var(--yellow);"><span>Paid now</span><span>${peso(o.downpaymentAmount)}</span></div>
           <div class="om-line" style="display:flex;justify-content:space-between;"><span>Balance</span><span>${o.balancePaidAt ? '<span style="color:#00E676;">Collected</span>' : peso(o.remainingAmount) + ' to collect'}</span></div>` : ''}
-        <h4 style="margin-top:14px;">Status</h4>
-        <div class="om-acts" style="margin-top:0;">
-          <select aria-label="Status of ${orderNo(o.id)}" onclick="event.stopPropagation()" onchange="quickStatus('${esc(o.id)}', this)">
-            ${ALL_STATUSES.map(s => `<option value="${s}"${st === s ? ' selected' : ''}>${s === 'Ready' ? 'Ready for pickup' : s}</option>`).join('')}
-          </select>
-        </div>
         <div class="om-acts">
           <a class="btn-ghost" href="order-detail.html?id=${encodeURIComponent(o.id)}" title="Print files, driver, staff notes, history"><i class="bi bi-box-arrow-up-right"></i> Full page</a>
         </div>
       </div>
+      ${statusHtml(o)}
       ${foldsHtml(o)}
     </div>`;
+  }
+
+  // ── Status buttons and choosing the driver ───────────────────────────────────────────────────────
+  let emps = [], empsErr = null, pickFor = null, statusBusy = null;
+  function statusHtml(o) {
+    const st = o.status || 'Pending', busy = statusBusy === o.id;
+    const btns = ALL_STATUSES.map(s => {
+      const key = s.toLowerCase(), on = s === st;
+      return `<button type="button" class="stb${on ? ' on' : ''}" style="--c:var(--s-${key},#888);" ${on ? 'aria-pressed="true"' : 'aria-pressed="false"'}${busy ? ' disabled' : ''}
+        onclick="event.stopPropagation();pickStatus('${esc(o.id)}','${s}')" title="${on ? 'Current status' : 'Set to ' + statusLabel(s)}"><i class="bi ${STATUS_ICONS[s] || 'bi-circle'}"></i> ${statusLabel(s)}</button>`;
+    }).join('');
+    return `<div class="om-status"><h4>Status</h4><div class="stb-row" role="group" aria-label="Status of ${orderNo(o.id)}">${btns}</div>${pickFor === o.id ? driverPickHtml(o) : ''}</div>`;
+  }
+  function driverPickHtml(o) {
+    const cur = o.driver && o.driver.name ? o.driver : null;
+    const list = empsErr
+      ? `<div class="note">Couldn't load the employees${empsErr.code === 'permission-denied' ? ' (publish the updated database rules first)' : ''}. Type the driver below instead.</div>`
+      : emps.length ? `<div class="drv-list">${emps.map(e => `<button type="button" class="drv-opt${cur && (cur.employeeId === e.id || cur.name === e.name) ? ' cur' : ''}" onclick="event.stopPropagation();chooseDriver('${esc(o.id)}','${esc(e.id)}')">
+            <span class="av">${esc(e.name.charAt(0).toUpperCase())}</span><span>${esc(e.name)}<small>${e.phone ? esc(prettyPhone(e.phone)) : 'No number'}</small></span></button>`).join('')}</div>`
+      : `<div class="note">No employees yet. <a href="employees.html" style="color:var(--orange);">Add your drivers on the Employees page</a>, or type one below.</div>`;
+    return `<div class="drv-pick" onclick="event.stopPropagation()">
+      <h5><i class="bi bi-truck" style="color:#00B8D4;"></i> Who is delivering ${orderNo(o.id)}?</h5>
+      ${list}
+      <div class="drv-other">
+        <input id="do-name-${esc(o.id)}" maxlength="60" placeholder="Someone else: name" aria-label="Driver's name">
+        <input id="do-phone-${esc(o.id)}" maxlength="20" inputmode="tel" placeholder="Phone" aria-label="Driver's phone">
+        <input id="do-veh-${esc(o.id)}" maxlength="60" placeholder="Plate or Lalamove # (optional)" aria-label="Plate or booking number">
+        <button type="button" class="btn-ghost" onclick="chooseDriver('${esc(o.id)}', null)">Send with them</button>
+      </div>
+      <div class="drv-foot">
+        <label><input type="checkbox" id="do-tell-${esc(o.id)}" checked> Tell the customer in the chat</label>
+        <a href="employees.html" style="color:var(--orange);">Edit employees</a>
+        <button type="button" class="btn-ghost" style="margin-left:auto;padding:5px 11px;" onclick="pickFor=null;render()">Cancel</button>
+      </div>
+    </div>`;
+  }
+  async function pickStatus(id, s) {
+    const o = all.find(x => x.id === id); if (!o) return;
+    const from = o.status || 'Pending';
+    if (s === 'Delivering') { pickFor = pickFor === id ? null : id; render(); return; }
+    if (s === from) return;
+    const q = statusChangeQuestion(orderNo(id), from, s);
+    if (q && !confirm(q)) return;
+    pickFor = null; statusBusy = id; render();
+    try { await setOrderStatus(id, s); toast(`Status updated to "${statusLabel(s)}"`, 'ok'); }
+    catch (e) { toast('Failed: ' + e.message, 'err'); }
+    finally { statusBusy = null; render(); }
+  }
+  async function chooseDriver(id, empId) {
+    let emp;
+    if (empId) emp = emps.find(e => e.id === empId);
+    else {
+      const name = (document.getElementById('do-name-' + id).value || '').trim(), phone = (document.getElementById('do-phone-' + id).value || '').trim();
+      if (!name) { toast("Type the driver's name, or pick an employee", 'warn'); document.getElementById('do-name-' + id).focus(); return; }
+      if (phone && !/^[\d\s()+-]{7,20}$/.test(phone)) { toast('Check the phone number', 'warn'); return; }
+      emp = { name, phone, vehicle: (document.getElementById('do-veh-' + id).value || '').trim() };
+    }
+    if (!emp) return;
+    const tell = document.getElementById('do-tell-' + id).checked;
+    statusBusy = id; render();
+    try {
+      await assignDriver(id, emp, { tell });
+      pickFor = null;
+      toast(`Out for delivery with ${emp.name}${tell ? '. The customer was told in the chat.' : ''}`, 'ok');
+    } catch (e) { toast('Not saved: ' + e.message, 'err'); }
+    finally { statusBusy = null; render(); }
   }
 
   // ── Bottom of an opened order: its status changes and its chat, each opened with its own button ──
@@ -312,7 +398,7 @@
     const hist = hOpen ? `<div class="om-sec"><ul class="om-hist">${steps.map(h => {
         const key = String(h.status || '').toLowerCase();
         return `<li><span style="color:var(--s-${key === 'placed' ? 'pending' : esc(key)},var(--muted));">●</span>
-          <strong>${esc(h.status === 'Ready' ? 'Ready for pickup' : h.status || '')}</strong>${h.by ? `<span class="who">by ${esc(h.by)}</span>` : ''}
+          <strong>${esc(statusLabel(h.status))}</strong>${h.by ? `<span class="who">by ${esc(h.by)}</span>` : ''}
           <span class="when">${h.at ? fmtDate(h.at) : ''}</span></li>`;
       }).join('')}</ul>${steps.length === 1 ? '<div class="note" style="margin-top:6px;">No status changes yet.</div>' : ''}</div>` : '';
     let chat = '';
@@ -451,6 +537,12 @@
     const s=document.getElementById('m-sel').value, id=editId;
     const o = all.find(x => x.id === id);
     if (o && (o.status || 'Pending') === s) { closeStatus(); return; }
+    if (s === 'Delivering') {
+      // Going out needs a driver: open the order with the driver list
+      closeStatus(); opened.clear(); opened.add(id); pickFor = id; syncChats(); render();
+      const row = document.querySelector(`tr.row-link[data-id="${CSS.escape(id)}"]`); if (row) row.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      return;
+    }
     const q = statusChangeQuestion(orderNo(id), o && o.status, s);
     if (q && !confirm(q)) return;
     try {

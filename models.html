@@ -101,6 +101,20 @@
     .checks li { display: flex; gap: 8px; line-height: 1.45; }
     .checks li i { flex-shrink: 0; margin-top: 1px; }
     .checks .ok i { color: #00E676; } .checks .warn i { color: var(--yellow); } .checks .bad i { color: #FF6B6B; } .checks .info i { color: var(--muted); }
+    /* Where the 3D model comes from: a picture, a ready-made shape, or a .glb */
+    .src-tabs { margin: 0 0 12px; }
+    .src-pane > p { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+    .shape-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+    .shape { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 10px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.03); color: var(--text); cursor: pointer; text-align: center; font-size: 14px; }
+    .shape:hover, .shape.on { border-color: var(--orange); background: rgba(255,92,0,.07); }
+    .shape .e { font-size: 30px; line-height: 1; }
+    .shape small { color: var(--muted); font-size: 12.5px; }
+    .flat-pics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .flat-pic { position: relative; min-height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+    .flat-pic img { max-width: 100%; max-height: 120px; object-fit: contain; background: repeating-conic-gradient(#1b1b1b 0% 25%, #222 0% 50%) 50% / 14px 14px; border-radius: 8px; }
+    .flat-pic .x { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.6); border: 0; color: #fff; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; }
+    .flat-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-top: 12px; font-size: 13.5px; }
+    .flat-row input[type=number] { width: 90px; padding: 6px 8px; border-radius: 7px; background: var(--dark); color: var(--text); border: 1px solid var(--border); }
     .art-tabs { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
     .art-box { position: relative; background: repeating-conic-gradient(#1b1b1b 0% 25%, #222 0% 50%) 50% / 18px 18px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; user-select: none; touch-action: none; }
     .art-box img { display: block; width: 100%; height: 100%; object-fit: fill; pointer-events: none; }
@@ -161,13 +175,14 @@
     <div class="card" style="margin-bottom:16px;">
       <p class="mo-intro" style="color:#d0d0d0;font-size:15.5px;">
         These are the things customers can design and try on in the app. The five shirts are built in.
-        To sell something new, like a cap or a tote bag, add its 3D file here, then add it as a product on <a href="products.html" style="color:var(--orange);">Products &amp; Stock</a>.
+        To sell something new, press <strong>Add a model</strong>. <strong>No 3D file? No problem:</strong> make one from a photo of the item, or start from a ready-made shape (tote bag, cap, ID lanyard).
+        Then add it as a product on <a href="products.html" style="color:var(--orange);">Products &amp; Stock</a>.
       </p>
       <details class="mo-how">
         <summary><i class="bi bi-question-circle"></i> How to add something new</summary>
         <div class="mo-steps">
-          <div class="mo-step"><b><span>1</span>Get the 3D file</b>Ask a 3D artist for a <strong>.glb</strong> file of the item, or buy one online. Send them the notes under <strong>For your 3D artist</strong> at the bottom of this page.</div>
-          <div class="mo-step"><b><span>2</span>Upload it</b>Press <strong>Add model</strong> and choose the file. The page makes the pictures for the designer by itself.</div>
+          <div class="mo-step"><b><span>1</span>Pick how to make it</b><strong>From a picture</strong>: a photo of the item straight from the front (a plain or see-through background is best); the page turns it into a flat 3D model. <strong>Ready-made shape</strong>: a tote bag, cap or ID lanyard to start from. <strong>Upload a 3D file</strong>: a .glb from a 3D artist (see <strong>For your 3D artist</strong> at the bottom).</div>
+          <div class="mo-step"><b><span>2</span>Add it</b>Press <strong>Add a model</strong> and choose one. The page makes the pictures for the designer by itself.</div>
           <div class="mo-step"><b><span>3</span>Check the print area</b>The orange box is where customers can put their design. Drag it or its corners if it's off.</div>
           <div class="mo-step"><b><span>4</span>Line it up for try-on</b>Pick where it's worn (head, neck, chest…) and move it until it sits right on the dummy. Then try it in the app.</div>
           <div class="mo-step"><b><span>5</span>Sell it</b>On <a href="products.html" style="color:var(--orange);">Products &amp; Stock</a>, press <strong>Add Product</strong>, and under Advanced pick this model.</div>
@@ -266,11 +281,39 @@
         <!-- 2. 3D model -->
         <div class="ed-sec" id="sec-glb">
           <h4><span class="num">2</span>3D model</h4>
-          <p>A .glb file. It's checked here and only uploaded when you press Save.</p>
-          <div class="drop" id="glb-drop" tabindex="0" role="button" aria-label="Choose a .glb file">
-            <i class="bi bi-cloud-arrow-up"></i><span id="glb-drop-text">Drop a .glb here or click to choose</span>
+          <div class="filter-bar src-tabs" id="src-tabs" role="tablist">
+            <button class="f-tab" data-src="picture" role="tab"><i class="bi bi-image"></i> From a picture</button>
+            <button class="f-tab" data-src="shape" role="tab"><i class="bi bi-bag"></i> Ready-made shape</button>
+            <button class="f-tab" data-src="glb" role="tab"><i class="bi bi-badge-3d"></i> Upload a 3D file</button>
           </div>
-          <input type="file" id="glb-file" accept=".glb,model/gltf-binary" hidden>
+
+          <div class="src-pane" id="src-picture">
+            <p>No 3D file needed. Take a photo of the item straight from the front (flat, like a sign, a fan, a flag, a pillow, a bag from the front).
+              The page turns it into a flat 3D model that works in the designer, the app's 3D view and the try-on.</p>
+            <div class="flat-pics">
+              <div class="drop flat-pic" id="flat-front" tabindex="0" role="button" aria-label="Choose the front picture"><i class="bi bi-camera"></i><span>Front picture *</span></div>
+              <div class="drop flat-pic" id="flat-back" tabindex="0" role="button" aria-label="Choose the back picture"><i class="bi bi-camera"></i><span>Back picture<br><small>optional</small></span></div>
+            </div>
+            <input type="file" id="flat-file" accept="image/png,image/webp,image/jpeg" hidden>
+            <div class="flat-row">
+              <label style="display:flex;gap:8px;align-items:center;">Real width <input type="number" id="flat-cm" min="2" max="200" step="0.5" value="30"> cm</label>
+              <label class="fg-check" style="margin:0;"><input type="checkbox" id="flat-cut" checked> Remove a plain background</label>
+            </div>
+            <div class="hint" style="font-size:13px;color:var(--muted);margin-top:8px;">Tip: a PNG with a see-through background gives the cleanest edge. For colours customers can change, use a photo of a white or light item.</div>
+          </div>
+
+          <div class="src-pane" id="src-shape" hidden>
+            <p>Start from one of these, then set the name, print area and fit like any other model.</p>
+            <div class="shape-grid" id="shape-grid"></div>
+          </div>
+
+          <div class="src-pane" id="src-glb" hidden>
+            <p>A .glb file. It's checked here and only uploaded when you press Save.</p>
+            <div class="drop" id="glb-drop" tabindex="0" role="button" aria-label="Choose a .glb file">
+              <i class="bi bi-cloud-arrow-up"></i><span id="glb-drop-text">Drop a .glb here or click to choose</span>
+            </div>
+            <input type="file" id="glb-file" accept=".glb,model/gltf-binary" hidden>
+          </div>
           <ul class="checks" id="glb-checks"></ul>
         </div>
 
@@ -348,6 +391,7 @@
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
   import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
   import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+  import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
   const $ = id => document.getElementById(id);
   const MAX_GLB = 10 * 1024 * 1024, WARN_GLB = 8 * 1024 * 1024, WARN_TRIS = 60000;
@@ -413,7 +457,8 @@
       const chips = [];
       chips.push(m.builtIn ? '<span class="chip">Built in</span>' : `<span class="chip">${esc(kindLabel(m.kind).split(' (')[0])}</span>`);
       if (!m.builtIn) {
-        chips.push(m.modelFile && (m.modelFile.printFront) ? '<span class="chip ok">3D print</span>' : '<span class="chip warn">2D print only</span>');
+        chips.push(m.madeFrom === 'picture' ? '<span class="chip ok">From a picture</span>'
+          : m.modelFile && (m.modelFile.printFront) ? '<span class="chip ok">3D print</span>' : '<span class="chip warn">2D print only</span>');
         chips.push(m.lensObjectName ? '<span class="chip ok">In the Lens</span>' : `<span class="chip">Try-on: ${esc(wornLabel(m.wornOn))}</span>`);
       }
       chips.push(used ? `<span class="chip ok">${used} product${used === 1 ? '' : 's'}</span>` : '<span class="chip warn">No product yet</span>');
@@ -584,7 +629,15 @@
   function renderChecks() {
     const out = [], li = (cls, icon, text) => out.push(`<li class="${cls}"><i class="bi ${icon}"></i><span>${text}</span></li>`);
     const f = ed.modelFile;
-    if (!f) { $('glb-checks').innerHTML = ed.builtIn ? '' : '<li class="info"><i class="bi bi-info-circle"></i><span>No file yet.</span></li>'; return; }
+    if (!f) { $('glb-checks').innerHTML = ed.builtIn ? '' : '<li class="info"><i class="bi bi-info-circle"></i><span>No model yet.</span></li>'; return; }
+    if (ed.flat || f.madeFromPicture) {
+      const sz = f.size ? f.size.slice(0, 2).map(n => (n * 100).toFixed(1)).join(' × ') + ' cm' : '';
+      li('ok', 'bi-check-circle', 'A flat 3D model made from your picture' + (sz ? `, ${sz}` : '') + '. It is saved as a .glb when you press Save.');
+      li('ok', 'bi-check-circle', 'Designs show on it in the app\'s 3D view and the try-on, inside the print area' + (f.printBack ? 's (front and back).' : '.'));
+      li('info', 'bi-info-circle', 'It is flat like a card: great for bags seen from the front, signs, flags, fans, pillows and badges. For round things (caps, mugs) use a ready-made shape or a 3D file.');
+      $('glb-checks').innerHTML = out.join('');
+      return;
+    }
     const mb = (f.bytes / 1048576).toFixed(1) + ' MB';
     li(f.bytes > WARN_GLB ? 'warn' : 'ok', f.bytes > WARN_GLB ? 'bi-exclamation-triangle' : 'bi-check-circle',
       `${esc(f.name || 'model.glb')}, ${mb}` + (f.bytes > WARN_GLB ? ': large; customers download it before the 3D view and try-on open.' : ''));
@@ -616,6 +669,7 @@
       const obj = await loadGlb(buf);
       const size = new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3());
       ed.glbFile = file;
+      ed.flat = null;
       ed.modelFile = Object.assign({ name: file.name, bytes: file.size, size: [size.x, size.y, size.z] }, info);
       showModel(obj);
       renderChecks();
@@ -625,6 +679,241 @@
       setDirty();
       status('');
     } catch (e) { status(''); toast("Couldn't read that model: " + e.message, 'err'); }
+  }
+
+  // ─────────────────────────────── Where the model comes from ───────────────────────────────
+  // "picture": a flat 3D model made here from a PNG of the item (no 3D file needed); "shape": a ready-made .glb to start
+  // from; "glb": a file from a 3D artist. All three end up as a .glb with PrintFront / PrintBack parts, so the app's
+  // designer, 3D view and try-on treat them the same.
+  const SHAPES = [
+    { id: 'tote', file: 'models/templates/ToteBag.glb', e: '👜', name: 'Tote bag', sub: 'Held in the hand', label: 'Tote Bag', blurb: 'Canvas tote with handles', kind: 'accessory', wornOn: 'rightHand' },
+    { id: 'cap', file: 'models/templates/BaseballCap.glb', e: '🧢', name: 'Baseball cap', sub: 'On the head', label: 'Baseball Cap', blurb: 'Curved brim, print on the front', kind: 'headwear', wornOn: 'head' },
+    { id: 'lanyard', file: 'models/templates/IDLanyard.glb', e: '🪪', name: 'ID lanyard', sub: 'Around the neck', label: 'ID Lanyard', blurb: 'ID card with a printed strap', kind: 'neckwear', wornOn: 'neck' }
+  ];
+  let src = 'picture';
+  function setSrc(s) {
+    src = s;
+    document.querySelectorAll('#src-tabs .f-tab').forEach(b => b.classList.toggle('active', b.dataset.src === s));
+    ['picture', 'shape', 'glb'].forEach(k => $('src-' + k).hidden = k !== s);
+    renderShapes(); renderFlat();
+  }
+  document.querySelectorAll('#src-tabs .f-tab').forEach(b => b.addEventListener('click', () => setSrc(b.dataset.src)));
+
+  function renderShapes() {
+    $('shape-grid').innerHTML = SHAPES.map(sh => `<button type="button" class="shape${ed && ed.shape === sh.id ? ' on' : ''}" onclick="useShape('${sh.id}')">
+      <span class="e">${sh.e}</span><b>${esc(sh.name)}</b><small>${esc(sh.sub)}</small></button>`).join('');
+  }
+  /** Sets the type and where it's worn for a new model, unless the shop already chose them. */
+  function presetPlacement(kind, wornOn) {
+    if (!ed.isNew) return;
+    ed.kind = kind; $('f-kind').value = kind;
+    if (!ed.wornTouched) { ed.wornOn = wornOn; $('f-wornon').value = wornOn; ed.follow = ''; renderFollow(); window.resetFit(); }
+  }
+  window.useShape = async id => {
+    const sh = SHAPES.find(s => s.id === id); if (!sh) return;
+    if ((ed.modelUrl || ed.glbFile || ed.flat) && !confirm('Replace this model with the ' + sh.name.toLowerCase() + '?')) return;
+    status('Loading the ' + sh.name.toLowerCase() + '…');
+    try {
+      const r = await fetch(sh.file); if (!r.ok) throw new Error('The shape file is missing (' + r.status + ')');
+      const file = new File([await r.blob()], sh.file.split('/').pop(), { type: 'model/gltf-binary' });
+      if (!ed.label.trim()) { ed.label = sh.label; $('f-label').value = sh.label; }
+      if (!ed.blurb.trim()) { ed.blurb = sh.blurb; $('f-blurb').value = sh.blurb; }
+      presetPlacement(sh.kind, sh.wornOn);
+      await takeGlb(file);
+      ed.shape = id; ed.tintable = true; $('f-tint').checked = true;
+      renderShapes();
+    } catch (e) { status(''); toast("Couldn't load it: " + e.message, 'err'); }
+  };
+
+  // ── From a picture ──
+  const MAX_FLAT_PX = 1536;
+  let flatPicking = 'front';
+  ['front', 'back'].forEach(side => {
+    const el = $('flat-' + side);
+    el.addEventListener('click', e => { if (e.target.closest('.x')) return; flatPicking = side; $('flat-file').click(); });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flatPicking = side; $('flat-file').click(); } });
+    ['dragenter', 'dragover'].forEach(n => el.addEventListener(n, e => { e.preventDefault(); el.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach(n => el.addEventListener(n, e => { e.preventDefault(); el.classList.remove('over'); }));
+    el.addEventListener('drop', e => { flatPicking = side; takeFlatPicture(e.dataTransfer.files[0]); });
+  });
+  $('flat-file').addEventListener('change', e => { takeFlatPicture(e.target.files[0]); e.target.value = ''; });
+  $('flat-cm').addEventListener('input', () => {
+    if (!ed || !ed.flat) return;
+    ed.flat.cm = Math.min(200, Math.max(2, +$('flat-cm').value || 30));
+    ['front', 'back'].forEach(k => { if (ed[k] && ed[k].autoCm) ed[k].cm = zoneCm(ed[k]); });
+    ed.flatDirty = true; setDirty(); rebuildFlatSoon(); renderArt();
+  });
+
+  const loadImage = url => new Promise((res, rej) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = () => rej(new Error("That picture couldn't be opened.")); i.src = url; });
+  /** Makes an image transparent where it is the plain background touching its edges (the colour of its corners). */
+  function cutBackground(cv) {
+    const ctx = cv.getContext('2d'), { width: w, height: h } = cv, img = ctx.getImageData(0, 0, w, h), d = img.data;
+    const corners = [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]].map(([x, y]) => (y * w + x) * 4);
+    const bg = [0, 1, 2].map(c => corners.reduce((s, i) => s + d[i + c], 0) / 4);
+    const tol = 42 * 42, seen = new Uint8Array(w * h), stack = [];
+    const like = p => { const i = p * 4, r = d[i] - bg[0], g = d[i + 1] - bg[1], b = d[i + 2] - bg[2]; return r * r + g * g + b * b < tol; };
+    for (let x = 0; x < w; x++) stack.push(x, (h - 1) * w + x);
+    for (let y = 0; y < h; y++) stack.push(y * w, y * w + w - 1);
+    let cleared = 0;
+    while (stack.length) {
+      const p = stack.pop();
+      if (seen[p] || !like(p)) continue;
+      seen[p] = 1; d[p * 4 + 3] = 0; cleared++;
+      const x = p % w, y = (p / w) | 0;
+      if (x > 0) stack.push(p - 1); if (x < w - 1) stack.push(p + 1); if (y > 0) stack.push(p - w); if (y < h - 1) stack.push(p + w);
+    }
+    ctx.putImageData(img, 0, 0);
+    return cleared / (w * h);
+  }
+  /** The box of the picture's visible pixels (fractions), or the whole picture. */
+  function opaqueBox(cv) {
+    const { width: w, height: h } = cv, d = cv.getContext('2d').getImageData(0, 0, w, h).data;
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 40) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    return x1 < 0 ? null : { x0, y0, x1, y1 };
+  }
+  const hasSeeThrough = cv => { const { width: w, height: h } = cv, d = cv.getContext('2d').getImageData(0, 0, w, h).data; for (let i = 3; i < d.length; i += 4 * 7) if (d[i] < 200) return true; return false; };
+  /** Reads a picture into a canvas: background removed when asked, cropped to the item, at most MAX_FLAT_PX. */
+  async function preparePicture(file) {
+    const url = URL.createObjectURL(file);
+    const img = await loadImage(url);
+    let w = img.naturalWidth, h = img.naturalHeight; const k = Math.min(1, MAX_FLAT_PX / Math.max(w, h));
+    let cv = document.createElement('canvas'); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    URL.revokeObjectURL(url);
+    let cut = false;
+    if (!hasSeeThrough(cv) && $('flat-cut').checked) cut = cutBackground(cv) > 0.03;
+    // Cropped to what's visible, so the real width is the item's width
+    const b = opaqueBox(cv);
+    if (!b) throw new Error('The picture is empty after removing its background. Untick “Remove a plain background”.');
+    const pad = Math.round(Math.max(cv.width, cv.height) * 0.01);
+    const cx0 = Math.max(0, b.x0 - pad), cy0 = Math.max(0, b.y0 - pad), cw = Math.min(cv.width, b.x1 + pad + 1) - cx0, ch = Math.min(cv.height, b.y1 + pad + 1) - cy0;
+    const out = document.createElement('canvas'); out.width = cw; out.height = ch;
+    out.getContext('2d').drawImage(cv, cx0, cy0, cw, ch, 0, 0, cw, ch);
+    return { canvas: out, w: cw, h: ch, cut };
+  }
+  const canvasBlob = cv => new Promise(r => cv.toBlob(r, 'image/png'));
+  function mirroredCanvas(cv) {
+    const m = document.createElement('canvas'); m.width = cv.width; m.height = cv.height;
+    const c = m.getContext('2d'); c.translate(cv.width, 0); c.scale(-1, 1); c.drawImage(cv, 0, 0); return m;
+  }
+  /** Where designs go to start with: the middle of the item's visible part. */
+  function startZone(cv) {
+    const b = opaqueBox(cv) || { x0: 0, y0: 0, x1: cv.width - 1, y1: cv.height - 1 };
+    const fx = v => v / cv.width, fy = v => v / cv.height, iw = fx(b.x1 - b.x0), ih = fy(b.y1 - b.y0);
+    return { left: fx(b.x0) + iw * 0.18, right: fx(b.x1) - iw * 0.18, top: fy(b.y0) + ih * 0.22, bottom: fy(b.y1) - ih * 0.14 };
+  }
+  const zoneCm = s => ed && ed.flat ? Math.round((s.zone.right - s.zone.left) * ed.flat.cm * 10) / 10 : 0;
+  async function setFlatSide(side, pic) {
+    const blob = await canvasBlob(pic.canvas);
+    ed.flat[side] = pic;
+    const old = ed[side];
+    ed[side] = { img: URL.createObjectURL(blob), blob, w: pic.w, h: pic.h, fromModel: false, autoCm: true,
+      zone: old && old.w === pic.w && old.h === pic.h ? old.zone : startZone(pic.canvas) };
+    ed[side].cm = zoneCm(ed[side]);
+  }
+  async function takeFlatPicture(file) {
+    if (!file || !ed) return;
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { toast('Choose a PNG, JPG or WEBP picture.', 'warn'); return; }
+    if (file.size > 15 * 1048576) { toast('Pictures can be up to 15 MB.', 'warn'); return; }
+    if (flatPicking === 'back' && !(ed.flat && ed.flat.front)) { toast('Add the front picture first.', 'warn'); return; }
+    status('Reading the picture…');
+    try {
+      const pic = await preparePicture(file);
+      if (!ed.flat) {
+        if ((ed.modelUrl || ed.glbFile) && !confirm('Make this model from the picture instead of its 3D file?')) { status(''); return; }
+        ed.flat = { cm: Math.min(200, Math.max(2, +$('flat-cm').value || 30)), front: null, back: null };
+        ed.modelUrl = ''; ed.glbFile = null; ed.shape = null;
+        // A photo has its own colours; customers can't recolour it unless it's of a white item
+        ed.tintable = false; $('f-tint').checked = false;
+        presetPlacement('accessory', 'rightHand');
+      }
+      await setFlatSide(flatPicking, pic);
+      if (flatPicking === 'front') {
+        if (!ed.label.trim()) { const n = file.name.replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40); ed.label = n ? n.charAt(0).toUpperCase() + n.slice(1) : ''; $('f-label').value = ed.label; }
+        if (ed.hasBack && (!ed.flat.back || ed.flat.back.mirrored)) await setFlatSide('back', { canvas: mirroredCanvas(pic.canvas), w: pic.w, h: pic.h, mirrored: true });
+      } else { ed.hasBack = true; $('f-hasback').checked = true; }
+      ed.flatDirty = true; setDirty();
+      artSide = flatPicking; rebuildFlat(); renderFlat(); renderArt();
+      status('');
+      if (pic.cut) toast('The plain background was removed. If part of the item went missing, untick “Remove a plain background” and add it again.', 'ok');
+    } catch (e) { status(''); toast(e.message, 'err'); }
+  }
+  window.removeFlatBack = e => {
+    e.stopPropagation();
+    if (!ed.flat) return;
+    ed.flat.back = null; ed.back = null; ed.hasBack = false; $('f-hasback').checked = false;
+    ed.flatDirty = true; setDirty(); rebuildFlat(); renderFlat(); renderArt();
+  };
+  function renderFlat() {
+    if (!ed) return;
+    const f = ed.flat;
+    ['front', 'back'].forEach(side => {
+      const el = $('flat-' + side), pic = f && f[side] && ed[side];
+      el.innerHTML = pic
+        ? `<img src="${esc(ed[side].img)}" alt="${side} picture">${side === 'back' && !f.back.mirrored ? '<button type="button" class="x" title="Remove the back picture" onclick="removeFlatBack(event)">&times;</button>' : ''}<small>${side === 'front' ? 'Front: click to replace' : f.back.mirrored ? 'Back (the front, mirrored): click to add a real back' : 'Back: click to replace'}</small>`
+        : side === 'front' ? '<i class="bi bi-camera"></i><span>Front picture *</span><small>PNG with a see-through background is best</small>'
+        : '<i class="bi bi-camera"></i><span>Back picture</span><small>optional</small>';
+    });
+    if (f) $('flat-cm').value = f.cm;
+    if (f && src !== 'picture') setSrc('picture');
+    if (f) renderChecks();
+  }
+
+  // The picture model in 3D: the photo on a thin card (front and back), with print parts over the print areas
+  const T_FLAT = 0.003;
+  /** A W×H plane with glTF's picture coordinates (v = 0 at the top), so prints and photos land the right way up. */
+  function glPlane(w, h) { const g = new THREE.PlaneGeometry(w, h), uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i)); return g; }
+  function flatTexture(cv) { const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.flipY = false; t.anisotropy = 4; return t; }
+  function buildFlatGroup() {
+    const f = ed.flat, F = f.front, W = f.cm / 100, H = W * F.h / F.w;
+    const root = new THREE.Group(); root.name = slug(ed.label || 'item');
+    // Held or hung things are carried from their top edge; everything else from its middle
+    const inner = new THREE.Group(); inner.name = 'Item'; inner.position.y = followOf(ed) === 'hang' ? -H / 2 : 0; root.add(inner);
+    const mat = cv => new THREE.MeshStandardMaterial({ map: flatTexture(cv), alphaTest: 0.5, roughness: ed.ar.roughness, metalness: 0 });
+    const front = new THREE.Mesh(glPlane(W, H), mat(F.canvas)); front.name = 'Body'; front.position.z = T_FLAT / 2;
+    const backCv = f.back ? f.back.canvas : mirroredCanvas(F.canvas);
+    const back = new THREE.Mesh(glPlane(W, H), mat(backCv)); back.name = 'BodyBack'; back.rotation.y = Math.PI; back.position.z = -T_FLAT / 2;
+    inner.add(front, back);
+    const addPrint = (zone, name, sign) => {
+      const pw = (zone.right - zone.left) * W, ph = (zone.bottom - zone.top) * H;
+      const m = new THREE.Mesh(glPlane(pw, ph), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85 })); m.name = name;
+      // The back's print area is measured on the back picture as seen from behind, so left and right swap
+      const cx = ((zone.left + zone.right) / 2 - 0.5) * W * sign, cy = (0.5 - (zone.top + zone.bottom) / 2) * H;
+      if (sign < 0) m.rotation.y = Math.PI;
+      m.position.set(cx, cy, sign * (T_FLAT / 2 + 0.0015));
+      inner.add(m);
+    };
+    addPrint(ed.front.zone, 'PrintFront', 1);
+    if (ed.hasBack && ed.back) addPrint(ed.back.zone, 'PrintBack', -1);
+    return root;
+  }
+  function rebuildFlat() {
+    if (!ed || !ed.flat || !ed.flat.front) return;
+    showModel(buildFlatGroup());
+    ed.modelFile = { name: slug(ed.label || 'item') + '.glb', bytes: 0, size: [ed.flat.cm / 100, ed.flat.cm / 100 * ed.flat.front.h / ed.flat.front.w, T_FLAT],
+      triangles: ed.hasBack ? 8 : 6, printFront: true, printBack: !!(ed.hasBack && ed.back), madeFromPicture: true };
+    renderChecks();
+  }
+  let flatTimer = null;
+  function rebuildFlatSoon() { clearTimeout(flatTimer); flatTimer = setTimeout(rebuildFlat, 250); }
+  /** For a saved picture model: reads its pictures back so the 3D model can be made again after a change. */
+  async function loadFlatPictures() {
+    if (!ed.flat || ed.flat.front) return;
+    status('Loading the pictures…');
+    const read = async s => { const img = await loadImage(s.img); const cv = document.createElement('canvas'); cv.width = s.w || img.naturalWidth; cv.height = s.h || img.naturalHeight; cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); return { canvas: cv, w: cv.width, h: cv.height }; };
+    ed.flat.front = await read(ed.front);
+    if (ed.back) ed.flat.back = await read(ed.back);
+    status('');
+  }
+  /** The picture model as a .glb file, made from the current pictures and print areas. */
+  async function exportFlatGlb() {
+    await loadFlatPictures();
+    const buf = await new GLTFExporter().parseAsync(buildFlatGroup(), { binary: true, maxTextureSize: 2048 });
+    const name = slug(ed.label || 'item') + '.glb';
+    const info = inspectGlb(buf);
+    ed.glbFile = new File([buf], name, { type: 'model/gltf-binary' });
+    ed.modelFile = Object.assign({ name, bytes: buf.byteLength, size: [ed.flat.cm / 100, ed.flat.cm / 100 * ed.flat.front.h / ed.flat.front.w, T_FLAT], madeFromPicture: true }, info);
   }
 
   // ─────────────────────────────── Designer pictures ───────────────────────────────
@@ -721,10 +1010,11 @@
     }
     const f = ed.modelFile;
     $('art-hint').innerHTML = backOff ? 'Tick “The back can be printed too” to give the back a print area.'
+      : ed.flat ? 'This is your picture. Drag the box or its corners to where designs go; the 3D model follows.'
       : s && s.found ? 'The print area was found from the model\'s print part. Drag the box or its corners to change it.'
       : f && !(artSide === 'front' ? f.printFront : f.printBack) ? 'Drag the box or its corners to where designs should go.'
       : 'Drag the box or its corners to change where designs go.';
-    $('btn-capture').disabled = !gltfScene; $('btn-zone-auto').disabled = !gltfScene;
+    $('btn-capture').disabled = !gltfScene || !!ed.flat; $('btn-zone-auto').disabled = !gltfScene || !!ed.flat;
     $('cm-row').hidden = !!ed.builtIn || !s || backOff;
     $('f-cm').value = s && +s.cm > 0 ? s.cm : '';
   }
@@ -760,9 +1050,25 @@
     }
     s.zone = z; s.found = false; placeZone(); setDirty();
   });
-  ['pointerup', 'pointercancel'].forEach(n => $('art-area').addEventListener(n, () => { zdrag = null; }));
+  ['pointerup', 'pointercancel'].forEach(n => $('art-area').addEventListener(n, () => {
+    if (zdrag && ed && ed.flat) {
+      // A picture model's print parts follow its print areas
+      if (ed[artSide] && ed[artSide].autoCm) ed[artSide].cm = zoneCm(ed[artSide]);
+      ed.flatDirty = true; loadFlatPictures().then(rebuildFlat).catch(() => {}); renderArt();
+    }
+    zdrag = null;
+  }));
   document.querySelectorAll('#art-sides .f-tab').forEach(b => b.addEventListener('click', () => { artSide = b.dataset.side; renderArt(); }));
-  $('f-hasback').addEventListener('change', e => { ed.hasBack = e.target.checked; if (ed.hasBack) { artSide = 'back'; } setDirty(); renderArt(); });
+  $('f-hasback').addEventListener('change', async e => {
+    ed.hasBack = e.target.checked; if (ed.hasBack) { artSide = 'back'; }
+    // A picture model with no back picture prints on the back of its front picture, mirrored
+    if (ed.flat) {
+      try { await loadFlatPictures(); } catch (err) { toast(err.message, 'err'); }
+      if (ed.hasBack && !ed.back && ed.flat.front) await setFlatSide('back', { canvas: mirroredCanvas(ed.flat.front.canvas), w: ed.flat.front.w, h: ed.flat.front.h, mirrored: true });
+      ed.flatDirty = true; rebuildFlat(); renderFlat();
+    }
+    setDirty(); renderArt();
+  });
   $('art-file').addEventListener('change', async e => {
     const file = e.target.files[0]; e.target.value = ''; if (!file) return;
     if (file.size > 8 * 1048576) { toast('Pictures can be up to 8 MB.', 'warn'); return; }
@@ -808,7 +1114,10 @@
       back: m && m.back ? Object.assign({}, m.back, { zone: Object.assign({}, m.back.zone) }) : null,
       hasBack: !!(m && m.back), tintable: m ? m.tintable : true, previewScale: m ? m.preview.scale : 1,
       ar: m ? Object.assign({}, m.ar) : startFit(wornOn, kind), lensObjectName: m ? m.lensObjectName : '', dirty: false,
-      follow: m ? (m.follow || "") : ""
+      follow: m ? (m.follow || "") : "",
+      // Made from a picture: its pictures are read back only when something changes (loadFlatPictures)
+      flat: m && m.madeFrom === 'picture' ? { cm: +m.flatCm || 30, front: null, back: null } : null, flatDirty: false,
+      shape: m && m.madeFrom && m.madeFrom.startsWith('shape:') ? m.madeFrom.slice(6) : null
     };
     // Built-in shirts keep their own fit; the sliders don't apply to them
     $('ed-title').textContent = m ? m.label : 'Add model';
@@ -831,9 +1140,10 @@
       : `No product uses this model yet. <a href="products.html?addModel=${encodeURIComponent(id)}" style="color:var(--orange);">Add one</a>.`;
     $('glb-drop-text').textContent = ed.modelUrl ? 'Replace: drop another .glb or click' : 'Drop a .glb here or click to choose';
     artSide = 'front';
+    setSrc(ed.flat ? 'picture' : ed.shape ? 'shape' : ed.isNew ? 'picture' : 'glb');
     renderSliders(); renderChecks();
     clearModel(); $('ed-empty').hidden = false;
-    $('ed-empty').querySelector('div').textContent = ed.builtIn ? 'A built-in shirt: its 3D model is part of the app.' : 'Upload a .glb to see the model here.';
+    $('ed-empty').querySelector('div').textContent = ed.builtIn ? 'A built-in shirt: its 3D model is part of the app.' : 'Add a picture of the item, pick a ready-made shape, or upload a .glb to see it here.';
     $('ed-modes').hidden = ed.builtIn;
     status('');
     $('ed-overlay').classList.add('show');
@@ -865,7 +1175,7 @@
     const guess = { headwear: 'head', eyewear: 'head', neckwear: 'neck', top: 'chest', accessory: 'rightHand' }[ed.kind];
     if (guess && ed.isNew && !ed.wornTouched) { ed.wornOn = guess; $('f-wornon').value = guess; ed.follow = ''; renderFollow(); window.resetFit(); }
   });
-  $('f-wornon').addEventListener('change', e => { ed.wornOn = e.target.value; ed.wornTouched = true; ed.follow = ''; renderFollow(); window.resetFit(); frameView(); });
+  $('f-wornon').addEventListener('change', e => { ed.wornOn = e.target.value; ed.wornTouched = true; ed.follow = ''; renderFollow(); window.resetFit(); if (ed.flat) { ed.flatDirty = true; rebuildFlatSoon(); } frameView(); });
   /** The "How it moves" box: the usual choice for where it's worn is marked, and used unless the shop picked another. */
   function renderFollow() {
     const def = followOf({ wornOn: ed.wornOn });
@@ -876,6 +1186,7 @@
   $('f-follow').addEventListener('change', e => {
     // Saved only when it differs from the usual choice, so changing "Worn on" later brings the right default
     ed.follow = e.target.value === followOf({ wornOn: ed.wornOn }) ? '' : e.target.value;
+    if (ed.flat) { ed.flatDirty = true; rebuildFlatSoon(); }
     renderFollow(); setDirty();
   });
   $('f-tint').addEventListener('change', e => { ed.tintable = e.target.checked; setDirty(); });
@@ -909,7 +1220,8 @@
     const label = ed.label.trim();
     if (!label) { toast('Give the model a name.', 'warn'); $('f-label').focus(); return; }
     if (!ed.builtIn) {
-      if (!ed.modelUrl && !ed.glbFile) { toast('Upload the .glb file.', 'warn'); return; }
+      if (ed.flat && !ed.flat.front && !ed.modelUrl) { toast('Add the front picture of the item.', 'warn'); return; }
+      if (!ed.flat && !ed.modelUrl && !ed.glbFile) { toast('Add a picture of the item, pick a ready-made shape, or upload a .glb file.', 'warn'); return; }
       if (!ed.front) { toast('The model needs a front picture for the designer. Use “Make from the 3D model”.', 'warn'); return; }
       if (ed.lensObjectName && SHIRT_STYLES.some(s => s.id === ed.lensObjectName) ) { /* reusing a built-in shirt's object is allowed */ }
     }
@@ -928,6 +1240,8 @@
           if (BUILTIN_ART[id] || models.some(m => m.id === id)) id = id + '-' + Math.random().toString(36).slice(2, 6);
         }
         const stamp = Date.now().toString(36);
+        // A picture model is made into its .glb now, from the final pictures and print areas
+        if (ed.flat && (ed.flatDirty || !ed.modelUrl)) { status('Making the 3D model from the picture…'); await exportFlatGlb(); }
         let modelUrl = ed.modelUrl;
         if (ed.glbFile) { status('Uploading the 3D model…'); modelUrl = await uploadGlb(ed.glbFile, `${id}-${stamp}.glb`); }
         const side = async (s, name) => {
@@ -943,7 +1257,8 @@
         const doc = Object.assign({
           builtIn: false, label, blurb: ed.blurb.trim(), kind: ed.kind, wornOn: ed.wornOn, follow: ed.follow || '', enabled: ed.enabled, order: ed.order,
           modelUrl, modelFile: mf, thumbUrl: front ? front.img : '', front, back, tintable: ed.tintable,
-          preview: { scale: ed.previewScale }, ar: Object.assign({}, ed.ar), lensObjectName: ed.lensObjectName || ''
+          preview: { scale: ed.previewScale }, ar: Object.assign({}, ed.ar), lensObjectName: ed.lensObjectName || '',
+          madeFrom: ed.flat ? 'picture' : ed.shape ? 'shape:' + ed.shape : 'glb', flatCm: ed.flat ? ed.flat.cm : 0
         }, meta);
         status('Saving…');
         await db.collection('models').doc(id).set(doc);

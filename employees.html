@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employees — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    .emp-wrap { max-width: 860px; }
+    .emp-intro { font-size: 15px; color: #c8c8c8; line-height: 1.55; margin-bottom: 16px; max-width: 680px; }
+    .emp-form { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 10px; align-items: end; padding: 0 18px 16px; }
+    @media (max-width: 640px) { .emp-form { grid-template-columns: minmax(0, 1fr); } }
+    .emp-form .fg { margin: 0; }
+    .ph { display: flex; align-items: stretch; }
+    .ph span { display: flex; align-items: center; padding: 0 10px; border: 1px solid var(--border); border-right: 0; border-radius: 8px 0 0 8px; background: rgba(255,255,255,.05); font-weight: 700; font-size: 14px; white-space: nowrap; }
+    .ph input { border-radius: 0 8px 8px 0 !important; min-width: 0; flex: 1; }
+    .emp-row { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-top: 1px solid var(--border); }
+    .emp-av { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff; background: linear-gradient(135deg, #00B8D4, #378ADD); flex-shrink: 0; }
+    .emp-row .grow { flex: 1; min-width: 0; }
+    .emp-row .nm { font-weight: 700; font-size: 15px; }
+    .emp-row .sub { font-size: 13.5px; color: var(--muted); }
+    .emp-row .sub a { color: var(--muted); }
+    .emp-busy { font-size: 12.5px; color: #00B8D4; margin-top: 2px; }
+    .emp-edit { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto auto; gap: 8px; flex: 1; align-items: center; }
+    @media (max-width: 640px) { .emp-edit { grid-template-columns: minmax(0, 1fr); } }
+  </style>
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar"><div class="topbar-title">Employees <span>&amp; Drivers</span></div></div>
+  <div class="page-content">
+  <div class="emp-wrap">
+    <p class="emp-intro">The people who deliver your orders. They don't sign in to this site; you pick one when you send an order <b>Out for delivery</b>, and the customer is told their name and number in the order chat.</p>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><span class="card-title"><i class="bi bi-person-plus" style="color:var(--orange);"></i> Add an employee</span></div>
+      <form class="emp-form" id="add-form" autocomplete="off">
+        <div class="fg"><label for="e-name">Name</label><input id="e-name" maxlength="60" placeholder="e.g. Mark Reyes" required></div>
+        <div class="fg"><label for="e-phone">Mobile number</label><div class="ph"><span>🇵🇭 +63</span><input id="e-phone" inputmode="tel" maxlength="16" placeholder="917 123 4567"></div></div>
+        <button class="btn-grad" type="submit" id="add-btn"><i class="bi bi-plus-lg"></i> Add</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title">Employees <span id="count" style="color:var(--muted);font-weight:400;font-size:14px;"></span></span></div>
+      <div id="list"><div class="spinner"></div></div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  let emps = null, editing = null, busy = {};   // busy: employee id → orders they are out delivering now
+
+  /** The 10 digits after +63 from whatever was typed (0917…, +63 917…, 917…), or null when it isn't a PH mobile number. */
+  function phDigits(raw) {
+    let d = String(raw || '').replace(/\D/g, '');
+    if (d.startsWith('63') && d.length === 12) d = d.slice(2); else if (d.startsWith('0') && d.length === 11) d = d.slice(1);
+    return /^9\d{9}$/.test(d) ? d : null;
+  }
+  /** Checks a name and number; returns the saved form, or null after saying what's wrong. */
+  function readEmp(nameEl, phoneEl) {
+    const name = nameEl.value.trim().replace(/\s+/g, ' ');
+    if (!name) { toast('Type the name', 'warn'); nameEl.focus(); return null; }
+    const raw = phoneEl.value.trim(), d = phDigits(raw);
+    if (raw && !d) { toast('Mobile numbers are 10 digits after +63, starting with 9 (like 917 123 4567)', 'warn'); phoneEl.focus(); return null; }
+    if (emps && emps.some(e => e.id !== editing && e.name.toLowerCase() === name.toLowerCase())) { toast(`${name} is already on the list`, 'warn'); nameEl.focus(); return null; }
+    return { name, phone: d ? '+63' + d : '' };
+  }
+
+  window.onAuthReady = () => {
+    watchEmployees((list, err) => {
+      if (!list) {
+        $('list').innerHTML = `<div class="empty" style="padding:30px 18px;"><i class="bi bi-lock"></i><p>Couldn't load the employees${err && err.code === 'permission-denied' ? ': the database rules don\'t allow it yet. Publish the updated rules (firestore.rules) in the Firebase console.' : ': ' + esc(err && err.message)}</p></div>`;
+        return;
+      }
+      emps = list; render();
+    });
+    // Who is out delivering right now
+    db.collection('orders').where('status', '==', 'Delivering').onSnapshot(s => {
+      busy = {};
+      s.docs.forEach(d => { const o = d.data(), id = o.driver && o.driver.employeeId; if (id) (busy[id] = busy[id] || []).push(orderNo(d.id)); });
+      if (emps) render();
+    }, () => {});
+  };
+
+  function render() {
+    $('count').textContent = emps.length ? `(${emps.length})` : '';
+    if (!emps.length) { $('list').innerHTML = '<div class="empty" style="padding:30px 18px;"><i class="bi bi-people"></i><p>No employees yet. Add the people who deliver your orders above.</p></div>'; return; }
+    $('list').innerHTML = emps.map(e => {
+      if (editing === e.id) return `<div class="emp-row"><div class="emp-av">${esc(e.name.charAt(0).toUpperCase())}</div>
+        <div class="emp-edit">
+          <input id="ed-name" maxlength="60" value="${esc(e.name)}" aria-label="Name">
+          <div class="ph"><span>+63</span><input id="ed-phone" inputmode="tel" maxlength="16" value="${esc(phDigits(e.phone) || '')}" placeholder="917 123 4567" aria-label="Mobile number"></div>
+          <button class="btn-grad" onclick="saveEdit('${esc(e.id)}')"><i class="bi bi-check-lg"></i> Save</button>
+          <button class="btn-ghost" onclick="editing=null;render()">Cancel</button>
+        </div></div>`;
+      const tel = String(e.phone || '').replace(/[^\d+]/g, ''), out = busy[e.id];
+      return `<div class="emp-row"><div class="emp-av">${esc(e.name.charAt(0).toUpperCase())}</div>
+        <div class="grow"><div class="nm">${esc(e.name)}</div>
+          <div class="sub">${e.phone ? `<a href="tel:${esc(tel)}"><i class="bi bi-telephone"></i> ${esc(prettyPhone(e.phone))}</a>` : 'No number'}</div>
+          ${out ? `<div class="emp-busy"><i class="bi bi-truck"></i> Out delivering ${esc(out.join(', '))}</div>` : ''}</div>
+        <button class="btn-icon" title="Edit" aria-label="Edit ${esc(e.name)}" onclick="editing='${esc(e.id)}';render();document.getElementById('ed-name').focus()"><i class="bi bi-pencil"></i></button>
+        <button class="btn-icon del" title="Remove" aria-label="Remove ${esc(e.name)}" onclick="removeEmp('${esc(e.id)}')"><i class="bi bi-trash3"></i></button>
+      </div>`;
+    }).join('');
+    const ph = $('ed-phone'), nm = $('ed-name');
+    [nm, ph].forEach(el => el && el.addEventListener('keydown', ev => { if (ev.key === 'Enter') saveEdit(editing); if (ev.key === 'Escape') { editing = null; render(); } }));
+  }
+
+  $('add-form').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    editing = null;
+    const e = readEmp($('e-name'), $('e-phone')); if (!e) return;
+    $('add-btn').disabled = true;
+    try {
+      await db.collection('employees').add({ ...e, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      $('e-name').value = ''; $('e-phone').value = ''; $('e-name').focus();
+      toast(`${e.name} added`, 'ok');
+    } catch (err) { toast('Not added: ' + err.message, 'err'); }
+    finally { $('add-btn').disabled = false; }
+  });
+
+  async function saveEdit(id) {
+    const e = readEmp($('ed-name'), $('ed-phone')); if (!e) return;
+    try {
+      await db.collection('employees').doc(id).update({ ...e, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      editing = null; render(); toast('Saved', 'ok');
+    } catch (err) { toast('Not saved: ' + err.message, 'err'); }
+  }
+
+  async function removeEmp(id) {
+    const e = emps.find(x => x.id === id); if (!e) return;
+    if (!confirm(`Remove ${e.name} from the list? Orders they delivered keep their name.`)) return;
+    try { await db.collection('employees').doc(id).delete(); toast(`${e.name} removed`, 'ok'); }
+    catch (err) { toast('Not removed: ' + err.message, 'err'); }
+  }
+</script>
+</body>
+</html>

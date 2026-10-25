@@ -203,7 +203,7 @@
 
       setStat('st-total', orders.length);
       setStat('st-pending', sc.Pending || 0);
-      setStat('st-inprog', (sc.Processing||0)+(sc.Printing||0)+(sc.Ready||0));
+      setStat('st-inprog', (sc.Processing||0)+(sc.Printing||0)+(sc.Ready||0)+(sc.Delivering||0));
       setStat('st-delivered', sc.Delivered || 0);
       setStat('st-products', products.filter(p => p.isAvailable === true).length);
       setStat('st-revenue', peso(revenue));
@@ -239,6 +239,7 @@
         {k:'Processing', cls:'b-processing'},
         {k:'Printing',   cls:'b-printing'},
         {k:'Ready',      cls:'b-ready'},
+        {k:'Delivering', cls:'b-delivering'},
         {k:'Delivered',  cls:'b-delivered'},
         {k:'Cancelled',  cls:'b-cancelled'},
       ];
@@ -247,7 +248,7 @@
         const pct = Math.round(cnt/total*100);
         return `<a href="orders.html?status=${s.k}" style="display:block;margin-bottom:12px;color:inherit;">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:14px;">
-            <span>${s.k === 'Ready' ? 'Ready for pickup' : s.k}</span><span style="font-weight:700;">${cnt}</span>
+            <span>${statusLabel(s.k)}</span><span style="font-weight:700;">${cnt}</span>
           </div>
           <div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;">
             <div class="${s.cls}" style="height:100%;width:${pct}%;background:currentColor;border-radius:3px;transition:width .5s;"></div>

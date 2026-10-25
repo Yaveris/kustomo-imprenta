@@ -47,6 +47,7 @@
   auth.onAuthStateChanged(async u => {
     if (!u) return;
     adminUid = u.uid;
+    watchEmployees(list => { employees = list || []; if (order && document.getElementById('driver-box')) renderDriver(); });
     try { await loadOrder(); }
     catch (e) {
       // Never leave the page spinning: say what went wrong
@@ -99,7 +100,7 @@
     document.getElementById('history').innerHTML = steps.map(h => {
       const key = String(h.status || '').toLowerCase();
       return `<li><span class="dot" style="color:var(--s-${key === 'placed' ? 'pending' : esc(key)},var(--muted));"></span>
-        <div><strong>${esc(h.status === 'Ready' ? 'Ready for pickup' : h.status || '')}</strong>
+        <div><strong>${esc(statusLabel(h.status))}</strong>
         <div style="font-size:13px;color:var(--muted);">${h.at ? fmtDate(h.at) : ''}${h.by ? ' · ' + esc(h.by) : ''}</div></div></li>`;
     }).join('') + (hist.length ? '' : '<li class="note" style="display:block;">Status changes made from now on are listed here.</li>');
   }
@@ -306,7 +307,7 @@
               <div style="display:flex;align-items:center;gap:10px;">
                 <span id="sts-badge">${statusBadge(o.status||'Pending')}</span>
                 <select id="sts-sel" aria-label="Order status" style="background:var(--card-bg);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:13.5px;outline:none;" onchange="updateStatus(this.value)">
-                  ${ALL_STATUSES.map(s=>`<option value="${s}"${(o.status||'Pending')===s?' selected':''}>${s==='Ready'?'Ready for pickup':s}</option>`).join('')}
+                  ${ALL_STATUSES.map(s=>`<option value="${s}"${(o.status||'Pending')===s?' selected':''}>${statusLabel(s)}</option>`).join('')}
                 </select>
               </div>
             </div>
@@ -471,7 +472,13 @@
       return;
     }
     const recent = recentDrivers();
-    box.innerHTML = `<div class="drv-head ${d ? 'yes' : 'no'}"><i class="bi ${d ? 'bi-pencil' : 'bi-person-dash'}"></i> ${d ? 'Change the driver' : st === 'Cancelled' ? 'No driver (order cancelled)' : 'No driver assigned yet'}</div>
+    // The shop's employees (Employees page): one press sends the order out with them and tells the customer
+    const picks = st === 'Cancelled' || st === 'Delivered' ? '' : employees.length
+      ? `<div class="no-print" style="margin:8px 0 4px;"><div class="note" style="margin-bottom:6px;">Send it out with:</div><div style="display:flex;flex-wrap:wrap;gap:8px;">${employees.map(e =>
+          `<button class="btn-ghost" style="padding:6px 12px;" onclick="sendWith('${esc(e.id)}')"><i class="bi bi-truck" style="color:#00B8D4;"></i> ${esc(e.name)}${e.phone ? ` <span class="note">${esc(prettyPhone(e.phone))}</span>` : ''}</button>`).join('')}</div>
+          <div class="note" style="margin-top:6px;">Sets “Out for delivery” and tells the customer in the chat. <a href="employees.html" style="color:var(--orange);">Edit employees</a> · or type someone else below.</div></div>`
+      : `<div class="note no-print" style="margin:6px 0;">Add your drivers on the <a href="employees.html" style="color:var(--orange);">Employees page</a> to pick them with one press.</div>`;
+    box.innerHTML = `<div class="drv-head ${d ? 'yes' : 'no'}"><i class="bi ${d ? 'bi-pencil' : 'bi-person-dash'}"></i> ${d ? 'Change the driver' : st === 'Cancelled' ? 'No driver (order cancelled)' : 'No driver assigned yet'}</div>${picks}
       <div class="drv-form no-print">
         <div class="fg"><label for="drv-name">Driver's name *</label><input id="drv-name" maxlength="60" list="drv-recent" placeholder="e.g. Mark Reyes" value="${esc(d ? d.name : '')}" autocomplete="off"></div>
         <div class="fg"><label for="drv-phone">Phone</label><input id="drv-phone" maxlength="30" inputmode="tel" placeholder="09XX XXX XXXX" value="${esc(d ? d.phone || '' : '')}"></div>
@@ -485,6 +492,17 @@
       const r = recentDrivers().find(x => x.name.toLowerCase() === nameIn.value.trim().toLowerCase());
       if (r) { if (!document.getElementById('drv-phone').value) document.getElementById('drv-phone').value = r.phone || ''; if (!document.getElementById('drv-vehicle').value) document.getElementById('drv-vehicle').value = r.vehicle || ''; }
     });
+  }
+  let employees = [];
+  async function sendWith(empId) {
+    const e = employees.find(x => x.id === empId); if (!e) return;
+    try {
+      await assignDriver(oid, e);
+      rememberDriver({ name: e.name, phone: e.phone, vehicle: '' });
+      driverEditing = false;
+      toast(`Out for delivery with ${e.name}. The customer was told in the chat.`, 'ok');
+    } catch (err) { toast('Not saved: ' + err.message, 'err'); }
+    await refreshStatus().catch(() => {});
   }
   async function saveDriver() {
     const name = document.getElementById('drv-name').value.trim().replace(/\s+/g, ' ');
@@ -518,11 +536,19 @@
   function dpPct(o) { return o.totalAmount > 0 ? Math.round((o.downpaymentAmount || 0) / o.totalAmount * 100) : 50; }
 
   async function updateStatus(s) {
+    // Out for delivery is set by choosing the driver in the Delivery box
+    if (s === 'Delivering' && !(order.driver && order.driver.name)) {
+      document.getElementById('sts-sel').value = order.status || 'Pending';
+      driverEditing = true; renderDriver();
+      document.getElementById('delivery-card').scrollIntoView({ block: 'center', behavior: 'smooth' });
+      toast('Pick who is delivering it', 'warn');
+      return;
+    }
     const q = statusChangeQuestion(orderNo(oid), order.status, s);
     if (q && !confirm(q)) { document.getElementById('sts-sel').value = order.status || 'Pending'; return; }
     try {
       await setOrderStatus(oid, s);
-      toast(`Status changed to "${s === 'Ready' ? 'Ready for pickup' : s}"`, 'ok');
+      toast(`Status changed to "${statusLabel(s)}"`, 'ok');
       if (s === 'Delivered' && order.isDownpayment && !order.balancePaidAt &&
           confirm(`Was the balance of ${peso(order.remainingAmount)} collected? Press OK to mark it as collected.`)) {
         await setBalanceCollected(oid, true);

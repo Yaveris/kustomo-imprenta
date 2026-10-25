@@ -20,6 +20,7 @@
   --s-processing: #378ADD;
   --s-printing:   #8B5CF6;
   --s-ready:      #FF5C00;
+  --s-delivering: #00B8D4;
   --s-delivered:  #00E676;
   --s-cancelled:  #FF4444;
 }
@@ -234,6 +235,7 @@ table.tbl {
 .b-processing { background:rgba(55,138,221,.14);   color:var(--s-processing); }
 .b-printing   { background:rgba(139,92,246,.14);   color:var(--s-printing); }
 .b-ready      { background:rgba(255,92,0,.14);     color:var(--s-ready); }
+.b-delivering { background:rgba(0,184,212,.14);    color:var(--s-delivering); }
 .b-delivered  { background:rgba(0,230,118,.14);    color:var(--s-delivered); }
 .b-cancelled  { background:rgba(255,68,68,.14);    color:var(--s-cancelled); }
 

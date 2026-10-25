@@ -93,7 +93,7 @@ function downloadCsv(filename, rows) {
 /** Status badge HTML */
 function statusBadge(s) {
   const key = (s || 'pending').toLowerCase().replace(/\s/g, '');
-  const label = { pending: 'Pending', processing: 'Processing', printing: 'Printing', ready: 'Ready', delivered: 'Delivered', cancelled: 'Cancelled' };
+  const label = { pending: 'Pending', processing: 'Processing', printing: 'Printing', ready: 'Ready', delivering: 'Out for delivery', delivered: 'Delivered', cancelled: 'Cancelled' };
   return `<span class="badge b-${key}">${label[key] || s}</span>`;
 }
 
@@ -104,14 +104,19 @@ function esc(str) {
 }
 
 /** Order status progression (Cancelled is set apart, see setOrderStatus) */
-const STATUSES = ['Pending', 'Processing', 'Printing', 'Ready', 'Delivered'];
+// "Delivering" (shown as "Out for delivery") is set by choosing who drives the order (assignDriver)
+const STATUSES = ['Pending', 'Processing', 'Printing', 'Ready', 'Delivering', 'Delivered'];
 const ALL_STATUSES = STATUSES.concat(['Cancelled']);
+/** How a status reads on screen. */
+function statusLabel(s) { return s === 'Ready' ? 'Ready for pickup' : s === 'Delivering' ? 'Out for delivery' : (s || 'Pending'); }
+/** Icon of a status, for the status buttons. */
+const STATUS_ICONS = { Pending: 'bi-hourglass-split', Processing: 'bi-gear', Printing: 'bi-printer', Ready: 'bi-box-seam', Delivering: 'bi-truck', Delivered: 'bi-check-circle', Cancelled: 'bi-x-circle' };
 
 /** What to ask before a status change that's easy to get wrong, or '' when no question is needed. */
 function statusChangeQuestion(no, from, to) {
   from = from || 'Pending';
   if (from === to) return '';
-  const label = s => s === 'Ready' ? 'Ready for pickup' : s;
+  const label = statusLabel;
   if (to === 'Cancelled') return `Cancel order ${no}? Any stock taken for it is put back. If the customer paid, refund them from the PayMongo dashboard.`;
   if (from === 'Cancelled') return `Order ${no} was cancelled. Open it again as "${label(to)}"? Its stock is taken off again.`;
   if (from === 'Delivered') return `Order ${no} was already delivered. Move it back to "${label(to)}"?`;
@@ -138,6 +143,40 @@ async function setOrderStatus(orderId, status) {
   });
   if (status === 'Cancelled') await restockIfCancelled(orderId);
   else await deductStockIfAccepted(orderId, status);
+}
+
+// ─────────────────────────────────────────────
+//  EMPLOYEES AND DRIVERS
+//  employees/{id}: { name, phone } — the shop's people who deliver, kept on the Employees page. They have no account
+//  or role on this site; they are only picked as an order's driver.
+// ─────────────────────────────────────────────
+/** Calls cb(list) now and whenever the employees change (sorted by name); cb(null, error) when they can't be read. */
+function watchEmployees(cb) {
+  return db.collection('employees').onSnapshot(
+    s => cb(s.docs.map(d => ({ id: d.id, name: '', phone: '', ...d.data() })).filter(e => e.name).sort((a, b) => a.name.localeCompare(b.name))),
+    e => cb(null, e));
+}
+/**
+ * Sends the order out with [emp] as its driver: saves the driver, sets "Out for delivery", and (unless tell is false)
+ * tells the customer in the order chat who is coming. emp: an employee, or {name, phone} typed in for someone else.
+ */
+async function assignDriver(orderId, emp, opts = {}) {
+  const who = (auth.currentUser && auth.currentUser.email) || '';
+  const driver = { name: String(emp.name || '').trim(), phone: String(emp.phone || '').trim(), vehicle: String(emp.vehicle || '').trim(),
+    assignedAt: firebase.firestore.FieldValue.serverTimestamp(), assignedBy: who };
+  if (emp.id) driver.employeeId = emp.id;
+  if (!driver.name) throw new Error('Pick who is driving');
+  await db.collection('orders').doc(orderId).update({ driver });
+  if (opts.setStatus !== false) await setOrderStatus(orderId, 'Delivering');
+  if (opts.tell === false) return;
+  try {
+    const snap = await db.collection('chats').where('orderId', '==', orderId).limit(1).get();
+    if (snap.empty) return;
+    const chat = snap.docs[0].ref, ts = firebase.firestore.FieldValue.serverTimestamp();
+    await chat.collection('messages').add({ senderId: (auth.currentUser && auth.currentUser.uid) || '', senderRole: 'admin', sentAt: ts,
+      messageText: `🚚 Your order ${orderNo(orderId)} is on its way! Your driver is ${driver.name}${driver.phone ? ' (' + prettyPhone(driver.phone) + ')' : ''}${driver.vehicle ? ', ' + driver.vehicle : ''}.` });
+    await chat.update({ lastMessageAt: ts, adminReadAt: ts });
+  } catch (e) { toast("The driver is saved, but the chat message wasn't sent: " + e.message, 'warn'); }
 }
 
 // ─────────────────────────────────────────────

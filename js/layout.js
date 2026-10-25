@@ -17,7 +17,8 @@
     ['Shop', [
       ['orders.html', 'bi-bag-check', 'Orders', false, 'nb-orders'],
       ['chats.html', 'bi-chat-dots', 'Messages', false, 'nb-chats'],
-      ['customers.html', 'bi-people', 'Customers']
+      ['customers.html', 'bi-people', 'Customers'],
+      ['employees.html', 'bi-person-vcard', 'Employees']
     ]],
     ['Catalog', [
       ['products.html', 'bi-box-seam', 'Products &amp; Stock'],
