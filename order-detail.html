@@ -37,6 +37,7 @@
 <script src="js/shop-map.js"></script>
 <script src="js/layout.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/studio-common.js"></script>
 <script>
   const oid = new URLSearchParams(location.search).get('id');
   if (!oid) location.href = 'orders.html';
@@ -111,24 +112,136 @@
 
   const hexOk = h => (typeof h === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(h)) ? h : '';
 
-  /** One side of a customer's design (front, back, a sleeve): its image, text and shapes. */
-  function renderSide(side, v) {
-    const img = safeUrl(v.imageUrl);
-    const shapes = Array.isArray(v.shapes) ? v.shapes : [];
-    if (!img && !v.customText && !shapes.length) return '';
-    const fontColor = hexOk(v.fontColorHex);
-    const names = shapes.map(sh => sh && sh.name).filter(Boolean);
+  /** One side of a customer's design (front, back, a sleeve): a preview drawn the way the app prints it, what is on
+   *  it, the inks it needs, what the app's print check warned about, and its print-ready files. */
+  function renderSide(side, raw, idx) {
+    const v = Studio.normalizeView(raw);
+    if (!Studio.hasContent(v)) return '';
+    const texts = v.texts.filter(t => t.text.trim());
+    const dot = h => `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${h};border:1px solid var(--border);vertical-align:middle;"></span>`;
+    const inks = Studio.inksOf(v);
+    const shapeNames = v.shapes.map(sh => sh.name).filter(Boolean);
+    const key = idx + '|' + side;
     return `
-      <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.03);">
-        ${img ? `<a href="${img}" target="_blank" rel="noopener" title="Open the image"><img src="${img}" alt="${esc(side)} image" style="width:64px;height:64px;object-fit:contain;border-radius:6px;background:rgba(255,255,255,.08);"></a>` : ''}
-        <div style="font-size:13.5px;line-height:1.5;">
-          <div style="font-weight:700;">${esc(side)}</div>
-          ${v.customText ? `<div>Text: "${esc(v.customText)}"<span style="color:var(--muted);"> · ${esc(v.fontStyle || 'Normal')}${v.fontSize ? ', size ' + Math.round(v.fontSize) : ''}${fontColor ? ` <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${fontColor};border:1px solid var(--border);vertical-align:middle;"></span> ${fontColor}` : ''}</span></div>` : ''}
-          ${img ? `<div><a href="${img}" target="_blank" rel="noopener" style="color:var(--orange);">Open image</a></div>` : ''}
-          ${shapes.length ? `<div style="color:var(--muted);">${shapes.length} shape${shapes.length > 1 ? 's' : ''}${names.length ? ': ' + esc(names.join(', ')) : ''}</div>` : ''}
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.03);">
+        <div class="pv-box" data-k="${esc(key)}" style="width:120px;height:120px;flex:0 0 120px;border-radius:6px;background:repeating-conic-gradient(#3a3a3a 0% 25%, #2a2a2a 0% 50%) 50% / 16px 16px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><div class="spinner" style="width:20px;height:20px;"></div></div>
+        <div style="font-size:13.5px;line-height:1.55;flex:1;min-width:0;">
+          <div style="font-weight:700;">${esc(side)} <span class="pv-size" data-k="${esc(key)}" style="font-weight:400;color:var(--muted);font-size:12.5px;"></span></div>
+          ${texts.map(t => `<div>Text: "${esc(t.text.replace(/\n/g, ' / '))}" <span style="color:var(--muted);">· ${esc(Studio.fontLabel(t.font))}${t.effect && t.effect !== 'none' ? ' · ' + esc(t.effect) : ''} ${dot(t.colorHex)}</span></div>`).join('')}
+          ${v.images.map((im, i) => { const u = safeUrl(im.url); return u ? `<div>Picture ${v.images.length > 1 ? i + 1 : ''}: <a href="${u}" target="_blank" rel="noopener" style="color:var(--orange);">open original file</a></div>` : ''; }).join('')}
+          ${v.shapes.length ? `<div style="color:var(--muted);">${v.shapes.length} drawing${v.shapes.length > 1 ? 's / shapes' : ' / shape'}${shapeNames.length ? ': ' + esc(shapeNames.slice(0, 6).join(', ')) : ''}</div>` : ''}
+          ${inks.length ? `<div style="margin-top:3px;"><span style="color:var(--muted);">Inks:</span> ${inks.map(i => `${dot(i.hex)} <span style="font-family:monospace;font-size:12px;">${i.hex}</span>`).join(' &nbsp;')}${v.images.length ? ' <span style="color:var(--muted);">+ full-colour picture</span>' : ''}</div>` : ''}
+          ${v.printWarnings.length ? `<div style="margin-top:4px;color:var(--yellow);font-size:13px;"><i class="bi bi-exclamation-triangle"></i> The app's print check: ${v.printWarnings.map(esc).join(' · ')}</div>` : ''}
+          <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+            <button class="btn-ghost" style="padding:4px 10px;font-size:13px;" onclick="downloadSide(${idx},'${esc(side)}','png')"><i class="bi bi-filetype-png"></i> PNG</button>
+            <button class="btn-ghost" style="padding:4px 10px;font-size:13px;" onclick="downloadSide(${idx},'${esc(side)}','pdf')"><i class="bi bi-filetype-pdf"></i> PDF</button>
+          </div>
         </div>
       </div>`;
   }
+
+  // ── Print files: each side at its real size (the model's print width in cm) at the chosen resolution ──
+  let printModels = null;
+  const printOpts = () => ({
+    dpi: +((document.getElementById('pf-dpi') || {}).value || 300),
+    mirror: !!(document.getElementById('pf-mirror') || {}).checked,
+    label: (document.getElementById('pf-label') || { checked: true }).checked
+  });
+  function modelForItem(it) {
+    const c = it.customization || {};
+    return (printModels || []).find(m => m.id === c.shirtStyle) || (printModels || []).find(m => m.id === guessShirtStyle(it.productName || '', '')) || null;
+  }
+  /** The side as a print-ready canvas, with its size in cm (0 when the model's print width isn't set). */
+  async function printCanvas(idx, side, opts) {
+    const it = order.items[idx], v = Studio.normalizeView(((it.customization || {}).views || {})[side]);
+    const art = modelSide(modelForItem(it), side);
+    let size;
+    if (art) size = Studio.printPixels(art, opts.dpi);
+    else {
+      // No picture of this side to measure: keep the shape it was designed against, 3000 px wide
+      const r = v.ref || { width: 1, height: 1 };
+      size = { w: 3000, h: Math.round(3000 * r.height / r.width), cmW: 0, cmH: 0, known: false };
+    }
+    const cv = await Studio.renderZone(v, size.w, size.h, { mirror: opts.mirror });
+    return { cv, size, v };
+  }
+  const fileBase = (idx, side) => `${orderNo(oid)}_item${idx + 1}_${side.replace(/\s+/g, '')}`;
+  function loadScript(src) {
+    return new Promise((res, rej) => { if (document.querySelector(`script[src="${src}"]`)) return res(); const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error("Couldn't load " + src)); document.head.appendChild(s); });
+  }
+  const JSPDF = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  const JSZIP = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  const toBlob = cv => new Promise((res, rej) => { try { cv.toBlob(b => b ? res(b) : rej(new Error('Empty picture')), 'image/png'); } catch (e) { rej(new Error("A picture in this design can't be copied into a file (its host doesn't allow it). Use “open original file” instead.")); } });
+  function save(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+  async function pdfOf(idx, side, opts) {
+    await loadScript(JSPDF);
+    const { cv, size, v } = await printCanvas(idx, side, opts);
+    const wMm = size.known ? size.cmW * 10 : size.w / opts.dpi * 25.4, hMm = size.known ? size.cmH * 10 : size.h / opts.dpi * 25.4;
+    const extra = opts.label ? 14 : 0;
+    const pdf = new window.jspdf.jsPDF({ orientation: wMm > hMm + extra ? 'l' : 'p', unit: 'mm', format: [wMm, hMm + extra], compress: true });
+    pdf.addImage(cv.toDataURL('image/png'), 'PNG', 0, 0, wMm, hMm, undefined, 'FAST');
+    if (opts.label) {
+      const inks = Studio.inksOf(v).map(i => i.hex).join(' ');
+      pdf.setFontSize(9);
+      pdf.text(`${orderNo(oid)} · item ${idx + 1} · ${side} · ${(wMm / 10).toFixed(1)} × ${(hMm / 10).toFixed(1)} cm${opts.mirror ? ' · MIRRORED' : ''}`, 4, hMm + 6);
+      if (inks) pdf.text('Inks: ' + inks, 4, hMm + 11);
+    }
+    return { blob: pdf.output('blob'), failed: cv.failedImages || [] };
+  }
+  async function downloadSide(idx, side, kind) {
+    const opts = printOpts();
+    toast('Making the ' + side + ' print file…');
+    try {
+      let failed = [];
+      if (kind === 'pdf') { const r = await pdfOf(idx, side, opts); failed = r.failed; save(r.blob, fileBase(idx, side) + '.pdf'); }
+      else {
+        const { cv, size } = await printCanvas(idx, side, opts);
+        failed = cv.failedImages || [];
+        save(await toBlob(cv), `${fileBase(idx, side)}_${size.known ? size.cmW.toFixed(1) + 'x' + size.cmH.toFixed(1) + 'cm_' : ''}${opts.dpi}dpi${opts.mirror ? '_mirrored' : ''}.png`);
+      }
+      toast(failed.length ? `Saved, but ${failed.length} picture(s) couldn't be included. Download them with “open original file”.` : 'Print file saved', failed.length ? 'warn' : 'ok');
+    } catch (e) { toast('Not made: ' + e.message, 'err'); }
+  }
+  async function downloadItemZip(idx) {
+    const opts = printOpts(), it = order.items[idx];
+    const sides = Object.keys((it.customization || {}).views || {}).filter(k => Studio.hasContent(Studio.normalizeView(it.customization.views[k])));
+    if (!sides.length) return;
+    toast('Making print files for ' + sides.length + ' side(s)…');
+    try {
+      await loadScript(JSZIP);
+      const zip = new JSZip(); let notes = `${orderNo(oid)} · item ${idx + 1} · ${it.productName || ''} · size ${it.size || '—'} × ${it.quantity || 1}\n`;
+      for (const side of sides) {
+        const { cv, size, v } = await printCanvas(idx, side, opts);
+        zip.file(`${fileBase(idx, side)}_${opts.dpi}dpi${opts.mirror ? '_mirrored' : ''}.png`, await toBlob(cv));
+        notes += `\n${side}: ${size.known ? size.cmW.toFixed(1) + ' × ' + size.cmH.toFixed(1) + ' cm' : size.w + ' × ' + size.h + ' px (print width not set)'}`;
+        notes += `\n  Inks: ${Studio.inksOf(v).map(i => i.hex).join(', ') || '—'}${v.images.length ? ' + full-colour picture' : ''}`;
+        if (v.printWarnings.length) notes += `\n  Print check: ${v.printWarnings.join(' | ')}`;
+        if ((cv.failedImages || []).length) notes += `\n  NOT INCLUDED (download separately): ${cv.failedImages.join(', ')}`;
+      }
+      zip.file('job.txt', notes + '\n');
+      save(await zip.generateAsync({ type: 'blob' }), `${orderNo(oid)}_item${idx + 1}_print_files.zip`);
+      toast('Print files saved', 'ok');
+    } catch (e) { toast('Not made: ' + e.message, 'err'); }
+  }
+  /** Draws every side's preview and shows its print size. */
+  async function renderPreviews() {
+    if (!printModels) printModels = await loadModels();
+    for (const box of document.querySelectorAll('.pv-box')) {
+      const [idx, side] = [+box.dataset.k.split('|')[0], box.dataset.k.split('|').slice(1).join('|')];
+      try {
+        const it = order.items[idx], art = modelSide(modelForItem(it), side);
+        const v = Studio.normalizeView(((it.customization || {}).views || {})[side]);
+        const r = art ? { w: (art.zone.right - art.zone.left) * art.w, h: (art.zone.bottom - art.zone.top) * art.h } : (v.ref ? { w: v.ref.width, h: v.ref.height } : { w: 1, h: 1 });
+        const k = 240 / Math.max(r.w, r.h);
+        const cv = await Studio.renderZone(v, r.w * k, r.h * k);
+        cv.style.cssText = 'max-width:100%;max-height:100%;';
+        box.innerHTML = ''; box.appendChild(cv);
+        const sz = document.querySelector(`.pv-size[data-k="${CSS.escape(box.dataset.k)}"]`);
+        if (sz) sz.textContent = art && art.cm ? `· print area ${art.cm.toFixed(1)} × ${(art.cm * r.h / r.w).toFixed(1)} cm` : '· print width not set for this model';
+      } catch (e) { box.innerHTML = '<i class="bi bi-image" title="Preview unavailable"></i>'; }
+    }
+  }
+  Object.assign(window, { downloadSide, downloadItemZip });
 
   /** An order line: what to make (product, style, colour, size), the customer's design and their notes. */
   function renderItem(it) {
@@ -136,7 +249,9 @@
     const color = hexOk(it.colorHex) || hexOk(c.apparelColorHex);
     const style = shirtStyleLabel(c.shirtStyle);
     const views = c.views || {};
-    const sides = Object.keys(views).map(k => renderSide(k, views[k] || {})).filter(Boolean);
+    const idx = (order.items || []).indexOf(it);
+    const order4 = k => { const i = DESIGN_SIDES.indexOf(k); return i < 0 ? 9 : i; };
+    const sides = Object.keys(views).sort((a, b) => order4(a) - order4(b)).map(k => renderSide(k, views[k] || {}, idx)).filter(Boolean);
     // The app's Fit Scan adds the customer's measurements to the notes: "[Scanned Measurements - …]" from the camera,
     // "[Entered Measurements - …]" when typed in (older versions: "[Manual Entry - …]")
     const notes = it.notes || '';
@@ -151,7 +266,8 @@
         <div style="flex:1;">
           <div class="item-name">${esc(it.productName||'Product')}</div>
           <div class="item-meta">Size: ${esc(it.size||'—')} · Qty: ${it.quantity||1}${style?` · Style: ${esc(style)}`:''}${color?` · Colour: <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${color};border:1px solid var(--border);vertical-align:middle;"></span> ${color}`:''}${it.customText?` · Text: "${esc(it.customText)}"`:''}</div>
-          ${sides.length ? `<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">${sides.join('')}</div>` : ''}
+          ${sides.length ? `<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">${sides.join('')}</div>
+            <div class="no-print" style="margin-top:8px;"><button class="btn-ghost" style="padding:5px 11px;font-size:13px;" onclick="downloadItemZip(${idx})"><i class="bi bi-file-zip"></i> All print files (ZIP)</button></div>` : ''}
           ${customerNotes ? `<div style="font-size:13.5px;margin-top:8px;"><span style="color:var(--muted);">Notes:</span> ${esc(customerNotes)}</div>` : ''}
           ${measurements ? `<div style="font-size:13.5px;margin-top:4px;"><span style="color:var(--muted);"><i class="bi bi-rulers"></i> ${fitLabel}:</span> ${esc(measurements)}</div>` : ''}
         </div>
@@ -214,7 +330,12 @@
 
           <!-- Items -->
           <div class="card">
-            <div class="card-head"><span class="card-title">Order Items (${items.length})</span></div>
+            <div class="card-head"><span class="card-title">Order Items (${items.length})</span>
+              <div class="no-print" style="display:flex;gap:12px;align-items:center;font-size:13px;color:var(--muted);flex-wrap:wrap;" title="Settings for the print files">
+                <label style="display:flex;gap:5px;align-items:center;">Print files <select id="pf-dpi" style="background:var(--card-bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:2px 5px;"><option value="300">300 dpi</option><option value="200">200 dpi</option><option value="150">150 dpi</option></select></label>
+                <label style="display:flex;gap:5px;align-items:center;"><input type="checkbox" id="pf-mirror"> Mirror (transfers)</label>
+                <label style="display:flex;gap:5px;align-items:center;"><input type="checkbox" id="pf-label" checked> Order label on PDF</label>
+              </div></div>
             ${items.map(renderItem).join('')}
 
             <div class="totals">
@@ -267,6 +388,7 @@
     renderDelivery();
     renderDriver();
     renderQuickReplies('quick-replies', 'chat-in');
+    renderPreviews();
   }
 
   // ── Delivery: the address, the distance from the shop, and the driver ─────────────────────────────

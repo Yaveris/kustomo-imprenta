@@ -551,6 +551,20 @@ service cloud.firestore {
       allow read: if signedIn();
       allow write: if isAdmin();
     }
+    // Designer Studio: shop-uploaded fonts, text layouts and the settings sets (Studio Settings page). Readable by
+    // anyone so the app's designer has them before sign-in; only staff change them.
+    match /designFonts/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /textLayouts/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /studioSettings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
 
     // ── Shop Settings and App Keys ────────────────────────────────────────────
     match /appConfig/{doc} {

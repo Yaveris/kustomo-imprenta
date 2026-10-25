@@ -21,6 +21,8 @@
     ['Catalog', [
       ['products.html', 'bi-box-seam', 'Products &amp; Stock'],
       ['design.html', 'bi-palette', 'Design Studio'],
+      ['design-library.html', 'bi-collection', 'Design Library'],
+      ['studio-settings.html', 'bi-sliders2', 'Studio Settings'],
       ['models.html', 'bi-badge-3d', '3D Models']
     ]],
     ['Super Admin', [

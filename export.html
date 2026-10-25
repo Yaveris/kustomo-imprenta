@@ -92,7 +92,7 @@
     const out = { exportedAt: new Date().toISOString(), projectId: firebaseConfig.projectId,
                   personalDetailsRemoved: hide, collections: {}, errors };
     try {
-      for (const name of ['products', 'categories', 'models', 'orders', 'designPresets', 'users', 'chats']) {
+      for (const name of ['products', 'categories', 'models', 'orders', 'designPresets', 'studioSettings', 'textLayouts', 'designFonts', 'users', 'chats']) {
         log(`Reading ${name}…`);
         const docs = await readAll(db.collection(name), name, hide, errors);
         out.collections[name] = docs;

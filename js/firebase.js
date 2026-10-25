@@ -205,18 +205,42 @@ function productShirtStyle(p) {
 
 /** Each built-in cut's front/back picture and where its print area is in it (fractions: left, top, right, bottom):
  *  nearly the whole front and back. The same pictures and numbers as the app's 2D editor (styleArt in CustomizerScreen.kt). */
+// The 2D pictures of each built-in cut, where the print goes on each (zone: left, top, right, bottom as shares of
+// the picture) and how wide that print zone really is (cm). Same numbers as the app (CustomizerScreen.kt styleArt).
 const BUILTIN_ART = {
-  MaleClassicShirt:   { Front: { img: 'img/shirt_art_male_classic_front.png', zone: [0.3158, 0.1973, 0.684, 0.8671], w: 782, h: 760 },
-                        Back:  { img: 'img/shirt_art_male_classic_back.png',  zone: [0.316, 0.1467, 0.6842, 0.905], w: 782, h: 760 } },
-  MaleVNeckShirt:     { Front: { img: 'img/shirt_art_male_vneck_front.png',   zone: [0.3158, 0.2794, 0.684, 0.8671], w: 782, h: 760 },
-                        Back:  { img: 'img/shirt_art_male_vneck_back.png',    zone: [0.316, 0.1467, 0.6842, 0.905], w: 782, h: 760 } },
-  FemaleClassicShirt: { Front: { img: 'img/shirt_art_female_classic_front.png', zone: [0.3049, 0.2344, 0.6973, 0.8583], w: 712, h: 760 },
-                        Back:  { img: 'img/shirt_art_female_classic_back.png',  zone: [0.3027, 0.149, 0.6951, 0.9042], w: 712, h: 760 } },
-  FemaleVNeckShirt:   { Front: { img: 'img/shirt_art_female_vneck_front.png', zone: [0.3049, 0.3067, 0.6973, 0.8583], w: 712, h: 760 },
-                        Back:  { img: 'img/shirt_art_female_vneck_back.png',  zone: [0.3027, 0.149, 0.6951, 0.9042], w: 712, h: 760 } },
-  LongSleeveShirt:    { Front: { img: 'img/shirt_art_long_sleeve_front.png', zone: [0.369, 0.197, 0.6318, 0.8673], w: 1097, h: 760 },
-                        Back:  { img: 'img/shirt_art_long_sleeve_back.png',  zone: [0.3682, 0.1464, 0.631, 0.9051], w: 1097, h: 760 } }
+  MaleClassicShirt:   { Front: { img: 'img/shirt_art_male_classic_front.png', zone: [0.2314, 0.078, 0.7684, 0.9054], w: 782, h: 760, cm: 43.75 },
+                        Back:  { img: 'img/shirt_art_male_classic_back.png',  zone: [0.2381, 0.0545, 0.7621, 0.9328], w: 782, h: 760, cm: 42.69 },
+                        'Left Sleeve':  { img: 'img/shirt_art_male_sleeve_left.png',  zone: [0.1091, 0.1227, 0.893, 0.836], w: 760, h: 547, cm: 27.1 },
+                        'Right Sleeve': { img: 'img/shirt_art_male_sleeve_right.png', zone: [0.107, 0.1227, 0.8909, 0.836], w: 760, h: 547, cm: 27.1 } },
+  MaleVNeckShirt:     { Front: { img: 'img/shirt_art_male_vneck_front.png',   zone: [0.2314, 0.0776, 0.7684, 0.9054], w: 782, h: 760, cm: 43.75 },
+                        Back:  { img: 'img/shirt_art_male_vneck_back.png',    zone: [0.2381, 0.0545, 0.7621, 0.9328], w: 782, h: 760, cm: 42.69 },
+                        'Left Sleeve':  { img: 'img/shirt_art_male_sleeve_left.png',  zone: [0.1091, 0.1227, 0.893, 0.836], w: 760, h: 547, cm: 27.1 },
+                        'Right Sleeve': { img: 'img/shirt_art_male_sleeve_right.png', zone: [0.107, 0.1227, 0.8909, 0.836], w: 760, h: 547, cm: 27.1 } },
+  FemaleClassicShirt: { Front: { img: 'img/shirt_art_female_classic_front.png', zone: [0.207, 0.0754, 0.7952, 0.9046], w: 712, h: 760, cm: 41.98 },
+                        Back:  { img: 'img/shirt_art_female_classic_back.png',  zone: [0.2007, 0.0558, 0.7971, 0.9332], w: 712, h: 760, cm: 42.56 },
+                        'Left Sleeve':  { img: 'img/shirt_art_female_sleeve_left.png',  zone: [0.0863, 0.1742, 0.9025, 0.7857], w: 760, h: 460, cm: 25.03 },
+                        'Right Sleeve': { img: 'img/shirt_art_female_sleeve_right.png', zone: [0.0975, 0.1742, 0.9137, 0.7857], w: 760, h: 460, cm: 25.03 } },
+  FemaleVNeckShirt:   { Front: { img: 'img/shirt_art_female_vneck_front.png', zone: [0.2069, 0.0754, 0.7953, 0.9045], w: 712, h: 760, cm: 41.98 },
+                        Back:  { img: 'img/shirt_art_female_vneck_back.png',  zone: [0.2007, 0.0558, 0.7971, 0.9332], w: 712, h: 760, cm: 42.56 },
+                        'Left Sleeve':  { img: 'img/shirt_art_female_sleeve_left.png',  zone: [0.0863, 0.1742, 0.9025, 0.7857], w: 760, h: 460, cm: 25.03 },
+                        'Right Sleeve': { img: 'img/shirt_art_female_sleeve_right.png', zone: [0.0975, 0.1742, 0.9137, 0.7857], w: 760, h: 460, cm: 25.03 } },
+  LongSleeveShirt:    { Front: { img: 'img/shirt_art_long_sleeve_front.png', zone: [0.309, 0.0751, 0.6918, 0.906], w: 1097, h: 760, cm: 43.71 },
+                        Back:  { img: 'img/shirt_art_long_sleeve_back.png',  zone: [0.3122, 0.0537, 0.687, 0.9299], w: 1097, h: 760, cm: 42.8 },
+                        'Left Sleeve':  { img: 'img/shirt_art_long_sleeve_sleeve_left.png',  zone: [0.1284, 0.0798, 0.872, 0.8994], w: 460, h: 760, cm: 24.2 },
+                        'Right Sleeve': { img: 'img/shirt_art_long_sleeve_sleeve_right.png', zone: [0.128, 0.0798, 0.8716, 0.8994], w: 460, h: 760, cm: 24.2 } }
 };
+
+/** Every side a design can have, in the order the app shows them. */
+const DESIGN_SIDES = ['Front', 'Back', 'Left Sleeve', 'Right Sleeve'];
+
+/** A model's picture for a side ('Front', 'Back', 'Left Sleeve', 'Right Sleeve'), or null when it has none. */
+function modelSide(model, side) {
+  if (!model) return null;
+  if (model.sides && model.sides[side]) return model.sides[side];
+  if (side === 'Front') return model.front || null;
+  if (side === 'Back') return model.back || null;
+  return null;
+}
 
 const MODEL_KINDS = [
   { id: 'top',       label: 'Top (shirt, jacket)', category: 'Tees' },
@@ -247,8 +271,11 @@ function startFit(wornOn, kind) {
 /** A built-in shirt as a catalog entry (before any saved override). */
 function builtInModel(style, i) {
   const art = BUILTIN_ART[style.id];
-  const side = a => ({ img: a.img, w: a.w, h: a.h, zone: { left: a.zone[0], top: a.zone[1], right: a.zone[2], bottom: a.zone[3] } });
+  const side = a => ({ img: a.img, w: a.w, h: a.h, cm: a.cm || 0, zone: { left: a.zone[0], top: a.zone[1], right: a.zone[2], bottom: a.zone[3] } });
+  const sides = {};
+  DESIGN_SIDES.forEach(k => { if (art[k]) sides[k] = side(art[k]); });
   return {
+    sides,
     id: style.id, builtIn: true, label: style.label, blurb: style.description, kind: 'top', wornOn: 'body',
     enabled: true, order: i, modelUrl: '', modelFile: null, thumbUrl: art.Front.img,
     front: side(art.Front), back: side(art.Back), tintable: true, preview: { scale: 1 },
@@ -259,7 +286,7 @@ function builtInModel(style, i) {
 /** A models/{id} document as a catalog entry, filling in anything missing. */
 function normalizeModel(id, d) {
   const zone = z => ({ left: +(z && z.left) || 0.3, top: +(z && z.top) || 0.3, right: +(z && z.right) || 0.7, bottom: +(z && z.bottom) || 0.7 });
-  const side = s => (s && s.img) ? { img: s.img, w: +s.w || 1000, h: +s.h || 1000, zone: zone(s.zone), fromModel: s.fromModel !== false } : null;
+  const side = s => (s && s.img) ? { img: s.img, w: +s.w || 1000, h: +s.h || 1000, cm: +s.cm || 0, zone: zone(s.zone), fromModel: s.fromModel !== false } : null;
   return {
     id, builtIn: false, label: d.label || id, blurb: d.blurb || '', kind: d.kind || 'accessory',
     wornOn: d.wornOn || 'head', enabled: d.enabled !== false, order: typeof d.order === 'number' ? d.order : 100,

@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio Settings — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<style>
+  .ss-wrap { display:grid; grid-template-columns:260px minmax(0,1fr); gap:16px; align-items:start; }
+  @media (max-width: 960px) { .ss-wrap { grid-template-columns:minmax(0,1fr); } }
+  .set-item { display:block; width:100%; text-align:left; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:var(--dark); color:var(--text); cursor:pointer; margin-bottom:8px; }
+  .set-item.on { border-color:var(--orange); background:rgba(255,92,0,.1); }
+  .set-item small { display:block; color:var(--muted); font-size:12px; margin-top:2px; line-height:1.4; }
+  .ss-sec label.h { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); display:block; margin:14px 0 6px; }
+  .ss-sec input[type=text], .ss-sec input[type=number], .ss-sec select, .ss-sec textarea { padding:8px 9px; border-radius:8px; background:var(--dark); color:var(--text); border:1px solid var(--border); font-size:14px; box-sizing:border-box; }
+  .chk { display:flex; gap:7px; align-items:center; font-size:14px; }
+  .scope-opt { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid var(--border); border-radius:10px; margin-bottom:8px; cursor:pointer; }
+  .scope-opt.on { border-color:var(--orange); }
+  .prod-list { max-height:220px; overflow:auto; border:1px solid var(--border); border-radius:10px; padding:8px 10px; display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:4px 12px; }
+  .font-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:8px; }
+  .font-card { border:1px solid var(--border); border-radius:10px; padding:8px 10px; display:flex; gap:8px; align-items:center; }
+  .font-card.off { opacity:.45; }
+  .font-card .sample { font-size:22px; line-height:1.2; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .font-card .lbl { font-size:12px; color:var(--muted); }
+  .star { background:none; border:none; cursor:pointer; color:var(--muted); font-size:16px; padding:2px; }
+  .star.on { color:#FFD600; }
+  .inks { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .ink { position:relative; width:34px; height:34px; border-radius:50%; border:1px solid #555; }
+  .ink button { position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; border:none; background:#333; color:#fff; font-size:11px; cursor:pointer; line-height:18px; padding:0; }
+  .lay-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
+  .lay-card { border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .lay-card.off { opacity:.45; }
+  .lay-card canvas { width:100%; display:block; background:#2a2a2a; }
+  .lay-card .b { padding:7px 9px; font-size:13px; display:flex; gap:6px; align-items:center; }
+  .lines-tbl { width:100%; border-collapse:collapse; font-size:13px; }
+  .lines-tbl th { text-align:left; color:var(--muted); font-weight:600; font-size:11.5px; text-transform:uppercase; padding:4px; white-space:nowrap; }
+  .lines-tbl td { padding:3px 4px; }
+  .lines-tbl input, .lines-tbl select { width:100%; padding:5px 6px !important; font-size:13px !important; }
+  .used-by { font-size:13.5px; line-height:1.6; color:var(--muted); }
+</style>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Studio Settings <span>Fonts, layouts, tools and inks in the app's designer</span></div>
+    <div class="topbar-right">
+      <span id="dirty" style="font-size:13.5px;color:var(--yellow);" hidden>Unsaved changes</span>
+      <button class="btn-grad" id="save" onclick="saveSet()"><i class="bi bi-check-lg"></i> Save settings</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="ss-wrap">
+      <div class="card" style="padding:14px;">
+        <div style="font-weight:700;margin-bottom:4px;">Settings sets</div>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.5;">Every product uses exactly one set: its own, else its category's, else <strong>Standard</strong>.</p>
+        <div id="sets"></div>
+        <button class="btn-ghost" style="width:100%;" onclick="newSet()"><i class="bi bi-plus-lg"></i> New set</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card ss-sec" style="padding:16px 18px;">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+            <div style="flex:1;min-width:220px;"><label class="h" for="s-name" style="margin-top:0;">Set name</label><input type="text" id="s-name" maxlength="40" style="width:100%;"></div>
+            <button class="btn-ghost" onclick="duplicateSet()"><i class="bi bi-copy"></i> Duplicate</button>
+            <button class="btn-ghost" id="del" onclick="deleteSet()"><i class="bi bi-trash3"></i> <span id="del-text">Delete set</span></button>
+          </div>
+          <div id="scope-box"></div>
+          <label class="h">Products using this set</label>
+          <div class="used-by" id="used-by"></div>
+        </div>
+
+        <div class="filter-bar" id="tabs" style="margin:0;">
+          <button class="f-tab active" data-tab="fonts"><i class="bi bi-fonts"></i> Fonts</button>
+          <button class="f-tab" data-tab="layouts"><i class="bi bi-layout-text-window"></i> Text layouts</button>
+          <button class="f-tab" data-tab="tools"><i class="bi bi-brush"></i> Drawing &amp; photo tools</button>
+          <button class="f-tab" data-tab="inks"><i class="bi bi-droplet"></i> Ink colours</button>
+          <button class="f-tab" data-tab="limits"><i class="bi bi-exclamation-triangle"></i> Print check</button>
+        </div>
+
+        <section class="card ss-sec" id="tab-fonts" style="padding:16px 18px;">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <input type="text" id="f-sample" placeholder="Preview text" value="Team Spirit 2026" style="flex:1;min-width:200px;">
+            <button class="btn-ghost" onclick="setAllFonts(true)">All on</button>
+            <button class="btn-ghost" onclick="setAllFonts(false)">All off</button>
+            <button class="btn-ghost" onclick="document.getElementById('f-file').click()"><i class="bi bi-upload"></i> Upload a font</button>
+            <input type="file" id="f-file" accept=".ttf,.otf,font/ttf,font/otf" hidden>
+          </div>
+          <p style="font-size:13px;color:var(--muted);margin:10px 0 0;line-height:1.5;">Tick the fonts customers may use with this set. <i class="bi bi-star-fill" style="color:#FFD600;"></i> marks a recommended font (listed first, and new text starts in the first one). Uploaded fonts are shared by every set; only upload fonts you're allowed to print on products.</p>
+          <div id="f-status" style="font-size:13.5px;color:var(--muted);margin-top:8px;"></div>
+          <div id="fonts"></div>
+        </section>
+
+        <section class="card ss-sec" id="tab-layouts" style="padding:16px 18px;" hidden>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <button class="btn-ghost" onclick="editLayout(null)"><i class="bi bi-plus-lg"></i> New layout</button>
+            <button class="btn-ghost" id="add-starters" onclick="addStarters()"><i class="bi bi-magic"></i> Add the starter layouts</button>
+            <span id="lay-note" style="font-size:13px;color:var(--muted);"></span>
+          </div>
+          <p style="font-size:13px;color:var(--muted);margin:10px 0 12px;line-height:1.5;">Layouts are shared by every set; untick one to hide it for products using this set. Sizes and positions are shares of the print area, so a layout fits any shirt side.</p>
+          <div class="lay-grid" id="layouts"></div>
+          <div id="lay-editor" style="margin-top:16px;" hidden></div>
+        </section>
+
+        <section class="card ss-sec" id="tab-tools" style="padding:16px 18px;" hidden>
+          <p style="font-size:13px;color:var(--muted);margin:0 0 10px;">Tools customers get in the Draw studio and for their photos with this set.</p>
+          <div id="tools" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;"></div>
+        </section>
+
+        <section class="card ss-sec" id="tab-inks" style="padding:16px 18px;" hidden>
+          <p style="font-size:13px;color:var(--muted);margin:0 0 10px;line-height:1.5;">The colours offered for text, drawings and shapes. Match them to the inks or vinyl you stock.</p>
+          <div class="inks" id="inks"></div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:12px;">
+            <input type="color" id="ink-new" value="#ff5c00" style="width:44px;height:34px;padding:0;border-radius:8px;border:1px solid var(--border);background:none;">
+            <button class="btn-ghost" onclick="addInk()"><i class="bi bi-plus-lg"></i> Add colour</button>
+            <button class="btn-ghost" onclick="resetInks()">Use the default colours</button>
+          </div>
+          <label class="chk" style="margin-top:14px;"><input type="checkbox" id="any-color"> Also let customers pick any colour (a colour wheel)</label>
+        </section>
+
+        <section class="card ss-sec" id="tab-limits" style="padding:16px 18px;" hidden>
+          <p style="font-size:13px;color:var(--muted);margin:0 0 6px;line-height:1.5;">The app warns customers (and shows you on the order) when a design is likely to print badly.</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+            <div><label class="h" for="l-text">Smallest text (mm tall)</label><input type="number" id="l-text" min="1" max="30" step="0.5" style="width:100%;"></div>
+            <div><label class="h" for="l-line">Thinnest line (mm)</label><input type="number" id="l-line" min="0.1" max="10" step="0.1" style="width:100%;"></div>
+            <div><label class="h" for="l-dpi">Lowest picture quality (dpi)</label><input type="number" id="l-dpi" min="50" max="600" step="10" style="width:100%;"></div>
+            <div><label class="h" for="l-op">Faintest opacity (%)</label><input type="number" id="l-op" min="0" max="100" step="5" style="width:100%;"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/studio-common.js"></script>
+<script>
+  // Firestore studioSettings/{id}: { name, isDefault, scope: 'all'|'products'|'category', products[], category,
+  //   fontsOff[], recommendedFonts[], layoutsOff[], tools{ id: false }, inks[], anyColor, limits{}, updatedAt }
+  // The app (StudioSettings.kt) picks one set per product: product set → category set → the default; newest wins.
+  // designFonts/{id}: { label, category, url, asc, desc }   textLayouts/{id}: { name, category, side, order, published, lines[] }
+  const $ = id => document.getElementById(id);
+  let sets = [], cur = null, dirty = false, products = [], categories = [], layouts = [], layoutsFromDb = false;
+
+  const touch = () => { dirty = true; $('dirty').hidden = false; };
+  document.querySelectorAll('#tabs .f-tab').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#tabs .f-tab').forEach(x => x.classList.toggle('active', x === b));
+    ['fonts', 'layouts', 'tools', 'inks', 'limits'].forEach(t => { $('tab-' + t).hidden = t !== b.dataset.tab; });
+    if (b.dataset.tab === 'layouts') renderLayouts();
+  }));
+
+  // ── Sets ──
+  async function loadSets(selectId) {
+    const snap = await db.collection('studioSettings').get();
+    sets = snap.docs.map(d => Studio.normalizeSettings(d.id, d.data()));
+    if (!sets.some(s => s.isDefault)) sets.unshift(Studio.normalizeSettings('', { name: 'Standard', isDefault: true, scope: 'all' }));
+    sets.sort((a, b) => (b.isDefault - a.isDefault) || a.name.localeCompare(b.name));
+    renderSetList();
+    openSet(sets.find(s => s.id === selectId) || sets.find(s => s.isDefault));
+  }
+  const catName = n => productCategory({ category: n });
+  function usersOf(set) { return products.filter(p => Studio.settingsFor(p, sets, catName) === set); }
+  function scopeText(s) {
+    if (s.isDefault) return 'Every product without its own set';
+    if (s.scope === 'category') return s.category ? 'Category: ' + s.category : 'No category chosen';
+    return s.products.length + ' product' + (s.products.length === 1 ? '' : 's');
+  }
+  function renderSetList() {
+    $('sets').innerHTML = sets.map((s, i) => `<button class="set-item ${s === cur ? 'on' : ''}" onclick="pick(${i})">
+      <strong>${esc(s.name)}</strong>${s.isDefault ? ' <span class="pill" style="font-size:11px;border:1px solid var(--border);border-radius:20px;padding:0 6px;">Default</span>' : ''}
+      <small>${esc(scopeText(s))} · used by ${usersOf(s).length}</small></button>`).join('');
+  }
+  function pick(i) { if (dirty && !confirmLeave()) return; openSet(sets[i]); }
+  let leaveArmed = false;
+  function confirmLeave() { if (leaveArmed) { leaveArmed = false; return true; } leaveArmed = true; toast('Unsaved changes. Click again to leave them.', 'warn'); setTimeout(() => leaveArmed = false, 5000); return false; }
+  function openSet(s) {
+    cur = JSON.parse(JSON.stringify(s)); cur._ref = s; dirty = false; $('dirty').hidden = true;
+    sets.forEach((x, i) => { if (x === s) cur._index = i; });
+    $('s-name').value = cur.name;
+    $('del').hidden = cur.isDefault || !cur.id;
+    renderScope(); renderFonts(); renderTools(); renderInks(); renderLimits();
+    if (!$('tab-layouts').hidden) renderLayouts();
+    renderSetList(); renderUsedBy();
+    document.querySelectorAll('#sets .set-item').forEach((b, i) => b.classList.toggle('on', sets[i] === s));
+  }
+  function renderScope() {
+    if (cur.isDefault) { $('scope-box').innerHTML = '<p style="font-size:13.5px;color:var(--muted);margin:12px 0 0;">This is the <strong>Standard</strong> set: every product that has no set of its own, and isn\'t in a category with a set, uses it.</p>'; return; }
+    const opt = (v, title, sub, body) => `<div class="scope-opt ${cur.scope === v ? 'on' : ''}" onclick="setScope('${v}')"><input type="radio" name="scope" ${cur.scope === v ? 'checked' : ''}><div style="flex:1;"><div style="font-weight:600;">${title}</div><div style="font-size:13px;color:var(--muted);">${sub}</div>${cur.scope === v ? body : ''}</div></div>`;
+    $('scope-box').innerHTML = '<label class="h">Who uses this set</label>' +
+      opt('products', 'Chosen products', 'Pick products below. A product set wins over a category set.',
+        `<div class="prod-list" style="margin-top:8px;" onclick="event.stopPropagation()">${products.map(p => `<label class="chk"><input type="checkbox" value="${p.id}" ${cur.products.includes(p.id) ? 'checked' : ''} onchange="toggleProduct('${p.id}',this.checked)"> ${esc(p.name || p.id)}</label>`).join('') || '<span style="color:var(--muted);">No products yet</span>'}</div>`) +
+      opt('category', 'A whole category', 'Every product in the category, unless it has its own set.',
+        `<select style="margin-top:8px;min-width:220px;" onclick="event.stopPropagation()" onchange="cur.category=this.value;touch();renderUsedBy()"><option value="">Choose a category…</option>${categories.map(c => `<option ${c === cur.category ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>`);
+  }
+  function setScope(v) { if (cur.scope === v) return; cur.scope = v; touch(); renderScope(); renderUsedBy(); }
+  function toggleProduct(id, on) { cur.products = on ? [...new Set(cur.products.concat(id))] : cur.products.filter(x => x !== id); touch(); renderUsedBy(); }
+  function renderUsedBy() {
+    // What the app would pick if this set were saved as it is now
+    const preview = sets.map(s => s === cur._ref ? cur : s);
+    const used = products.filter(p => Studio.settingsFor(p, preview, catName) === cur);
+    const stolen = !cur.isDefault ? products.filter(p => {
+      const winner = Studio.settingsFor(p, preview, catName);
+      const wanted = cur.scope === 'products' ? cur.products.includes(p.id) : (cur.category && catName(p.category || '').toLowerCase() === cur.category.toLowerCase());
+      return wanted && winner !== cur;
+    }) : [];
+    $('used-by').innerHTML = (used.length ? used.map(p => esc(p.name || p.id)).join(' · ') : 'No products yet.') +
+      (stolen.length ? `<div style="color:var(--yellow);margin-top:4px;"><i class="bi bi-info-circle"></i> ${stolen.map(p => esc(p.name || p.id)).join(', ')} ${stolen.length === 1 ? 'uses' : 'use'} another set that comes first (a product set, or a newer one).</div>` : '');
+  }
+  function newSet() {
+    if (dirty && !confirmLeave()) return;
+    const s = Studio.normalizeSettings('', { name: 'New set', isDefault: false, scope: 'products' });
+    s.inks = (sets.find(x => x.isDefault) || s).inks.slice();
+    sets.push(s); openSet(s); touch(); $('s-name').focus(); $('s-name').select();
+  }
+  function duplicateSet() {
+    if (dirty && !confirmLeave()) return;
+    const s = JSON.parse(JSON.stringify(Object.assign({}, cur, { _ref: undefined }))); delete s._ref; delete s._index;
+    Object.assign(s, { id: '', name: cur.name + ' copy', isDefault: false, scope: 'products', products: [], category: '' });
+    sets.push(s); openSet(s); touch();
+  }
+  async function deleteSet() {
+    if (cur.isDefault || !cur.id) return;
+    const btn = $('del');
+    if (btn.dataset.sure !== '1') { btn.dataset.sure = '1'; $('del-text').textContent = 'Click again to delete'; setTimeout(() => { btn.dataset.sure = ''; $('del-text').textContent = 'Delete set'; }, 4000); return; }
+    try { await db.collection('studioSettings').doc(cur.id).delete(); toast('Set deleted; its products use another set now', 'ok'); dirty = false; await loadSets(''); }
+    catch (e) { toast('Not deleted: ' + e.message, 'err'); }
+  }
+  async function saveSet() {
+    cur.name = $('s-name').value.trim() || (cur.isDefault ? 'Standard' : 'Set');
+    if (!cur.isDefault && cur.scope === 'category' && !cur.category) { toast('Choose the category this set is for', 'warn'); return; }
+    if (!cur.isDefault && cur.scope === 'products' && !cur.products.length) { toast('Tick at least one product, or choose a category', 'warn'); return; }
+    readLimits();
+    const tools = {}; Studio.TOOLS.forEach(t => { if (cur.tools[t.id] === false) tools[t.id] = false; });
+    const data = {
+      name: cur.name, isDefault: cur.isDefault, scope: cur.isDefault ? 'all' : cur.scope,
+      products: cur.isDefault || cur.scope !== 'products' ? [] : cur.products, category: cur.isDefault || cur.scope !== 'category' ? '' : cur.category,
+      fontsOff: cur.fontsOff, recommendedFonts: cur.recommendedFonts.filter(f => !cur.fontsOff.includes(f)), layoutsOff: cur.layoutsOff,
+      tools, inks: cur.inks, anyColor: cur.anyColor, limits: cur.limits,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: (auth.currentUser && auth.currentUser.email) || ''
+    };
+    if (!cur.anyColor && !cur.inks.length) { toast('Add at least one ink colour, or allow any colour', 'warn'); return; }
+    const btn = $('save'); btn.disabled = true;
+    try {
+      let id = cur.id;
+      if (id) await db.collection('studioSettings').doc(id).set(data);
+      else id = (await db.collection('studioSettings').add(data)).id;
+      dirty = false; toast('Saved. The app picks it up the next time the designer opens.', 'ok');
+      await loadSets(id);
+    } catch (e) {
+      toast(e && e.code === 'permission-denied' ? 'Not saved: the database rules need updating (App Keys → For your developer).' : 'Not saved: ' + e.message, 'err');
+    } finally { btn.disabled = false; }
+  }
+  $('s-name').addEventListener('input', touch);
+
+  // ── Fonts ──
+  async function renderFonts() {
+    await Studio.loadFontList();
+    const all = Studio.allFonts(), cats = Studio.fontCategories(), sample = $('f-sample').value || 'Aa';
+    $('fonts').innerHTML = cats.map(c => {
+      const list = all.filter(f => f.category === c); if (!list.length) return '';
+      return `<label class="h">${esc(c)}</label><div class="font-grid">${list.map(f => {
+        const on = !cur.fontsOff.includes(f.id), rec = cur.recommendedFonts.includes(f.id), ff = Studio.fontFile(f.id, false, false);
+        return `<div class="font-card ${on ? '' : 'off'}">
+          <input type="checkbox" ${on ? 'checked' : ''} onchange="toggleFont('${f.id}',this.checked)" aria-label="${esc(f.label)}">
+          <div style="flex:1;min-width:0;"><div class="sample" style="font-family:'${ff.family}',sans-serif;">${esc(sample)}</div><div class="lbl">${esc(f.label)}${f.builtIn ? '' : ' · uploaded'}</div></div>
+          <button class="star ${rec ? 'on' : ''}" title="${rec ? 'Recommended' : 'Recommend'}" onclick="toggleRec('${f.id}')"><i class="bi ${rec ? 'bi-star-fill' : 'bi-star'}"></i></button>
+          ${f.builtIn ? '' : `<button class="btn-icon" title="Remove this uploaded font" onclick="removeFont('${f.id}',this)"><i class="bi bi-trash3"></i></button>`}
+        </div>`; }).join('')}</div>`;
+    }).join('');
+    // Load the faces so the samples show in their own font
+    Studio.ensureFonts(all.map(f => ({ font: f.id, bold: false, italic: false })));
+  }
+  $('f-sample').addEventListener('input', () => document.querySelectorAll('.font-card .sample').forEach(e => { e.textContent = $('f-sample').value || 'Aa'; }));
+  function toggleFont(id, on) { cur.fontsOff = on ? cur.fontsOff.filter(x => x !== id) : [...new Set(cur.fontsOff.concat(id))]; touch(); renderFonts(); }
+  function toggleRec(id) { cur.recommendedFonts = cur.recommendedFonts.includes(id) ? cur.recommendedFonts.filter(x => x !== id) : cur.recommendedFonts.concat(id); if (cur.recommendedFonts.includes(id)) cur.fontsOff = cur.fontsOff.filter(x => x !== id); touch(); renderFonts(); }
+  function setAllFonts(on) { cur.fontsOff = on ? [] : Studio.allFonts().map(f => f.id).filter(id => id !== Studio.DEFAULT_FONT_ID); touch(); renderFonts(); }
+  /** Ascent / descent as shares of the em, the same way the app's font list records them (typo metrics when the font asks for them). */
+  function fontMetrics(buf) {
+    const dv = new DataView(buf), n = dv.getUint16(4), tables = {};
+    for (let i = 0; i < n; i++) { const o = 12 + i * 16; tables[String.fromCharCode(dv.getUint8(o), dv.getUint8(o + 1), dv.getUint8(o + 2), dv.getUint8(o + 3))] = dv.getUint32(o + 8); }
+    if (!tables.head || !tables.hhea) throw new Error('not a TrueType / OpenType font');
+    const upm = dv.getUint16(tables.head + 18);
+    let asc = dv.getInt16(tables.hhea + 4), desc = -dv.getInt16(tables.hhea + 6);
+    if (tables['OS/2']) {
+      const os = tables['OS/2'], fsSel = dv.getUint16(os + 62);
+      if (fsSel & 128) { asc = dv.getInt16(os + 68); desc = -dv.getInt16(os + 70); }
+    }
+    return { asc: Math.round(asc / upm * 10000) / 10000, desc: Math.round(desc / upm * 10000) / 10000 };
+  }
+  $('f-file').addEventListener('change', async e => {
+    const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+    if (file.size > 3 * 1024 * 1024) { toast('Fonts can be up to 3 MB', 'warn'); return; }
+    const st = $('f-status'); st.textContent = 'Reading ' + file.name + '…';
+    try {
+      const m = fontMetrics(await file.arrayBuffer());
+      const label = file.name.replace(/\.(ttf|otf)$/i, '').replace(/[-_]+/g, ' ').replace(/\s+(Regular|Variable.*)$/i, '').trim().slice(0, 40) || 'Shop font';
+      st.textContent = 'Uploading ' + file.name + '…';
+      const url = await uploadToCloudinary(file, { folder: 'kustomoimprenta/fonts', resourceType: 'raw', name: file.name.replace(/\s+/g, '_') });
+      await db.collection('designFonts').add({ label, category: 'Shop fonts', url, asc: m.asc, desc: m.desc,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdBy: (auth.currentUser && auth.currentUser.email) || '' });
+      Studio.reloadFonts(); st.textContent = ''; toast('“' + label + '” added. It shows in the app for every set that has it ticked.', 'ok');
+      renderFonts();
+    } catch (err) { st.textContent = ''; toast('Font not added: ' + err.message, 'err'); }
+  });
+  async function removeFont(id, btn) {
+    if (btn.dataset.sure !== '1') { btn.dataset.sure = '1'; btn.style.color = '#FF4444'; toast('Click the bin again to remove this font', 'warn'); setTimeout(() => { btn.dataset.sure = ''; btn.style.color = ''; }, 4000); return; }
+    try {
+      // Kept (marked removed) so designs already ordered with it can still be printed
+      await db.collection('designFonts').doc(id.replace(/^custom:/, '')).update({ deleted: true, deletedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      Studio.reloadFonts(); toast('Font removed from the designer. Orders that used it still print with it.', 'ok'); renderFonts();
+    } catch (e) { toast('Not removed: ' + e.message, 'err'); }
+  }
+
+  // ── Text layouts ──
+  async function loadLayouts() {
+    try {
+      const snap = await db.collection('textLayouts').get();
+      layoutsFromDb = !snap.empty;
+      layouts = layoutsFromDb ? snap.docs.map(d => Object.assign({ id: d.id }, d.data())) : (await Studio.starterLayouts()).map(l => Object.assign({ _starter: true }, l));
+    } catch (e) { layouts = []; toast("Couldn't load text layouts: " + e.message, 'err'); }
+    layouts.sort((a, b) => ((a.order != null ? a.order : 100) - (b.order != null ? b.order : 100)) || String(a.name).localeCompare(String(b.name)));
+  }
+  async function renderLayouts() {
+    $('lay-note').textContent = layoutsFromDb ? '' : 'Showing the starter layouts the app uses until you add your own.';
+    $('add-starters').hidden = layoutsFromDb && (await Studio.starterLayouts()).every(s => layouts.some(l => l.id === s.id));
+    $('layouts').innerHTML = layouts.map(l => {
+      const on = !cur.layoutsOff.includes(l.id);
+      return `<div class="lay-card ${on ? '' : 'off'}"><canvas data-l="${esc(l.id)}" width="300" height="210"></canvas>
+        <div class="b"><input type="checkbox" ${on ? 'checked' : ''} onchange="toggleLayout('${esc(l.id)}',this.checked)" aria-label="Offer ${esc(l.name)}">
+        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(l.name || 'Layout')}${l.published === false ? ' (hidden)' : ''}</span>
+        ${l._starter ? '' : `<button class="btn-icon" title="Edit" onclick="editLayout('${esc(l.id)}')"><i class="bi bi-pencil"></i></button>`}</div></div>`;
+    }).join('') || '<p style="color:var(--muted);">No layouts.</p>';
+    for (const cv of document.querySelectorAll('#layouts canvas')) drawLayout(cv, layouts.find(l => l.id === cv.dataset.l));
+  }
+  async function drawLayout(cv, l) {
+    if (!l) return;
+    const ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+    ctx.fillStyle = '#2A2A2A'; ctx.fillRect(0, 0, W, H);
+    const z = { left: W * 0.08, top: H * 0.06, width: W * 0.84, height: H * 0.88 };
+    const texts = Studio.layoutToTexts(l, z, 1, '#2A2A2A');
+    await Studio.ensureFonts(texts);
+    ctx.fillStyle = '#2A2A2A'; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.beginPath(); ctx.rect(z.left, z.top, z.width, z.height); ctx.clip();
+    texts.forEach(t => Studio.drawTextItem(ctx, t, 1));
+    ctx.restore();
+  }
+  function toggleLayout(id, on) { cur.layoutsOff = on ? cur.layoutsOff.filter(x => x !== id) : [...new Set(cur.layoutsOff.concat(id))]; touch(); renderLayouts(); }
+  async function addStarters() {
+    const starters = await Studio.starterLayouts(), batch = db.batch();
+    let n = 0;
+    starters.forEach(s => { if (!layouts.some(l => l.id === s.id && !l._starter)) { const d = Object.assign({}, s); delete d.id; batch.set(db.collection('textLayouts').doc(s.id), Object.assign(d, { published: true })); n++; } });
+    try { await batch.commit(); toast(n + ' starter layout(s) added. Edit or hide them as you like.', 'ok'); await loadLayouts(); renderLayouts(); }
+    catch (e) { toast('Not added: ' + e.message, 'err'); }
+  }
+  // Layout editor
+  let edit = null;
+  const LINE_DEFAULT = () => ({ key: 'l' + Math.random().toString(36).slice(2, 6), label: 'Line', text: 'YOUR TEXT', font: 'anton', size: 0.12, x: 0, y: 0, color: 'auto', curve: 0, spacing: 0, outline: 0, outlineColor: 'auto', shadow: 0, effect: 'none', caps: false, maxChars: 0, digitsOnly: false, optional: false });
+  function editLayout(id) {
+    const l = id ? layouts.find(x => x.id === id) : null;
+    edit = l ? JSON.parse(JSON.stringify(l)) : { id: '', name: 'New layout', category: '', side: 'Any', order: 100, published: true, lines: [LINE_DEFAULT()] };
+    renderEditor();
+  }
+  function renderEditor() {
+    const box = $('lay-editor'); box.hidden = !edit; if (!edit) return;
+    const fonts = Studio.allFonts();
+    const fsel = v => `<select onchange="setLine(this,'font',this.value)">${fonts.map(f => `<option value="${esc(f.id)}" ${f.id === v ? 'selected' : ''}>${esc(f.label)}</option>`).join('')}</select>`;
+    const inp = (i, k, v, type = 'text', step = '') => `<input type="${type}" ${step ? `step="${step}"` : ''} value="${esc(String(v))}" data-i="${i}" oninput="setLine(this,'${k}',${type === 'number' ? '+this.value' : 'this.value'})">`;
+    box.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:14px;">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 90px auto;gap:10px;align-items:end;">
+        <div><label class="h">Layout name</label><input type="text" value="${esc(edit.name)}" style="width:100%;" oninput="edit.name=this.value"></div>
+        <div><label class="h">Category</label><input type="text" value="${esc(edit.category || '')}" style="width:100%;" oninput="edit.category=this.value" placeholder="e.g. Sports"></div>
+        <div><label class="h">Best on</label><select style="width:100%;" onchange="edit.side=this.value">${['Any'].concat(DESIGN_SIDES).map(s => `<option ${s === edit.side ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+        <div><label class="h">Position</label><input type="number" value="${edit.order != null ? edit.order : 100}" style="width:100%;" oninput="edit.order=+this.value"></div>
+        <label class="chk" style="margin-bottom:9px;"><input type="checkbox" ${edit.published !== false ? 'checked' : ''} onchange="edit.published=this.checked"> Shown in the app</label>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;margin-top:12px;align-items:start;">
+        <div style="overflow-x:auto;"><table class="lines-tbl"><thead><tr><th>Label</th><th>Sample text</th><th>Font</th><th>Size</th><th>X</th><th>Y</th><th>Colour</th><th>Curve</th><th>Spacing</th><th>Outline</th><th>Effect</th><th>Caps</th><th>Max</th><th>0-9</th><th>Opt.</th><th></th></tr></thead><tbody>
+          ${edit.lines.map((ln, i) => `<tr data-i="${i}">
+            <td style="min-width:80px;">${inp(i, 'label', ln.label)}</td><td style="min-width:120px;">${inp(i, 'text', ln.text)}</td><td style="min-width:120px;">${fsel(ln.font)}</td>
+            <td style="width:64px;">${inp(i, 'size', ln.size, 'number', '0.005')}</td><td style="width:64px;">${inp(i, 'x', ln.x, 'number', '0.01')}</td><td style="width:64px;">${inp(i, 'y', ln.y, 'number', '0.01')}</td>
+            <td style="width:84px;">${inp(i, 'color', ln.color)}</td><td style="width:60px;">${inp(i, 'curve', ln.curve || 0, 'number', '1')}</td><td style="width:60px;">${inp(i, 'spacing', ln.spacing || 0, 'number', '0.01')}</td>
+            <td style="width:60px;">${inp(i, 'outline', ln.outline || 0, 'number', '0.005')}</td>
+            <td style="width:90px;"><select onchange="setLine(this,'effect',this.value)">${Studio.EFFECTS.map(e => `<option ${e === (ln.effect || 'none') ? 'selected' : ''}>${e}</option>`).join('')}</select></td>
+            <td><input type="checkbox" ${ln.caps ? 'checked' : ''} onchange="setLine(this,'caps',this.checked)"></td>
+            <td style="width:52px;">${inp(i, 'maxChars', ln.maxChars || 0, 'number', '1')}</td>
+            <td><input type="checkbox" ${ln.digitsOnly ? 'checked' : ''} onchange="setLine(this,'digitsOnly',this.checked)"></td>
+            <td><input type="checkbox" ${ln.optional ? 'checked' : ''} onchange="setLine(this,'optional',this.checked)"></td>
+            <td><button class="btn-icon" title="Remove line" onclick="edit.lines.splice(${i},1);renderEditor()"><i class="bi bi-x-lg"></i></button></td></tr>`).join('')}
+        </tbody></table>
+        <p style="font-size:12.5px;color:var(--muted);line-height:1.5;">Size = font size as a share of the print area's width. X / Y = where the line's centre sits, from the middle of the print area (−0.5 left/top … 0.5 right/bottom). Colour: <code>auto</code> (black or white to suit the shirt) or <code>#RRGGBB</code>. Max = most letters a customer may type (0 = any); 0-9 = numbers only; Opt. = the line can be left empty.</p>
+        <button class="btn-ghost" onclick="edit.lines.push(LINE_DEFAULT());renderEditor()"><i class="bi bi-plus-lg"></i> Add line</button></div>
+        <div><canvas id="lay-prev" width="300" height="210" style="width:100%;border-radius:10px;"></canvas>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+            <button class="btn-grad" onclick="saveLayout()"><i class="bi bi-check-lg"></i> Save layout</button>
+            <button class="btn-ghost" onclick="edit=null;renderEditor()">Close</button>
+            ${edit.id ? `<button class="btn-ghost" id="lay-del" style="color:#FF4444;" onclick="deleteLayout()"><i class="bi bi-trash3"></i> Delete</button>` : ''}
+          </div></div>
+      </div></div>`;
+    drawLayout($('lay-prev'), edit);
+  }
+  function setLine(el, k, v) { const i = +el.closest('tr').dataset.i; edit.lines[i][k] = v; drawLayout($('lay-prev'), edit); }
+  async function saveLayout() {
+    if (!edit.lines.length) { toast('A layout needs at least one line', 'warn'); return; }
+    const keys = edit.lines.map(l => l.key); if (new Set(keys).size !== keys.length) edit.lines.forEach((l, i) => { l.key = 'l' + (i + 1); });
+    const data = { name: (edit.name || 'Layout').trim().slice(0, 40), category: (edit.category || '').trim().slice(0, 30), side: edit.side || 'Any', order: Math.round(+edit.order || 0), published: edit.published !== false,
+      lines: edit.lines.map(l => ({ key: l.key, label: l.label || 'Line', text: l.text || '', font: l.font || Studio.DEFAULT_FONT_ID, size: +l.size || 0.1, x: +l.x || 0, y: +l.y || 0,
+        color: l.color || 'auto', curve: +l.curve || 0, spacing: +l.spacing || 0, outline: +l.outline || 0, outlineColor: l.outlineColor || 'auto', shadow: +l.shadow || 0,
+        effect: l.effect || 'none', caps: !!l.caps, maxChars: Math.max(0, Math.round(+l.maxChars || 0)), digitsOnly: !!l.digitsOnly, optional: !!l.optional })),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    try {
+      if (!layoutsFromDb && !edit.id) {
+        // The first layout of the shop's own replaces the starters in the app, so keep those too
+        await addStarters();
+      }
+      if (edit.id) await db.collection('textLayouts').doc(edit.id).set(data);
+      else edit.id = (await db.collection('textLayouts').add(data)).id;
+      toast('Layout saved', 'ok'); await loadLayouts(); renderLayouts(); renderEditor();
+    } catch (e) { toast('Not saved: ' + e.message, 'err'); }
+  }
+  async function deleteLayout() {
+    const b = $('lay-del'); if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.lastChild.textContent = ' Click again to delete'; return; }
+    try { await db.collection('textLayouts').doc(edit.id).delete(); toast('Layout deleted', 'ok'); edit = null; await loadLayouts(); renderLayouts(); renderEditor(); }
+    catch (e) { toast('Not deleted: ' + e.message, 'err'); }
+  }
+
+  // ── Tools, inks, limits ──
+  function renderTools() {
+    $('tools').innerHTML = Studio.TOOLS.map(t => `<label class="chk" style="padding:8px 10px;border:1px solid var(--border);border-radius:9px;"><input type="checkbox" ${cur.tools[t.id] !== false ? 'checked' : ''} onchange="cur.tools['${t.id}']=this.checked?true:false;touch()"> ${esc(t.label)}</label>`).join('');
+  }
+  function renderInks() {
+    $('inks').innerHTML = cur.inks.map((h, i) => `<div class="ink" style="background:${h};" title="${h}"><button aria-label="Remove ${h}" onclick="cur.inks.splice(${i},1);touch();renderInks()">×</button></div>`).join('') || '<span style="color:var(--muted);font-size:13.5px;">No colours yet.</span>';
+    $('any-color').checked = cur.anyColor;
+  }
+  function addInk() { const h = Studio.normHex($('ink-new').value); if (!cur.inks.includes(h)) { cur.inks.push(h); touch(); renderInks(); } }
+  function resetInks() { cur.inks = Studio.DEFAULT_INKS.slice(); touch(); renderInks(); }
+  $('any-color').addEventListener('change', e => { cur.anyColor = e.target.checked; touch(); });
+  function renderLimits() { $('l-text').value = cur.limits.minTextMm; $('l-line').value = cur.limits.minLineMm; $('l-dpi').value = cur.limits.minDpi; $('l-op').value = Math.round(cur.limits.minOpacity * 100); }
+  function readLimits() {
+    const n = (id, d, a, b) => { const v = +$(id).value; return isFinite(v) && v > 0 ? Math.min(b, Math.max(a, v)) : d; };
+    cur.limits = { minTextMm: n('l-text', 4, 1, 30), minLineMm: n('l-line', 1, 0.1, 10), minDpi: Math.round(n('l-dpi', 150, 50, 600)), minOpacity: Math.min(1, Math.max(0, (+$('l-op').value || 0) / 100)) };
+  }
+  ['l-text', 'l-line', 'l-dpi', 'l-op'].forEach(id => $(id).addEventListener('input', touch));
+
+  Object.assign(window, { pick, newSet, duplicateSet, deleteSet, saveSet, setScope, toggleProduct, toggleFont, toggleRec, setAllFonts, removeFont,
+    toggleLayout, addStarters, editLayout, setLine, saveLayout, deleteLayout, addInk, resetInks, renderEditor, renderInks, renderUsedBy, touch, LINE_DEFAULT });
+  window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  window.onAuthReady = async () => {
+    try {
+      await Promise.all([Studio.loadFontList(), loadCategories()]);
+      const snap = await db.collection('products').orderBy('name').get();
+      products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      categories = categoryChoices(products);
+      await loadLayouts();
+      await loadSets(new URLSearchParams(location.search).get('set') || '');
+    } catch (e) { toast("Couldn't load the studio settings: " + e.message, 'err'); }
+  };
+</script>
+</body>
+</html>

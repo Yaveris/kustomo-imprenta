@@ -293,6 +293,9 @@
           </div>
           <input type="file" id="art-file" accept="image/png,image/webp,image/jpeg" hidden>
           <div class="hint" style="font-size:13px;color:var(--muted);margin-top:8px;" id="art-hint"></div>
+          <label id="cm-row" style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13.5px;">Real width of this print area
+            <input type="number" id="f-cm" min="1" max="200" step="0.1" placeholder="cm" style="width:90px;padding:6px 8px;border-radius:7px;background:var(--dark);color:var(--text);border:1px solid var(--border);"> cm
+            <span style="color:var(--muted);font-size:12.5px;">(for the ruler, print checks and print-ready files)</span></label>
         </div>
 
         <!-- 4. Try-on fit -->
@@ -716,7 +719,12 @@
       : f && !(artSide === 'front' ? f.printFront : f.printBack) ? 'Drag the box or its corners to where designs should go.'
       : 'Drag the box or its corners to change where designs go.';
     $('btn-capture').disabled = !gltfScene; $('btn-zone-auto').disabled = !gltfScene;
+    $('cm-row').hidden = !!ed.builtIn || !s || backOff;
+    $('f-cm').value = s && +s.cm > 0 ? s.cm : '';
   }
+  document.addEventListener('input', e => {
+    if (e.target && e.target.id === 'f-cm' && ed && ed[artSide]) { ed[artSide].cm = +e.target.value || 0; setDirty(); }
+  });
   function placeZone() {
     const s = ed[artSide], z = $('zone'); if (!s || !z) return;
     z.style.left = (s.zone.left * 100) + '%'; z.style.top = (s.zone.top * 100) + '%';
@@ -905,7 +913,7 @@
           let img = s.img;
           if (s.blob) { status('Uploading the ' + name + ' picture…'); img = await uploadToCloudinary(s.blob, { folder: 'kustomoimprenta/models', name: `${id}-${name}-${stamp}.png` }); }
           const r = n => Math.round(n * 10000) / 10000;
-          return { img, w: s.w, h: s.h, fromModel: s.fromModel !== false, zone: { left: r(s.zone.left), top: r(s.zone.top), right: r(s.zone.right), bottom: r(s.zone.bottom) } };
+          return { img, w: s.w, h: s.h, fromModel: s.fromModel !== false, cm: +s.cm > 0 ? Math.round(+s.cm * 10) / 10 : 0, zone: { left: r(s.zone.left), top: r(s.zone.top), right: r(s.zone.right), bottom: r(s.zone.bottom) } };
         };
         const front = await side(ed.front, 'front');
         const back = ed.hasBack ? await side(ed.back || null, 'back') : null;

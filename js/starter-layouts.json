@@ -1,0 +1,461 @@
+{
+ "version": 1,
+ "note": "Starter text layouts. Same file in the app (res/raw/starter_layouts.json) and the admin site (js/starter-layouts.json). Sizes and positions are shares of the side's print area: size = font size / print-area width; x, y = offset of the line's centre from the print area's centre, as a share of its width / height. color 'auto' = black or white, whichever shows on the shirt.",
+ "layouts": [
+  {
+   "id": "starter_stacked",
+   "name": "Stacked words",
+   "category": "Quotes",
+   "side": "Any",
+   "lines": [
+    {
+     "key": "l1",
+     "label": "Line 1",
+     "text": "THERE'S",
+     "font": "anton",
+     "size": 0.17,
+     "x": 0.0,
+     "y": -0.17,
+     "color": "auto",
+     "caps": true
+    },
+    {
+     "key": "l2",
+     "label": "Line 2",
+     "text": "NO PLACE LIKE",
+     "font": "anton",
+     "size": 0.105,
+     "x": 0.0,
+     "y": -0.02,
+     "color": "auto",
+     "caps": true
+    },
+    {
+     "key": "l3",
+     "label": "Line 3",
+     "text": "HOME",
+     "font": "anton",
+     "size": 0.24,
+     "x": 0.0,
+     "y": 0.15,
+     "color": "#FF2D78",
+     "caps": true
+    }
+   ],
+   "order": 0
+  },
+  {
+   "id": "starter_arc_number",
+   "name": "Arc + number",
+   "category": "Sports",
+   "side": "Any",
+   "lines": [
+    {
+     "key": "team",
+     "label": "Team or town",
+     "text": "CALOOCAN",
+     "font": "graduate",
+     "size": 0.12,
+     "x": 0.0,
+     "y": -0.12,
+     "color": "auto",
+     "curve": 45,
+     "spacing": 0.04,
+     "caps": true,
+     "maxChars": 14
+    },
+    {
+     "key": "num",
+     "label": "Number",
+     "text": "23",
+     "font": "graduate",
+     "size": 0.36,
+     "x": 0.0,
+     "y": 0.08,
+     "color": "#FFD600",
+     "outline": 0.05,
+     "outlineColor": "auto",
+     "digitsOnly": true,
+     "maxChars": 2
+    }
+   ],
+   "order": 1
+  },
+  {
+   "id": "starter_badge",
+   "name": "Round badge",
+   "category": "Business",
+   "side": "Any",
+   "lines": [
+    {
+     "key": "top",
+     "label": "Top arc",
+     "text": "KUSTOMO",
+     "font": "bungee",
+     "size": 0.1,
+     "x": 0.0,
+     "y": -0.1,
+     "color": "auto",
+     "curve": 75,
+     "spacing": 0.08,
+     "caps": true,
+     "maxChars": 12
+    },
+    {
+     "key": "mid",
+     "label": "Middle",
+     "text": "EST. 2026",
+     "font": "bungee",
+     "size": 0.065,
+     "x": 0.0,
+     "y": 0.0,
+     "color": "#FF5C00",
+     "caps": true,
+     "maxChars": 12
+    },
+    {
+     "key": "bottom",
+     "label": "Bottom arc",
+     "text": "PRINT CO",
+     "font": "bungee",
+     "size": 0.08,
+     "x": 0.0,
+     "y": 0.1,
+     "color": "auto",
+     "curve": -75,
+     "spacing": 0.08,
+     "caps": true,
+     "maxChars": 12
+    }
+   ],
+   "order": 2
+  },
+  {
+   "id": "starter_jersey",
+   "name": "Jersey back",
+   "category": "Sports",
+   "side": "Back",
+   "lines": [
+    {
+     "key": "name",
+     "label": "Surname",
+     "text": "DELA CRUZ",
+     "font": "graduate",
+     "size": 0.11,
+     "x": 0.0,
+     "y": -0.22,
+     "color": "auto",
+     "spacing": 0.06,
+     "caps": true,
+     "maxChars": 12
+    },
+    {
+     "key": "num",
+     "label": "Number",
+     "text": "07",
+     "font": "graduate",
+     "size": 0.5,
+     "x": 0.0,
+     "y": 0.03,
+     "color": "#FF5C00",
+     "outline": 0.045,
+     "outlineColor": "auto",
+     "digitsOnly": true,
+     "maxChars": 2
+    },
+    {
+     "key": "team",
+     "label": "Team (optional)",
+     "text": "CALOOCAN HOOPS",
+     "font": "graduate",
+     "size": 0.06,
+     "x": 0.0,
+     "y": 0.25,
+     "color": "auto",
+     "spacing": 0.2,
+     "caps": true,
+     "maxChars": 20,
+     "optional": true
+    }
+   ],
+   "order": 3
+  },
+  {
+   "id": "starter_script_caps",
+   "name": "Script + caps",
+   "category": "Birthday",
+   "side": "Any",
+   "lines": [
+    {
+     "key": "script",
+     "label": "Script word",
+     "text": "Sweet",
+     "font": "pacifico",
+     "size": 0.2,
+     "x": 0.0,
+     "y": -0.05,
+     "color": "#FF2D78",
+     "maxChars": 12
+    },
+    {
+     "key": "caps",
+     "label": "Big word",
+     "text": "SIXTEEN",
+     "font": "bebas_neue",
+     "size": 0.16,
+     "x": 0.0,
+     "y": 0.11,
+     "color": "auto",
+     "spacing": 0.25,
+     "caps": true,
+     "maxChars": 12
+    }
+   ],
+   "order": 4
+  },
+  {
+   "id": "starter_batch",
+   "name": "Batch year",
+   "category": "Events",
+   "side": "Any",
+   "lines": [
+    {
+     "key": "title",
+     "label": "Title",
+     "text": "BATCH 2026",
+     "font": "righteous",
+     "size": 0.15,
+     "x": 0.0,
+     "y": 0.0,
+     "color": "#FFD600",
+     "effect": "3d",
+     "caps": true,
+     "maxChars": 14
+    },
+    {
+     "key": "sub",
+     "label": "Under it",
+     "text": "SENIOR HIGH",
+     "font": "poppins_bold",
+     "size": 0.06,
+     "x": 0.0,
+     "y": 0.12,
+     "color": "auto",
+     "spacing": 0.3,
+     "caps": true,
+     "maxChars": 20,
+     "optional": true
+    }
+   ],
+   "order": 5
+  },
+  {
+   "id": "starter_reunion",
+   "name": "Family reunion",
+   "category": "Family & Barkada",
+   "side": "Any",
+   "lines": [
+    {
+     "key": "family",
+     "label": "Family name",
+     "text": "Dela Cruz",
+     "font": "shrikhand",
+     "size": 0.15,
+     "x": 0.0,
+     "y": -0.06,
+     "color": "auto",
+     "maxChars": 16
+    },
+    {
+     "key": "event",
+     "label": "Event",
+     "text": "FAMILY REUNION 2026",
+     "font": "poppins_bold",
+     "size": 0.055,
+     "x": 0.0,
+     "y": 0.07,
+     "color": "#FF5C00",
+     "spacing": 0.15,
+     "caps": true,
+     "maxChars": 24
+    }
+   ],
+   "order": 6
+  },
+  {
+   "id": "starter_birthday",
+   "name": "Happy birthday",
+   "category": "Birthday",
+   "side": "Any",
+   "lines": [
+    {
+     "key": "happy",
+     "label": "First line",
+     "text": "Happy 18th",
+     "font": "great_vibes",
+     "size": 0.17,
+     "x": 0.0,
+     "y": -0.07,
+     "color": "#FF2D78",
+     "maxChars": 14
+    },
+    {
+     "key": "bday",
+     "label": "Second line",
+     "text": "BIRTHDAY",
+     "font": "bebas_neue",
+     "size": 0.18,
+     "x": 0.0,
+     "y": 0.09,
+     "color": "auto",
+     "spacing": 0.3,
+     "caps": true,
+     "maxChars": 12
+    }
+   ],
+   "order": 7
+  },
+  {
+   "id": "starter_team_front",
+   "name": "Team front",
+   "category": "Sports",
+   "side": "Front",
+   "lines": [
+    {
+     "key": "team",
+     "label": "Team name",
+     "text": "HOOPS",
+     "font": "luckiest_guy",
+     "size": 0.2,
+     "x": 0.0,
+     "y": -0.08,
+     "color": "auto",
+     "curve": 35,
+     "outline": 0.04,
+     "outlineColor": "#FF5C00",
+     "caps": true,
+     "maxChars": 10
+    },
+    {
+     "key": "num",
+     "label": "Number",
+     "text": "11",
+     "font": "luckiest_guy",
+     "size": 0.24,
+     "x": 0.0,
+     "y": 0.12,
+     "color": "#FF5C00",
+     "digitsOnly": true,
+     "maxChars": 2
+    }
+   ],
+   "order": 8
+  },
+  {
+   "id": "starter_neon",
+   "name": "Neon words",
+   "category": "Quotes",
+   "side": "Any",
+   "lines": [
+    {
+     "key": "words",
+     "label": "Words",
+     "text": "GOOD VIBES",
+     "font": "monoton",
+     "size": 0.12,
+     "x": 0.0,
+     "y": -0.03,
+     "color": "#FF2D78",
+     "effect": "neon",
+     "caps": true,
+     "maxChars": 14
+    },
+    {
+     "key": "sub",
+     "label": "Under it",
+     "text": "ONLY",
+     "font": "poppins_bold",
+     "size": 0.06,
+     "x": 0.0,
+     "y": 0.09,
+     "color": "auto",
+     "spacing": 0.6,
+     "caps": true,
+     "maxChars": 12,
+     "optional": true
+    }
+   ],
+   "order": 9
+  },
+  {
+   "id": "starter_barkada",
+   "name": "Barkada trip",
+   "category": "Family & Barkada",
+   "side": "Any",
+   "lines": [
+    {
+     "key": "place",
+     "label": "Place",
+     "text": "SAGADA",
+     "font": "black_ops_one",
+     "size": 0.17,
+     "x": 0.0,
+     "y": -0.04,
+     "color": "auto",
+     "spacing": 0.06,
+     "caps": true,
+     "maxChars": 12
+    },
+    {
+     "key": "trip",
+     "label": "Trip",
+     "text": "BARKADA TRIP 2026",
+     "font": "special_elite",
+     "size": 0.06,
+     "x": 0.0,
+     "y": 0.09,
+     "color": "#FFD600",
+     "spacing": 0.1,
+     "caps": true,
+     "maxChars": 24
+    }
+   ],
+   "order": 10
+  },
+  {
+   "id": "starter_staff",
+   "name": "Staff shirt",
+   "category": "Business",
+   "side": "Back",
+   "lines": [
+    {
+     "key": "role",
+     "label": "Role",
+     "text": "STAFF",
+     "font": "anton",
+     "size": 0.26,
+     "x": 0.0,
+     "y": -0.02,
+     "color": "auto",
+     "spacing": 0.1,
+     "caps": true,
+     "maxChars": 10
+    },
+    {
+     "key": "biz",
+     "label": "Business",
+     "text": "YOUR BUSINESS",
+     "font": "poppins_bold",
+     "size": 0.06,
+     "x": 0.0,
+     "y": 0.13,
+     "color": "#FF5C00",
+     "spacing": 0.25,
+     "caps": true,
+     "maxChars": 24
+    }
+   ],
+   "order": 11
+  }
+ ]
+}

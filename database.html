@@ -119,9 +119,12 @@
     { path: 'orders',   label: 'Orders',   cols: ['fullName','status','totalAmount','paymentMethod','orderedAt'] },
     { path: 'users',    label: 'Accounts', cols: ['firstName','lastName','email','role','status'], subs: ['designs','shapes'] },
     { path: 'chats',    label: 'Chats',    cols: ['customerName','orderId','lastMessageAt'], subs: ['messages'] },
-    { path: 'designPresets', label: 'Design presets', cols: ['name','isActive','models'] },
+    { path: 'designPresets', label: 'Shop designs', cols: ['name','category','isActive','order','models'] },
     { path: 'models', label: 'Models', cols: ['label','kind','wornOn','enabled','order'] },
-    { path: 'categories', label: 'Categories', cols: ['name','order','showInApp','updatedAt'] }
+    { path: 'categories', label: 'Categories', cols: ['name','order','showInApp','updatedAt'] },
+    { path: 'studioSettings', label: 'Studio settings sets', cols: ['name','isDefault','scope','category','updatedAt'] },
+    { path: 'textLayouts', label: 'Text layouts', cols: ['name','category','side','published','order'] },
+    { path: 'designFonts', label: 'Uploaded fonts', cols: ['label','category','deleted','createdAt'] }
   ];
   const SUB_COLS = { messages: ['senderRole','messageText','approvalStatus','sentAt'], designs: ['productName','size','quantity','savedAt'], shapes: ['name','createdAt'] };
   const PAGE = 50;

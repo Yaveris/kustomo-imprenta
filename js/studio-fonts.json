@@ -1,0 +1,418 @@
+{
+ "version": 1,
+ "note": "Built-in shirt fonts. Same file in the app (res/raw/studio_fonts.json, res/font/*.ttf) and the admin site (js/studio-fonts.json, fonts/*.ttf). All are SIL Open Font License or Apache 2.0 fonts from Google Fonts, free to print on products.",
+ "categories": [
+  "Bold",
+  "Varsity",
+  "Script",
+  "Retro",
+  "Comic",
+  "Handwritten",
+  "Grunge",
+  "Basic"
+ ],
+ "defaultFont": "roboto",
+ "fonts": [
+  {
+   "id": "anton",
+   "label": "Anton",
+   "category": "Bold",
+   "file": "anton",
+   "asc": 1.1763,
+   "desc": 0.3291,
+   "typo": true
+  },
+  {
+   "id": "bebas_neue",
+   "label": "Bebas Neue",
+   "category": "Bold",
+   "file": "bebas_neue",
+   "asc": 0.9,
+   "desc": 0.3,
+   "typo": false
+  },
+  {
+   "id": "oswald",
+   "label": "Oswald",
+   "category": "Bold",
+   "file": "oswald",
+   "asc": 1.193,
+   "desc": 0.289,
+   "typo": true
+  },
+  {
+   "id": "archivo_black",
+   "label": "Archivo Black",
+   "category": "Bold",
+   "file": "archivo_black",
+   "asc": 0.878,
+   "desc": 0.21,
+   "typo": false
+  },
+  {
+   "id": "russo_one",
+   "label": "Russo One",
+   "category": "Bold",
+   "file": "russo_one",
+   "asc": 0.926,
+   "desc": 0.279,
+   "typo": false
+  },
+  {
+   "id": "passion_one",
+   "label": "Passion One",
+   "category": "Bold",
+   "file": "passion_one",
+   "asc": 0.835,
+   "desc": 0.266,
+   "typo": false
+  },
+  {
+   "id": "bungee",
+   "label": "Bungee",
+   "category": "Bold",
+   "file": "bungee",
+   "asc": 1.02,
+   "desc": 0.3,
+   "typo": true
+  },
+  {
+   "id": "titan_one",
+   "label": "Titan One",
+   "category": "Bold",
+   "file": "titan_one",
+   "asc": 0.97,
+   "desc": 0.175,
+   "typo": false
+  },
+  {
+   "id": "poppins_black",
+   "label": "Poppins Black",
+   "category": "Bold",
+   "file": "poppins_black",
+   "asc": 1.05,
+   "desc": 0.35,
+   "typo": true
+  },
+  {
+   "id": "graduate",
+   "label": "Graduate",
+   "category": "Varsity",
+   "file": "graduate",
+   "asc": 0.953,
+   "desc": 0.186,
+   "typo": true
+  },
+  {
+   "id": "staatliches",
+   "label": "Staatliches",
+   "category": "Varsity",
+   "file": "staatliches",
+   "asc": 0.95,
+   "desc": 0.3,
+   "typo": true
+  },
+  {
+   "id": "squada_one",
+   "label": "Squada One",
+   "category": "Varsity",
+   "file": "squada_one",
+   "asc": 0.861,
+   "desc": 0.196,
+   "typo": false
+  },
+  {
+   "id": "holtwood_one_sc",
+   "label": "Holtwood One SC",
+   "category": "Varsity",
+   "file": "holtwood_one_sc",
+   "asc": 1.1997,
+   "desc": 0.4277,
+   "typo": true
+  },
+  {
+   "id": "alfa_slab_one",
+   "label": "Alfa Slab One",
+   "category": "Varsity",
+   "file": "alfa_slab_one",
+   "asc": 1.036,
+   "desc": 0.333,
+   "typo": true
+  },
+  {
+   "id": "roboto_slab",
+   "label": "Roboto Slab",
+   "category": "Varsity",
+   "file": "roboto_slab",
+   "asc": 1.0479,
+   "desc": 0.271,
+   "typo": true
+  },
+  {
+   "id": "pacifico",
+   "label": "Pacifico",
+   "category": "Script",
+   "file": "pacifico",
+   "asc": 1.303,
+   "desc": 0.453,
+   "typo": true
+  },
+  {
+   "id": "lobster",
+   "label": "Lobster",
+   "category": "Script",
+   "file": "lobster",
+   "asc": 1.0,
+   "desc": 0.25,
+   "typo": true
+  },
+  {
+   "id": "dancing_script",
+   "label": "Dancing Script",
+   "category": "Script",
+   "file": "dancing_script",
+   "asc": 0.92,
+   "desc": 0.28,
+   "typo": true
+  },
+  {
+   "id": "great_vibes",
+   "label": "Great Vibes",
+   "category": "Script",
+   "file": "great_vibes",
+   "asc": 0.851,
+   "desc": 0.401,
+   "typo": true
+  },
+  {
+   "id": "satisfy",
+   "label": "Satisfy",
+   "category": "Script",
+   "file": "satisfy",
+   "asc": 0.9346,
+   "desc": 0.4893,
+   "typo": false
+  },
+  {
+   "id": "kaushan_script",
+   "label": "Kaushan Script",
+   "category": "Script",
+   "file": "kaushan_script",
+   "asc": 1.084,
+   "desc": 0.367,
+   "typo": false
+  },
+  {
+   "id": "yellowtail",
+   "label": "Yellowtail",
+   "category": "Script",
+   "file": "yellowtail",
+   "asc": 0.9717,
+   "desc": 0.3013,
+   "typo": false
+  },
+  {
+   "id": "shrikhand",
+   "label": "Shrikhand",
+   "category": "Retro",
+   "file": "shrikhand",
+   "asc": 1.026,
+   "desc": 0.432,
+   "typo": true
+  },
+  {
+   "id": "righteous",
+   "label": "Righteous",
+   "category": "Retro",
+   "file": "righteous",
+   "asc": 0.9849,
+   "desc": 0.2568,
+   "typo": false
+  },
+  {
+   "id": "monoton",
+   "label": "Monoton",
+   "category": "Retro",
+   "file": "monoton",
+   "asc": 1.1553,
+   "desc": 0.4014,
+   "typo": false
+  },
+  {
+   "id": "fascinate",
+   "label": "Fascinate",
+   "category": "Retro",
+   "file": "fascinate",
+   "asc": 1.0376,
+   "desc": 0.2886,
+   "typo": false
+  },
+  {
+   "id": "bungee_shade",
+   "label": "Bungee Shade",
+   "category": "Retro",
+   "file": "bungee_shade",
+   "asc": 1.02,
+   "desc": 0.3,
+   "typo": true
+  },
+  {
+   "id": "rye",
+   "label": "Rye",
+   "category": "Retro",
+   "file": "rye",
+   "asc": 0.9863,
+   "desc": 0.2637,
+   "typo": false
+  },
+  {
+   "id": "ultra",
+   "label": "Ultra",
+   "category": "Retro",
+   "file": "ultra",
+   "asc": 1.0088,
+   "desc": 0.2739,
+   "typo": false
+  },
+  {
+   "id": "luckiest_guy",
+   "label": "Luckiest Guy",
+   "category": "Comic",
+   "file": "luckiest_guy",
+   "asc": 0.7031,
+   "desc": 0.2969,
+   "typo": false
+  },
+  {
+   "id": "bangers",
+   "label": "Bangers",
+   "category": "Comic",
+   "file": "bangers",
+   "asc": 0.883,
+   "desc": 0.181,
+   "typo": true
+  },
+  {
+   "id": "chewy",
+   "label": "Chewy",
+   "category": "Comic",
+   "file": "chewy",
+   "asc": 0.9795,
+   "desc": 0.3027,
+   "typo": false
+  },
+  {
+   "id": "permanent_marker",
+   "label": "Permanent Marker",
+   "category": "Handwritten",
+   "file": "permanent_marker",
+   "asc": 1.1094,
+   "desc": 0.3174,
+   "typo": false
+  },
+  {
+   "id": "caveat",
+   "label": "Caveat",
+   "category": "Handwritten",
+   "file": "caveat",
+   "asc": 0.96,
+   "desc": 0.3,
+   "typo": true
+  },
+  {
+   "id": "rock_salt",
+   "label": "Rock Salt",
+   "category": "Handwritten",
+   "file": "rock_salt",
+   "asc": 1.585,
+   "desc": 0.7695,
+   "typo": false
+  },
+  {
+   "id": "gloria_hallelujah",
+   "label": "Gloria Hallelujah",
+   "category": "Handwritten",
+   "file": "gloria_hallelujah",
+   "asc": 1.4053,
+   "desc": 0.5771,
+   "typo": false
+  },
+  {
+   "id": "indie_flower",
+   "label": "Indie Flower",
+   "category": "Handwritten",
+   "file": "indie_flower",
+   "asc": 0.971,
+   "desc": 0.488,
+   "typo": true
+  },
+  {
+   "id": "amatic_sc",
+   "label": "Amatic SC",
+   "category": "Handwritten",
+   "file": "amatic_sc",
+   "asc": 1.016,
+   "desc": 0.245,
+   "typo": true
+  },
+  {
+   "id": "black_ops_one",
+   "label": "Black Ops One",
+   "category": "Grunge",
+   "file": "black_ops_one",
+   "asc": 0.9136,
+   "desc": 0.3364,
+   "typo": true
+  },
+  {
+   "id": "special_elite",
+   "label": "Special Elite",
+   "category": "Grunge",
+   "file": "special_elite",
+   "asc": 0.7031,
+   "desc": 0.2969,
+   "typo": false
+  },
+  {
+   "id": "creepster",
+   "label": "Creepster",
+   "category": "Grunge",
+   "file": "creepster",
+   "asc": 0.9512,
+   "desc": 0.2178,
+   "typo": false
+  },
+  {
+   "id": "stardos_stencil",
+   "label": "Stardos Stencil",
+   "category": "Grunge",
+   "file": "stardos_stencil",
+   "asc": 0.9736,
+   "desc": 0.4058,
+   "typo": false
+  },
+  {
+   "id": "roboto",
+   "label": "Roboto",
+   "category": "Basic",
+   "file": "roboto_regular",
+   "styles": {
+    "bold": "roboto_bold",
+    "italic": "roboto_italic",
+    "boldItalic": "roboto_bold_italic"
+   },
+   "asc": 0.9277,
+   "desc": 0.2441,
+   "typo": false
+  },
+  {
+   "id": "poppins_bold",
+   "label": "Poppins Bold",
+   "category": "Basic",
+   "file": "poppins_bold",
+   "asc": 1.05,
+   "desc": 0.35,
+   "typo": true
+  }
+ ]
+}

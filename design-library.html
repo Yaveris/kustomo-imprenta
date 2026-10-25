@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design Library — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<style>
+  .lib-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px; }
+  .lib-card { border:1px solid var(--border); border-radius:12px; background:var(--card-bg); overflow:hidden; display:flex; flex-direction:column; }
+  .lib-card .thumb { aspect-ratio:1/1; background:#1d1d1d; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .lib-card .thumb canvas, .lib-card .thumb img { max-width:100%; max-height:100%; display:block; }
+  .lib-card .body { padding:9px 11px 11px; display:flex; flex-direction:column; gap:4px; flex:1; }
+  .lib-card .name { font-weight:700; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lib-card .meta { font-size:12.5px; color:var(--muted); line-height:1.4; }
+  .lib-card .acts { display:flex; gap:4px; flex-wrap:wrap; margin-top:auto; padding-top:6px; }
+  .pill { display:inline-block; font-size:11.5px; padding:1px 7px; border-radius:20px; border:1px solid var(--border); margin-right:3px; }
+  .pill.live { color:#00E676; border-color:rgba(0,230,118,.4); }
+  .pill.draft { color:var(--muted); }
+  .pill.sched { color:var(--yellow); border-color:rgba(255,214,0,.4); }
+  .lib-tools { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+  .lib-tools input, .lib-tools select { padding:8px 10px; border-radius:8px; background:var(--dark); color:var(--text); border:1px solid var(--border); font-size:14px; }
+  .imp-box { border:2px dashed var(--border); border-radius:12px; padding:22px; text-align:center; color:var(--muted); }
+  .imp-box.drop { border-color:var(--orange); color:var(--text); }
+  .imp-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:14px; text-align:left; }
+  .imp-row label { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); display:block; margin-bottom:5px; }
+  .imp-row input, .imp-row select { width:100%; box-sizing:border-box; padding:8px 9px; border-radius:8px; background:var(--dark); color:var(--text); border:1px solid var(--border); font-size:14px; }
+  .bar { height:8px; border-radius:4px; background:linear-gradient(90deg,var(--orange),#FF2D78); }
+</style>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">Design Library <span>Shop designs customers add to their shirts</span></div>
+    <div class="topbar-right">
+      <a class="btn-grad" href="design.html?mode=preset"><i class="bi bi-plus-lg"></i> New design in the Studio</a>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="filter-bar" id="tabs">
+      <button class="f-tab active" data-tab="lib"><i class="bi bi-grid-3x3-gap"></i> Designs</button>
+      <button class="f-tab" data-tab="import"><i class="bi bi-cloud-arrow-up"></i> Upload &amp; bulk import</button>
+      <button class="f-tab" data-tab="stats"><i class="bi bi-graph-up"></i> Usage</button>
+    </div>
+
+    <!-- Designs -->
+    <section id="tab-lib">
+      <div class="lib-tools">
+        <input type="search" id="q" placeholder="Search name, category, words…" style="min-width:220px;">
+        <select id="f-cat"><option value="">All categories</option></select>
+        <select id="f-state"><option value="">Any status</option><option value="live">Live</option><option value="draft">Drafts</option><option value="sched">Scheduled / ended</option></select>
+        <select id="f-model"><option value="">Any model</option></select>
+        <span id="count" style="font-size:13.5px;color:var(--muted);"></span>
+      </div>
+      <div class="lib-grid" id="grid"><div class="spinner"></div></div>
+    </section>
+
+    <!-- Upload & import -->
+    <section id="tab-import" hidden>
+      <div class="card" style="padding:18px;">
+        <p style="font-size:14px;color:var(--muted);margin:0 0 14px;line-height:1.55;">
+          Turn artwork into shop designs. Each picture becomes one design: the picture centred on the front of the model you pick,
+          ready for customers to add. SVG files are turned into high-resolution PNGs first, so they show in the app.
+          A <strong>.zip</strong> can hold many pictures; pictures in a folder get that folder's name as their category.
+        </p>
+        <div class="imp-box" id="drop">
+          <i class="bi bi-images" style="font-size:28px;"></i>
+          <div style="margin:8px 0;">Drop PNG, JPG, WEBP, SVG or ZIP files here</div>
+          <button class="btn-ghost" onclick="document.getElementById('imp-file').click()"><i class="bi bi-folder2-open"></i> Choose files</button>
+          <input type="file" id="imp-file" accept=".png,.jpg,.jpeg,.webp,.svg,.zip,image/*,application/zip" multiple hidden>
+        </div>
+        <div class="imp-row">
+          <div><label for="imp-model">Place on</label><select id="imp-model"></select></div>
+          <div><label for="imp-cat">Category (for files not in a folder)</label><input type="text" id="imp-cat" maxlength="30" placeholder="e.g. Sports" list="cats"><datalist id="cats"></datalist></div>
+          <div><label for="imp-size">Size on the print area</label><select id="imp-size"><option value="0.75">Small (chest)</option><option value="1" selected>Medium</option><option value="1.3">Large</option></select></div>
+          <div><label for="imp-pub">Status</label><select id="imp-pub"><option value="draft">Save as drafts (publish later)</option><option value="live">Publish right away</option></select></div>
+        </div>
+        <div id="imp-log" style="margin-top:14px;font-size:13.5px;line-height:1.6;"></div>
+      </div>
+    </section>
+
+    <!-- Usage -->
+    <section id="tab-stats" hidden>
+      <div class="card" style="padding:18px;">
+        <p style="font-size:14px;color:var(--muted);margin:0 0 14px;">What customers used in their orders (cancelled orders left out). An order counts once per design, layout or font.</p>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;">
+          <select id="st-range" style="padding:7px 9px;border-radius:8px;background:var(--dark);color:var(--text);border:1px solid var(--border);">
+            <option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="365">Last year</option><option value="0">All time</option>
+          </select>
+          <button class="btn-ghost" onclick="loadStats()"><i class="bi bi-arrow-clockwise"></i> Count again</button>
+          <span id="st-note" style="font-size:13px;color:var(--muted);"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;" id="stats"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/studio-common.js"></script>
+<script src="js/design-render.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  const num = (v, d) => (typeof v === 'number' && isFinite(v)) ? v : d;
+  const STAGE_H = 520;   // the Design Studio's picture height: designs made here use the same coordinates
+  let presets = [], models = [];
+
+  // ── Tabs ──
+  document.querySelectorAll('#tabs .f-tab').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#tabs .f-tab').forEach(x => x.classList.toggle('active', x === b));
+    ['lib', 'import', 'stats'].forEach(t => { $('tab-' + t).hidden = t !== b.dataset.tab; });
+    if (b.dataset.tab === 'stats' && !$('stats').dataset.done) loadStats();
+  }));
+
+  // ── The list ──
+  function stateOf(p) {
+    if (p.isActive === false) return 'draft';
+    const now = Date.now() / 1000;
+    if ((p.startAt && p.startAt.seconds > now) || (p.endAt && p.endAt.seconds <= now)) return 'sched';
+    return 'live';
+  }
+  const stateLabel = p => {
+    const s = stateOf(p);
+    if (s === 'draft') return '<span class="pill draft">Draft</span>';
+    if (s === 'sched') return `<span class="pill sched">${p.startAt && p.startAt.seconds * 1000 > Date.now() ? 'Starts ' + fmtDate(p.startAt, false) : 'Ended'}</span>`;
+    return `<span class="pill live">Live</span>${p.endAt ? `<span class="pill sched">until ${fmtDate(p.endAt, false)}</span>` : ''}`;
+  };
+  function filtered() {
+    const q = $('q').value.trim().toLowerCase(), cat = $('f-cat').value, st = $('f-state').value, md = $('f-model').value;
+    return presets.filter(p => (!cat || p.category === cat) && (!st || stateOf(p) === st)
+      && (!md || !(Array.isArray(p.models) && p.models.length) || p.models.includes(md))
+      && (!q || [p.name, p.category, p.description, ...(p.tags || [])].some(x => String(x || '').toLowerCase().includes(q))));
+  }
+  const thumbs = {};
+  function render() {
+    const list = filtered();
+    $('count').textContent = `${list.length} of ${presets.length} design${presets.length === 1 ? '' : 's'}`;
+    if (!list.length) { $('grid').innerHTML = `<div class="empty" style="grid-column:1/-1;"><i class="bi bi-stars"></i><p>${presets.length ? 'No designs match.' : 'No shop designs yet. Make one in the Design Studio, or upload artwork.'}</p></div>`; return; }
+    $('grid').innerHTML = list.map(p => {
+      const m = Array.isArray(p.models) && p.models.length ? models.find(x => x.id === p.models[0]) : null;
+      const sides = Array.isArray(p.sides) && p.sides.length ? p.sides.join(', ') : 'any side';
+      return `<div class="lib-card">
+        <div class="thumb" data-id="${p.id}"><div class="spinner" style="width:22px;height:22px;"></div></div>
+        <div class="body">
+          <div class="name" title="${esc(p.name || '')}">${esc(p.name || 'Design')}</div>
+          <div>${stateLabel(p)}${p.category ? `<span class="pill">${esc(p.category)}</span>` : ''}</div>
+          <div class="meta">${m ? esc(m.label) + ' only' : 'Every model'} · ${esc(sides)}${p.editableText === false ? ' · words locked' : ''}${p.recolorable === false ? ' · colours locked' : ''}<br>Position ${num(p.order, 100)}</div>
+          <div class="acts">
+            <a class="btn-icon" title="Edit in the Design Studio" aria-label="Edit" href="design.html?preset=${encodeURIComponent(p.id)}"><i class="bi bi-pencil"></i></a>
+            <button class="btn-icon" title="${p.isActive === false ? 'Publish' : 'Unpublish (make a draft)'}" aria-label="Toggle published" onclick="togglePub('${p.id}')"><i class="bi ${p.isActive === false ? 'bi-eye' : 'bi-eye-slash'}"></i></button>
+            <button class="btn-icon" title="Move up the list" aria-label="Move up" onclick="nudge('${p.id}',-1)"><i class="bi bi-arrow-up"></i></button>
+            <button class="btn-icon" title="Move down the list" aria-label="Move down" onclick="nudge('${p.id}',1)"><i class="bi bi-arrow-down"></i></button>
+            <button class="btn-icon" title="Duplicate" aria-label="Duplicate" onclick="duplicate('${p.id}')"><i class="bi bi-copy"></i></button>
+            <button class="btn-icon" title="Delete" aria-label="Delete" id="del-${p.id}" onclick="remove('${p.id}')"><i class="bi bi-trash3"></i></button>
+          </div>
+        </div></div>`;
+    }).join('');
+    drawThumbs();
+  }
+  async function drawThumbs() {
+    for (const box of document.querySelectorAll('.thumb[data-id]')) {
+      const p = presets.find(x => x.id === box.dataset.id); if (!p) continue;
+      if (safeUrl(p.thumbnailUrl)) { box.innerHTML = `<img src="${safeUrl(p.thumbnailUrl)}" alt="">`; continue; }
+      try {
+        const c = p.customization || {};
+        const m = models.find(x => x.id === c.shirtStyle) || (Array.isArray(p.models) && models.find(x => x.id === p.models[0])) || models[0];
+        const side = DESIGN_SIDES.find(s => c.views && c.views[s] && Studio.hasContent(Studio.normalizeView(c.views[s])) && modelSide(m, s)) || 'Front';
+        const key = p.id + '|' + (p.updatedAt ? p.updatedAt.seconds : '');
+        thumbs[key] = thumbs[key] || renderDesignCanvas(m, c, 380, side);
+        const cv = await thumbs[key];
+        box.innerHTML = ''; const img = new Image(); img.src = cv.toDataURL('image/png'); box.appendChild(img);
+      } catch (e) { box.innerHTML = '<i class="bi bi-image" style="font-size:26px;color:var(--muted);"></i>'; }
+    }
+  }
+  ['q', 'f-cat', 'f-state', 'f-model'].forEach(id => $(id).addEventListener('input', render));
+
+  async function load() {
+    const snap = await db.collection('designPresets').get();
+    presets = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (num(a.order, 100) - num(b.order, 100)) || (((b.createdAt && b.createdAt.seconds) || 0) - ((a.createdAt && a.createdAt.seconds) || 0)));
+    const cats = [...new Set(presets.map(p => p.category).filter(Boolean))].sort();
+    const keep = $('f-cat').value;
+    $('f-cat').innerHTML = '<option value="">All categories</option>' + cats.map(c => `<option>${esc(c)}</option>`).join('');
+    $('f-cat').value = cats.includes(keep) ? keep : '';
+    $('cats').innerHTML = cats.map(c => `<option value="${esc(c)}">`).join('');
+    render();
+  }
+  const stamp = () => ({ updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: (auth.currentUser && auth.currentUser.email) || '' });
+  async function togglePub(id) {
+    const p = presets.find(x => x.id === id); if (!p) return;
+    try { await db.collection('designPresets').doc(id).update(Object.assign({ isActive: p.isActive === false }, stamp())); toast(p.isActive === false ? 'Published' : 'Moved to drafts', 'ok'); await load(); }
+    catch (e) { toast('Not changed: ' + e.message, 'err'); }
+  }
+  async function nudge(id, dir) {
+    // Renumbers the visible order 10, 20, 30… with this design moved one place
+    const list = presets.slice(), i = list.findIndex(p => p.id === id), j = i + dir;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    const batch = db.batch();
+    list.forEach((p, k) => { if (num(p.order, 100) !== (k + 1) * 10) batch.update(db.collection('designPresets').doc(p.id), { order: (k + 1) * 10 }); });
+    try { await batch.commit(); await load(); } catch (e) { toast('Not moved: ' + e.message, 'err'); }
+  }
+  async function duplicate(id) {
+    const p = presets.find(x => x.id === id); if (!p) return;
+    const copy = Object.assign({}, p); delete copy.id;
+    Object.assign(copy, { name: (p.name || 'Design') + ' copy', isActive: false, createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy: auth.currentUser ? auth.currentUser.uid : '' }, stamp());
+    try { await db.collection('designPresets').add(copy); toast('Duplicated as a draft', 'ok'); await load(); }
+    catch (e) { toast('Not duplicated: ' + e.message, 'err'); }
+  }
+  async function remove(id) {
+    const btn = $('del-' + id);
+    if (btn.dataset.sure !== '1') { btn.dataset.sure = '1'; btn.style.color = '#FF4444'; btn.title = 'Click again to delete'; toast('Click the bin again to delete this design', 'warn'); setTimeout(() => { btn.dataset.sure = ''; btn.style.color = ''; }, 4000); return; }
+    try { await db.collection('designPresets').doc(id).delete(); toast('Deleted', 'ok'); await load(); }
+    catch (e) { toast('Not deleted: ' + e.message, 'err'); }
+  }
+  Object.assign(window, { togglePub, nudge, duplicate, remove, loadStats });
+
+  // ── Upload & bulk import ──
+  const drop = $('drop');
+  ['dragenter', 'dragover'].forEach(n => drop.addEventListener(n, e => { e.preventDefault(); drop.classList.add('drop'); }));
+  ['dragleave', 'drop'].forEach(n => drop.addEventListener(n, e => { e.preventDefault(); drop.classList.remove('drop'); }));
+  drop.addEventListener('drop', e => importFiles([...(e.dataTransfer.files || [])]));
+  $('imp-file').addEventListener('change', e => { importFiles([...e.target.files]); e.target.value = ''; });
+  const log = (html) => { $('imp-log').insertAdjacentHTML('beforeend', `<div>${html}</div>`); };
+  const IMG_RE = /\.(png|jpe?g|webp|svg)$/i;
+  function loadScript(src) {
+    return new Promise((res, rej) => { if (document.querySelector(`script[src="${src}"]`)) return res(); const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error("Couldn't load " + src)); document.head.appendChild(s); });
+  }
+  /** An SVG drawn into a PNG about 2000 px on its longer side (the app can't show SVG files). */
+  async function svgToPng(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await Studio.loadImage(url);
+      const w0 = img.naturalWidth || 1000, h0 = img.naturalHeight || 1000, k = 2000 / Math.max(w0, h0);
+      const cv = document.createElement('canvas'); cv.width = Math.round(w0 * k); cv.height = Math.round(h0 * k);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+      return new File([blob], file.name.replace(/\.svg$/i, '.png'), { type: 'image/png' });
+    } finally { URL.revokeObjectURL(url); }
+  }
+  /** One picture → one shop design, centred on the front print area as the Design Studio would place it. */
+  async function makeDesign(file, category) {
+    const m = models.find(x => x.id === $('imp-model').value) || models[0];
+    const art = modelSide(m, 'Front');
+    const w = STAGE_H * art.w / art.h, h = STAGE_H, zn = art.zone;
+    const z = { left: zn.left * w - w / 2, top: zn.top * h - h / 2, width: (zn.right - zn.left) * w, height: (zn.bottom - zn.top) * h };
+    if (/\.svg$/i.test(file.name) || file.type === 'image/svg+xml') file = await svgToPng(file);
+    if (file.size > 10 * 1024 * 1024) throw new Error('over 10 MB');
+    const url = await uploadDesignImage(file);
+    const v = Studio.normalizeView({});
+    v.images.push(Studio.imageFromMap({ id: Studio.newItemId(), url, offX: z.left + z.width / 2, offY: z.top + z.height * 0.42, scale: +$('imp-size').value }));
+    v.ref = { left: z.left, top: z.top, width: z.width, height: z.height, sp: 1 };
+    const name = file.name.replace(/\.[a-z0-9]+$/i, '').replace(/[_-]+/g, ' ').trim().slice(0, 40) || 'Design';
+    await db.collection('designPresets').add(Object.assign({
+      name, description: '', customization: { apparelColorHex: '#FFFFFF', shirtStyle: m.id, views: { Front: Studio.viewToMap(v) } },
+      isActive: $('imp-pub').value === 'live', models: [], category: (category || '').slice(0, 30), tags: [], sides: [],
+      editableText: true, recolorable: true, startAt: null, endAt: null, order: 100, thumbnailUrl: '',
+      createdBy: auth.currentUser ? auth.currentUser.uid : '', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, stamp()));
+    return name;
+  }
+  async function importFiles(files) {
+    if (!files.length) return;
+    $('imp-log').innerHTML = '';
+    const jobs = [];   // [file, category]
+    for (const f of files) {
+      if (/\.zip$/i.test(f.name) || f.type === 'application/zip') {
+        try {
+          await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+          const zip = await JSZip.loadAsync(f);
+          const entries = Object.values(zip.files).filter(e => !e.dir && IMG_RE.test(e.name) && !/(^|\/)(__MACOSX|\.)/.test(e.name));
+          for (const e of entries) {
+            const parts = e.name.split('/'), base = parts.pop(), folder = parts.pop() || '';
+            const type = /\.svg$/i.test(base) ? 'image/svg+xml' : /\.png$/i.test(base) ? 'image/png' : /\.webp$/i.test(base) ? 'image/webp' : 'image/jpeg';
+            jobs.push([new File([await e.async('blob')], base, { type }), folder.replace(/[_-]+/g, ' ').trim() || $('imp-cat').value.trim()]);
+          }
+          log(`<i class="bi bi-file-zip"></i> ${esc(f.name)}: ${entries.length} picture(s) found`);
+        } catch (e) { log(`<span style="color:#FF4444;">✗ ${esc(f.name)}: ${esc(e.message)}</span>`); }
+      } else if (IMG_RE.test(f.name) || /^image\//.test(f.type)) jobs.push([f, $('imp-cat').value.trim()]);
+      else log(`<span style="color:var(--muted);">Skipped ${esc(f.name)} (not a picture)</span>`);
+    }
+    let ok = 0;
+    for (const [f, cat] of jobs) {
+      try { const n = await makeDesign(f, cat); ok++; log(`<span style="color:#00E676;">✓</span> ${esc(n)}${cat ? ' · ' + esc(cat) : ''}`); }
+      catch (e) { log(`<span style="color:#FF4444;">✗ ${esc(f.name)}: ${esc(e.message)}</span>`); }
+    }
+    if (jobs.length) { toast(`${ok} of ${jobs.length} design(s) added`, ok === jobs.length ? 'ok' : 'warn'); await load(); }
+  }
+
+  // ── Usage ──
+  async function loadStats() {
+    $('stats').dataset.done = '1';
+    $('stats').innerHTML = '<div class="spinner"></div>'; $('st-note').textContent = '';
+    try {
+      const days = +$('st-range').value;
+      let q = db.collection('orders');
+      if (days) q = q.where('orderedAt', '>=', firebase.firestore.Timestamp.fromMillis(Date.now() - days * 86400000));
+      const snap = await q.get();
+      const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const u = Studio.usageOf(orders);
+      let layouts = [];
+      try { const ls = await db.collection('textLayouts').get(); layouts = ls.empty ? await Studio.starterLayouts() : ls.docs.map(d => ({ id: d.id, ...d.data() })); } catch (e) { layouts = await Studio.starterLayouts(); }
+      await Studio.loadFontList();
+      const table = (title, icon, counts, nameOf) => {
+        const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 15);
+        const max = rows.length ? rows[0][1] : 1;
+        return `<div><div style="font-weight:700;margin-bottom:10px;"><i class="bi ${icon}" style="color:var(--orange);"></i> ${title}</div>
+          ${rows.length ? rows.map(([k, n]) => `<div style="display:grid;grid-template-columns:1fr 40px;gap:8px;align-items:center;margin-bottom:7px;font-size:13.5px;">
+            <div><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(nameOf(k))}</div><div class="bar" style="width:${Math.max(4, n / max * 100)}%;"></div></div>
+            <div style="text-align:right;font-weight:700;">${n}</div></div>`).join('') : '<p style="font-size:13.5px;color:var(--muted);">Not used yet.</p>'}</div>`;
+      };
+      $('stats').innerHTML =
+        table('Shop designs', 'bi-stars', u.presets, k => (presets.find(p => p.id === k) || {}).name || 'Deleted design') +
+        table('Text layouts', 'bi-layout-text-window', u.layouts, k => (layouts.find(l => l.id === k) || {}).name || k) +
+        table('Fonts', 'bi-fonts', u.fonts, k => Studio.fontLabel(k));
+      $('st-note').textContent = `${orders.filter(o => o.status !== 'Cancelled').length} order(s) counted`;
+    } catch (e) { $('stats').innerHTML = `<p style="color:#FF4444;">Couldn't count: ${esc(e.message)}</p>`; }
+  }
+
+  window.onAuthReady = async () => {
+    try {
+      models = (await loadModels()).filter(m => m.front);
+      $('f-model').innerHTML = '<option value="">Any model</option>' + models.map(m => `<option value="${m.id}">${esc(m.label)}</option>`).join('');
+      $('imp-model').innerHTML = models.map(m => `<option value="${m.id}">${esc(m.label)}</option>`).join('');
+      await Studio.loadFontList();
+      await load();
+    } catch (e) { $('grid').innerHTML = `<p style="color:#FF4444;">Couldn't load the library: ${esc(e.message)}</p>`; }
+  };
+</script>
+</body>
+</html>
