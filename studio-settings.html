@@ -50,6 +50,13 @@
   .lines-tbl th { text-align:left; color:var(--muted); font-weight:600; font-size:11.5px; text-transform:uppercase; padding:4px; white-space:nowrap; }
   .lines-tbl td { padding:3px 4px; }
   .lines-tbl input, .lines-tbl select { width:100%; padding:5px 6px !important; font-size:13px !important; }
+  .tab-n { font-size:12px; color:var(--muted); font-weight:500; margin-left:2px; }
+  .f-tab.active .tab-n { color:inherit; }
+  .count-line { font-size:14px; margin:12px 0 2px; }
+  .count-line b { color:var(--text); }
+  .prod-row { display:flex; justify-content:space-between; gap:10px; padding:7px 10px; border-bottom:1px solid var(--border); font-size:14px; }
+  .prod-row:last-child { border-bottom:none; }
+  .prod-row a { color:var(--orange); cursor:pointer; white-space:nowrap; }
   .used-by { font-size:13.5px; line-height:1.6; color:var(--muted); }
 </style>
 
@@ -84,10 +91,10 @@
         </div>
 
         <div class="filter-bar" id="tabs" style="margin:0;">
-          <button class="f-tab active" data-tab="fonts"><i class="bi bi-fonts"></i> Fonts</button>
-          <button class="f-tab" data-tab="layouts"><i class="bi bi-layout-text-window"></i> Text layouts</button>
-          <button class="f-tab" data-tab="tools"><i class="bi bi-brush"></i> Drawing &amp; photo tools</button>
-          <button class="f-tab" data-tab="inks"><i class="bi bi-droplet"></i> Ink colours</button>
+          <button class="f-tab active" data-tab="fonts"><i class="bi bi-fonts"></i> Fonts <span class="tab-n" id="n-fonts"></span></button>
+          <button class="f-tab" data-tab="layouts"><i class="bi bi-layout-text-window"></i> Text layouts <span class="tab-n" id="n-layouts"></span></button>
+          <button class="f-tab" data-tab="tools"><i class="bi bi-brush"></i> Drawing &amp; photo tools <span class="tab-n" id="n-tools"></span></button>
+          <button class="f-tab" data-tab="inks"><i class="bi bi-droplet"></i> Ink colours <span class="tab-n" id="n-inks"></span></button>
           <button class="f-tab" data-tab="limits"><i class="bi bi-exclamation-triangle"></i> Print check</button>
         </div>
 
@@ -101,6 +108,7 @@
           </div>
           <p style="font-size:13px;color:var(--muted);margin:10px 0 0;line-height:1.5;">Tick the fonts customers may use with this set. <i class="bi bi-star-fill" style="color:#FFD600;"></i> marks a recommended font (listed first, and new text starts in the first one). Uploaded fonts are shared by every set; only upload fonts you're allowed to print on products.</p>
           <div id="f-status" style="font-size:13.5px;color:var(--muted);margin-top:8px;"></div>
+          <div class="count-line" id="f-count"></div>
           <div id="fonts"></div>
         </section>
 
@@ -111,6 +119,7 @@
             <span id="lay-note" style="font-size:13px;color:var(--muted);"></span>
           </div>
           <p style="font-size:13px;color:var(--muted);margin:10px 0 12px;line-height:1.5;">Layouts are shared by every set; untick one to hide it for products using this set. Sizes and positions are shares of the print area, so a layout fits any shirt side.</p>
+          <div class="count-line" id="l-count"></div>
           <div class="lay-grid" id="layouts"></div>
           <div id="lay-editor" style="margin-top:16px;" hidden></div>
         </section>
@@ -140,6 +149,16 @@
             <div><label class="h" for="l-op">Faintest opacity (%)</label><input type="number" id="l-op" min="0" max="100" step="5" style="width:100%;"></div>
           </div>
         </section>
+        <div class="card ss-sec" style="padding:16px 18px;">
+          <div style="font-weight:700;font-size:15px;">Every product and the set it uses <span class="tab-n" id="n-products"></span></div>
+          <p style="font-size:13px;color:var(--muted);margin:4px 0 10px;">Click a set name to open it.</p>
+          <div id="prod-table"></div>
+        </div>
+        <div class="card" style="padding:14px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <i class="bi bi-stars" style="font-size:22px;color:var(--orange);"></i>
+          <div style="flex:1;min-width:220px;font-size:14px;"><strong id="d-count">Ready-made designs</strong><div style="color:var(--muted);font-size:13px;">They are kept in the Design Library, where you can see all of them and add the starter designs.</div></div>
+          <a class="btn-ghost" href="design-library.html"><i class="bi bi-collection"></i> Open the Design Library</a>
+        </div>
       </div>
     </div>
   </div>
@@ -160,7 +179,7 @@
   const $ = id => document.getElementById(id);
   let sets = [], cur = null, dirty = false, products = [], categories = [], layouts = [], layoutsFromDb = false;
 
-  const touch = () => { dirty = true; $('dirty').hidden = false; };
+  const touch = () => { dirty = true; $('dirty').hidden = false; if (cur) setTimeout(renderCounts, 0); };
   document.querySelectorAll('#tabs .f-tab').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('#tabs .f-tab').forEach(x => x.classList.toggle('active', x === b));
     ['fonts', 'layouts', 'tools', 'inks', 'limits'].forEach(t => { $('tab-' + t).hidden = t !== b.dataset.tab; });
@@ -197,9 +216,30 @@
     $('s-name').value = cur.name;
     $('del').hidden = cur.isDefault || !cur.id;
     renderScope(); renderFonts(); renderTools(); renderInks(); renderLimits();
-    if (!$('tab-layouts').hidden) renderLayouts();
+    renderLayouts(); renderCounts(); renderProducts();
     renderSetList(); renderUsedBy();
     document.querySelectorAll('#sets .set-item').forEach((b, i) => b.classList.toggle('on', sets[i] === s));
+  }
+  /** The numbers on the tabs, so it's clear how many of each there are and how many this set offers. */
+  function renderCounts() {
+    const all = Studio.allFonts(), onF = all.filter(f => !cur.fontsOff.includes(f.id)).length;
+    $('n-fonts').textContent = `· ${onF} of ${all.length}`;
+    $('f-count').innerHTML = `<b>${all.length} fonts</b> in ${new Set(all.map(f => f.category)).size} groups · <b>${onF}</b> offered with this set${cur.recommendedFonts.length ? ` · ${cur.recommendedFonts.length} recommended` : ''}`;
+    const onL = layouts.filter(l => !cur.layoutsOff.includes(l.id)).length;
+    $('n-layouts').textContent = `· ${onL} of ${layouts.length}`;
+    $('l-count').innerHTML = `<b>${layouts.length} text layouts</b> · <b>${onL}</b> offered with this set`;
+    const onT = Studio.TOOLS.filter(t => cur.tools[t.id] !== false).length;
+    $('n-tools').textContent = `· ${onT} of ${Studio.TOOLS.length}`;
+    $('n-inks').textContent = `· ${cur.inks.length}${cur.anyColor ? ' + any' : ''}`;
+  }
+  function renderProducts() {
+    const preview = sets.map(x => x === cur._ref ? cur : x);
+    $('n-products').textContent = `· ${products.length}`;
+    $('prod-table').innerHTML = products.length ? products.map(p => {
+      const set = Studio.settingsFor(p, preview, catName), i = preview.indexOf(set);
+      return `<div class="prod-row"><span>${esc(p.name || p.id)} <span style="color:var(--muted);font-size:12.5px;">${esc(catName(p.category || ''))}</span></span>
+        ${i >= 0 ? `<a onclick="pick(${i})">${esc(set.name)}</a>` : `<span style="color:var(--muted);">${esc(set.name)}</span>`}</div>`;
+    }).join('') : '<p style="color:var(--muted);font-size:13.5px;">No products yet.</p>';
   }
   function renderScope() {
     if (cur.isDefault) { $('scope-box').innerHTML = '<p style="font-size:13.5px;color:var(--muted);margin:12px 0 0;">This is the <strong>Standard</strong> set: every product that has no set of its own, and isn\'t in a category with a set, uses it.</p>'; return; }
@@ -213,6 +253,7 @@
   function setScope(v) { if (cur.scope === v) return; cur.scope = v; touch(); renderScope(); renderUsedBy(); }
   function toggleProduct(id, on) { cur.products = on ? [...new Set(cur.products.concat(id))] : cur.products.filter(x => x !== id); touch(); renderUsedBy(); }
   function renderUsedBy() {
+    if (typeof renderProducts === 'function' && cur) renderProducts();
     // What the app would pick if this set were saved as it is now
     const preview = sets.map(s => s === cur._ref ? cur : s);
     const used = products.filter(p => Studio.settingsFor(p, preview, catName) === cur);
@@ -276,7 +317,8 @@
     const all = Studio.allFonts(), cats = Studio.fontCategories(), sample = $('f-sample').value || 'Aa';
     $('fonts').innerHTML = cats.map(c => {
       const list = all.filter(f => f.category === c); if (!list.length) return '';
-      return `<label class="h">${esc(c)}</label><div class="font-grid">${list.map(f => {
+      const onC = list.filter(f => !cur.fontsOff.includes(f.id)).length;
+      return `<label class="h">${esc(c)} <span style="text-transform:none;letter-spacing:0;font-weight:500;">· ${list.length} font${list.length === 1 ? '' : 's'}${onC !== list.length ? `, ${onC} on` : ''}</span></label><div class="font-grid">${list.map(f => {
         const on = !cur.fontsOff.includes(f.id), rec = cur.recommendedFonts.includes(f.id), ff = Studio.fontFile(f.id, false, false);
         return `<div class="font-card ${on ? '' : 'off'}">
           <input type="checkbox" ${on ? 'checked' : ''} onchange="toggleFont('${f.id}',this.checked)" aria-label="${esc(f.label)}">
@@ -287,6 +329,7 @@
     }).join('');
     // Load the faces so the samples show in their own font
     Studio.ensureFonts(all.map(f => ({ font: f.id, bold: false, italic: false })));
+    renderCounts();
   }
   $('f-sample').addEventListener('input', () => document.querySelectorAll('.font-card .sample').forEach(e => { e.textContent = $('f-sample').value || 'Aa'; }));
   function toggleFont(id, on) { cur.fontsOff = on ? cur.fontsOff.filter(x => x !== id) : [...new Set(cur.fontsOff.concat(id))]; touch(); renderFonts(); }
@@ -470,6 +513,7 @@
       products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       categories = categoryChoices(products);
       await loadLayouts();
+      try { const ds = await db.collection('designPresets').get(); $('d-count').textContent = `${ds.size} ready-made design${ds.size === 1 ? '' : 's'} in your shop`; } catch (e) {}
       await loadSets(new URLSearchParams(location.search).get('set') || '');
     } catch (e) { toast("Couldn't load the studio settings: " + e.message, 'err'); }
   };

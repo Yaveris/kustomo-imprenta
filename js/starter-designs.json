@@ -1,0 +1,852 @@
+{
+ "version": 1,
+ "note": "Starter shop designs. The admin site's Design Library adds them to designPresets with one click (Add the starter designs). Positions are in the Design Studio's coordinates (ref.sp = 1).",
+ "designs": [
+  {
+   "id": "starter_barkada",
+   "name": "Sunset Barkada",
+   "category": "Barkada & Family",
+   "description": "Arched name with a sunset sun",
+   "tags": "barkada,friends,group,sunset",
+   "sides": [],
+   "editableText": true,
+   "recolorable": true,
+   "customization": {
+    "apparelColorHex": "#212121",
+    "shirtStyle": "MaleClassicShirt",
+    "views": {
+     "Front": {
+      "texts": [
+       {
+        "id": "s001",
+        "text": "BARKADA",
+        "font": "bungee",
+        "size": 46.0,
+        "colorHex": "#FFD600",
+        "offX": -0.05,
+        "offY": -73.16,
+        "curve": 40,
+        "outlineWidth": 0.05,
+        "outlineColorHex": "#0A0A0A"
+       },
+       {
+        "id": "s002",
+        "text": "SINCE 2016",
+        "font": "oswald",
+        "size": 17.2,
+        "colorHex": "#FFFFFF",
+        "offX": -0.05,
+        "offY": 21.5,
+        "letterSpacing": 0.25
+       }
+      ],
+      "images": [],
+      "shapes": [
+       {
+        "id": "s003",
+        "name": "Circle",
+        "path": "F0.0500:0.5000,0.0400 0.5451,0.0422 0.5897,0.0488 0.6335,0.0598 0.6760,0.0750 0.7168,0.0943 0.7556,0.1175 0.7918,0.1444 0.8253,0.1747 0.8556,0.2082 0.8825,0.2444 0.9057,0.2832 0.9250,0.3240 0.9402,0.3665 0.9512,0.4103 0.9578,0.4549 0.9600,0.5000 0.9578,0.5451 0.9512,0.5897 0.9402,0.6335 0.9250,0.6760 0.9057,0.7168 0.8825,0.7556 0.8556,0.7918 0.8253,0.8253 0.7918,0.8556 0.7556,0.8825 0.7168,0.9057 0.6760,0.9250 0.6335,0.9402 0.5897,0.9512 0.5451,0.9578 0.5000,0.9600 0.4549,0.9578 0.4103,0.9512 0.3665,0.9402 0.3240,0.9250 0.2832,0.9057 0.2444,0.8825 0.2082,0.8556 0.1747,0.8253 0.1444,0.7918 0.1175,0.7556 0.0943,0.7168 0.0750,0.6760 0.0598,0.6335 0.0488,0.5897 0.0422,0.5451 0.0400,0.5000 0.0422,0.4549 0.0488,0.4103 0.0598,0.3665 0.0750,0.3240 0.0943,0.2832 0.1175,0.2444 0.1444,0.2082 0.1747,0.1747 0.2082,0.1444 0.2444,0.1175 0.2832,0.0943 0.3240,0.0750 0.3665,0.0598 0.4103,0.0488 0.4549,0.0422",
+        "colorHex": "#FF2D78",
+        "offX": -0.05,
+        "offY": -47.34,
+        "scale": 1.15,
+        "rotation": 0,
+        "outline": false,
+        "repeat": 1,
+        "kind": "shape",
+        "opacity": 0.9
+       }
+      ],
+      "customText": "",
+      "imageUrl": "",
+      "layerOrder": [
+       "shape:s003",
+       "text:s001",
+       "text:s002"
+      ],
+      "locked": [],
+      "area": {
+       "left": 0,
+       "top": 0,
+       "right": 1,
+       "bottom": 1
+      },
+      "ref": {
+       "left": -143.71513684210527,
+       "top": -219.44,
+       "width": 287.3232631578947,
+       "height": 430.248,
+       "sp": 1
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "starter_ballers",
+   "name": "Team Ballers",
+   "category": "Sports",
+   "description": "Varsity team name and big number",
+   "tags": "basketball,team,jersey,varsity,number",
+   "sides": [],
+   "editableText": true,
+   "recolorable": true,
+   "customization": {
+    "apparelColorHex": "#1565C0",
+    "shirtStyle": "MaleClassicShirt",
+    "views": {
+     "Front": {
+      "texts": [
+       {
+        "id": "s004",
+        "text": "BALLERS",
+        "font": "graduate",
+        "size": 43.1,
+        "colorHex": "#FFFFFF",
+        "offX": -0.05,
+        "offY": -90.37,
+        "curve": 30,
+        "outlineWidth": 0.05,
+        "outlineColorHex": "#0A0A0A"
+       },
+       {
+        "id": "s005",
+        "text": "23",
+        "font": "graduate",
+        "size": 120.7,
+        "colorHex": "#FFD600",
+        "offX": -0.05,
+        "offY": 17.2,
+        "outlineWidth": 0.04,
+        "outlineColorHex": "#0A0A0A"
+       }
+      ],
+      "images": [],
+      "shapes": [],
+      "customText": "",
+      "imageUrl": "",
+      "layerOrder": [
+       "text:s004",
+       "text:s005"
+      ],
+      "locked": [],
+      "area": {
+       "left": 0,
+       "top": 0,
+       "right": 1,
+       "bottom": 1
+      },
+      "ref": {
+       "left": -143.71513684210527,
+       "top": -219.44,
+       "width": 287.3232631578947,
+       "height": 430.248,
+       "sp": 1
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "starter_jersey_back",
+   "name": "Jersey Back Name",
+   "category": "Sports",
+   "description": "Surname and number for the back",
+   "tags": "jersey,back,name,number,surname",
+   "sides": [
+    "Back"
+   ],
+   "editableText": true,
+   "recolorable": true,
+   "customization": {
+    "apparelColorHex": "#1565C0",
+    "shirtStyle": "MaleClassicShirt",
+    "views": {
+     "Back": {
+      "texts": [
+       {
+        "id": "s006",
+        "text": "DELA CRUZ",
+        "font": "graduate",
+        "size": 36.4,
+        "colorHex": "#FFFFFF",
+        "offX": 0.05,
+        "offY": -122.05,
+        "curve": 25
+       },
+       {
+        "id": "s007",
+        "text": "07",
+        "font": "graduate",
+        "size": 140.2,
+        "colorHex": "#FFFFFF",
+        "offX": 0.05,
+        "offY": -3.3,
+        "outlineWidth": 0.03,
+        "outlineColorHex": "#0A0A0A"
+       }
+      ],
+      "images": [],
+      "shapes": [],
+      "customText": "",
+      "imageUrl": "",
+      "layerOrder": [
+       "text:s006",
+       "text:s007"
+      ],
+      "locked": [],
+      "area": {
+       "left": 0,
+       "top": 0,
+       "right": 1,
+       "bottom": 1
+      },
+      "ref": {
+       "left": -140.13028421052633,
+       "top": -231.66,
+       "width": 280.36757894736843,
+       "height": 456.716,
+       "sp": 1
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "starter_reunion",
+   "name": "Family Reunion 2026",
+   "category": "Barkada & Family",
+   "description": "Family name in script with the year",
+   "tags": "family,reunion,clan,2026",
+   "sides": [],
+   "editableText": true,
+   "recolorable": true,
+   "customization": {
+    "apparelColorHex": "#FFFFFF",
+    "shirtStyle": "MaleClassicShirt",
+    "views": {
+     "Front": {
+      "texts": [
+       {
+        "id": "s008",
+        "text": "Dela Cruz",
+        "font": "pacifico",
+        "size": 48.8,
+        "colorHex": "#8D1B1B",
+        "offX": -0.05,
+        "offY": -55.95
+       },
+       {
+        "id": "s009",
+        "text": "FAMILY REUNION",
+        "font": "anton",
+        "size": 28.7,
+        "colorHex": "#0A0A0A",
+        "offX": -0.05,
+        "offY": 4.29,
+        "letterSpacing": 0.08
+       },
+       {
+        "id": "s010",
+        "text": "2026",
+        "font": "anton",
+        "size": 40.2,
+        "colorHex": "#FF5C00",
+        "offX": -0.05,
+        "offY": 55.92
+       }
+      ],
+      "images": [],
+      "shapes": [],
+      "customText": "",
+      "imageUrl": "",
+      "layerOrder": [
+       "text:s008",
+       "text:s009",
+       "text:s010"
+      ],
+      "locked": [],
+      "area": {
+       "left": 0,
+       "top": 0,
+       "right": 1,
+       "bottom": 1
+      },
+      "ref": {
+       "left": -143.71513684210527,
+       "top": -219.44,
+       "width": 287.3232631578947,
+       "height": 430.248,
+       "sp": 1
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "starter_pasko",
+   "name": "Pasko Star",
+   "category": "Holidays",
+   "description": "Christmas parol star and greeting",
+   "tags": "christmas,pasko,parol,holiday,star",
+   "sides": [],
+   "editableText": true,
+   "recolorable": true,
+   "customization": {
+    "apparelColorHex": "#2E7D32",
+    "shirtStyle": "MaleClassicShirt",
+    "views": {
+     "Front": {
+      "texts": [
+       {
+        "id": "s011",
+        "text": "Maligayang Pasko",
+        "font": "pacifico",
+        "size": 27.3,
+        "colorHex": "#FFFFFF",
+        "offX": -0.05,
+        "offY": 73.13,
+        "shadow": 0.5
+       }
+      ],
+      "images": [],
+      "shapes": [
+       {
+        "id": "s012",
+        "name": "Star",
+        "path": "F0.0500:0.5000,0.0200 0.6176,0.3382 0.9565,0.3517 0.6902,0.5618 0.7821,0.8883 0.5000,0.7000 0.2179,0.8883 0.3098,0.5618 0.0435,0.3517 0.3824,0.3382",
+        "colorHex": "#FFD600",
+        "offX": -0.05,
+        "offY": -38.74,
+        "scale": 0.85,
+        "rotation": 0,
+        "outline": false,
+        "repeat": 1,
+        "kind": "shape"
+       }
+      ],
+      "customText": "",
+      "imageUrl": "",
+      "layerOrder": [
+       "shape:s012",
+       "text:s011"
+      ],
+      "locked": [],
+      "area": {
+       "left": 0,
+       "top": 0,
+       "right": 1,
+       "bottom": 1
+      },
+      "ref": {
+       "left": -143.71513684210527,
+       "top": -219.44,
+       "width": 287.3232631578947,
+       "height": 430.248,
+       "sp": 1
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "starter_trip",
+   "name": "Trip Badge",
+   "category": "Travel",
+   "description": "Round badge with the place and year",
+   "tags": "travel,trip,outing,badge,summer",
+   "sides": [],
+   "editableText": true,
+   "recolorable": true,
+   "customization": {
+    "apparelColorHex": "#00838F",
+    "shirtStyle": "MaleClassicShirt",
+    "views": {
+     "Front": {
+      "texts": [
+       {
+        "id": "s013",
+        "text": "SAGADA",
+        "font": "bebas_neue",
+        "size": 37.4,
+        "colorHex": "#FFFFFF",
+        "offX": -0.05,
+        "offY": -17.22,
+        "letterSpacing": 0.1
+       },
+       {
+        "id": "s014",
+        "text": "SUMMER 2026",
+        "font": "oswald",
+        "size": 12.9,
+        "colorHex": "#FFD600",
+        "offX": -0.05,
+        "offY": 25.8,
+        "letterSpacing": 0.2
+       }
+      ],
+      "images": [],
+      "shapes": [
+       {
+        "id": "s015",
+        "name": "Ring",
+        "path": "L0.0600:0.5000,0.0800 0.5412,0.0820 0.5819,0.0881 0.6219,0.0981 0.6607,0.1120 0.6980,0.1296 0.7333,0.1508 0.7664,0.1753 0.7970,0.2030 0.8247,0.2336 0.8492,0.2667 0.8704,0.3020 0.8880,0.3393 0.9019,0.3781 0.9119,0.4181 0.9180,0.4588 0.9200,0.5000 0.9180,0.5412 0.9119,0.5819 0.9019,0.6219 0.8880,0.6607 0.8704,0.6980 0.8492,0.7333 0.8247,0.7664 0.7970,0.7970 0.7664,0.8247 0.7333,0.8492 0.6980,0.8704 0.6607,0.8880 0.6219,0.9019 0.5819,0.9119 0.5412,0.9180 0.5000,0.9200 0.4588,0.9180 0.4181,0.9119 0.3781,0.9019 0.3393,0.8880 0.3020,0.8704 0.2667,0.8492 0.2336,0.8247 0.2030,0.7970 0.1753,0.7664 0.1508,0.7333 0.1296,0.6980 0.1120,0.6607 0.0981,0.6219 0.0881,0.5819 0.0820,0.5412 0.0800,0.5000 0.0820,0.4588 0.0881,0.4181 0.0981,0.3781 0.1120,0.3393 0.1296,0.3020 0.1508,0.2667 0.1753,0.2336 0.2030,0.2030 0.2336,0.1753 0.2667,0.1508 0.3020,0.1296 0.3393,0.1120 0.3781,0.0981 0.4181,0.0881 0.4588,0.0820 0.5000,0.0800",
+        "colorHex": "#FFFFFF",
+        "offX": -0.05,
+        "offY": -0.01,
+        "scale": 2.0,
+        "rotation": 0,
+        "outline": false,
+        "repeat": 1,
+        "kind": "shape"
+       }
+      ],
+      "customText": "",
+      "imageUrl": "",
+      "layerOrder": [
+       "shape:s015",
+       "text:s013",
+       "text:s014"
+      ],
+      "locked": [],
+      "area": {
+       "left": 0,
+       "top": 0,
+       "right": 1,
+       "bottom": 1
+      },
+      "ref": {
+       "left": -143.71513684210527,
+       "top": -219.44,
+       "width": 287.3232631578947,
+       "height": 430.248,
+       "sp": 1
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "starter_class",
+   "name": "Class of 2026",
+   "category": "School",
+   "description": "Graduation batch shirt",
+   "tags": "school,graduation,batch,class,2026",
+   "sides": [],
+   "editableText": true,
+   "recolorable": true,
+   "customization": {
+    "apparelColorHex": "#1A3A6B",
+    "shirtStyle": "MaleClassicShirt",
+    "views": {
+     "Front": {
+      "texts": [
+       {
+        "id": "s016",
+        "text": "CLASS OF",
+        "font": "anton",
+        "size": 34.5,
+        "colorHex": "#FFFFFF",
+        "offX": -0.05,
+        "offY": -64.55,
+        "letterSpacing": 0.1
+       },
+       {
+        "id": "s017",
+        "text": "2026",
+        "font": "anton",
+        "size": 97.7,
+        "colorHex": "#FFD600",
+        "offX": -0.05,
+        "offY": 8.59,
+        "outlineWidth": 0.03,
+        "outlineColorHex": "#FFFFFF"
+       },
+       {
+        "id": "s018",
+        "text": "Batch Name",
+        "font": "kaushan_script",
+        "size": 25.9,
+        "colorHex": "#FFFFFF",
+        "offX": -0.05,
+        "offY": 81.73
+       }
+      ],
+      "images": [],
+      "shapes": [],
+      "customText": "",
+      "imageUrl": "",
+      "layerOrder": [
+       "text:s016",
+       "text:s017",
+       "text:s018"
+      ],
+      "locked": [],
+      "area": {
+       "left": 0,
+       "top": 0,
+       "right": 1,
+       "bottom": 1
+      },
+      "ref": {
+       "left": -143.71513684210527,
+       "top": -219.44,
+       "width": 287.3232631578947,
+       "height": 430.248,
+       "sp": 1
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "starter_birthday",
+   "name": "Birthday Squad",
+   "category": "Birthday",
+   "description": "Party shirt with a heart",
+   "tags": "birthday,party,squad,celebration",
+   "sides": [],
+   "editableText": true,
+   "recolorable": true,
+   "customization": {
+    "apparelColorHex": "#FF2D78",
+    "shirtStyle": "MaleClassicShirt",
+    "views": {
+     "Front": {
+      "texts": [
+       {
+        "id": "s019",
+        "text": "BIRTHDAY",
+        "font": "luckiest_guy",
+        "size": 43.1,
+        "colorHex": "#FFFFFF",
+        "offX": -0.05,
+        "offY": -47.34,
+        "shadow": 0.5
+       },
+       {
+        "id": "s020",
+        "text": "SQUAD",
+        "font": "luckiest_guy",
+        "size": 57.5,
+        "colorHex": "#FFD600",
+        "offX": -0.05,
+        "offY": 21.5,
+        "shadow": 0.5
+       }
+      ],
+      "images": [],
+      "shapes": [
+       {
+        "id": "s021",
+        "name": "Heart",
+        "path": "F0.0500:0.5000,0.3311 0.5005,0.3249 0.5040,0.3072 0.5131,0.2802 0.5299,0.2473 0.5556,0.2128 0.5903,0.1811 0.6332,0.1563 0.6824,0.1417 0.7353,0.1395 0.7887,0.1506 0.8389,0.1744 0.8823,0.2097 0.9159,0.2540 0.9372,0.3046 0.9444,0.3589 0.9372,0.4144 0.9159,0.4694 0.8823,0.5228 0.8389,0.5739 0.7887,0.6228 0.7353,0.6697 0.6824,0.7149 0.6332,0.7584 0.5903,0.7998 0.5556,0.8383 0.5299,0.8728 0.5131,0.9017 0.5040,0.9237 0.5005,0.9375 0.5000,0.9422 0.4995,0.9375 0.4960,0.9237 0.4869,0.9017 0.4701,0.8728 0.4444,0.8383 0.4097,0.7998 0.3668,0.7584 0.3176,0.7149 0.2647,0.6697 0.2113,0.6228 0.1611,0.5739 0.1177,0.5228 0.0841,0.4694 0.0628,0.4144 0.0556,0.3589 0.0628,0.3046 0.0841,0.2540 0.1177,0.2097 0.1611,0.1744 0.2113,0.1506 0.2647,0.1395 0.3176,0.1417 0.3668,0.1563 0.4097,0.1811 0.4444,0.2128 0.4701,0.2473 0.4869,0.2802 0.4960,0.3072 0.4995,0.3249",
+        "colorHex": "#FFFFFF",
+        "offX": 86.14,
+        "offY": -111.88,
+        "scale": 0.35,
+        "rotation": 0,
+        "outline": false,
+        "repeat": 1,
+        "kind": "shape"
+       }
+      ],
+      "customText": "",
+      "imageUrl": "",
+      "layerOrder": [
+       "shape:s021",
+       "text:s019",
+       "text:s020"
+      ],
+      "locked": [],
+      "area": {
+       "left": 0,
+       "top": 0,
+       "right": 1,
+       "bottom": 1
+      },
+      "ref": {
+       "left": -143.71513684210527,
+       "top": -219.44,
+       "width": 287.3232631578947,
+       "height": 430.248,
+       "sp": 1
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "starter_kain",
+   "name": "Kain Muna",
+   "category": "Fun & Quotes",
+   "description": "Funny food quote",
+   "tags": "food,funny,quote,kain",
+   "sides": [],
+   "editableText": true,
+   "recolorable": true,
+   "customization": {
+    "apparelColorHex": "#FFD600",
+    "shirtStyle": "MaleClassicShirt",
+    "views": {
+     "Front": {
+      "texts": [
+       {
+        "id": "s022",
+        "text": "KAIN MUNA",
+        "font": "titan_one",
+        "size": 37.4,
+        "colorHex": "#8D1B1B",
+        "offX": -0.05,
+        "offY": -30.13
+       },
+       {
+        "id": "s023",
+        "text": "bago lahat",
+        "font": "permanent_marker",
+        "size": 28.7,
+        "colorHex": "#0A0A0A",
+        "offX": -0.05,
+        "offY": 25.8
+       }
+      ],
+      "images": [],
+      "shapes": [],
+      "customText": "",
+      "imageUrl": "",
+      "layerOrder": [
+       "text:s022",
+       "text:s023"
+      ],
+      "locked": [],
+      "area": {
+       "left": 0,
+       "top": 0,
+       "right": 1,
+       "bottom": 1
+      },
+      "ref": {
+       "left": -143.71513684210527,
+       "top": -219.44,
+       "width": 287.3232631578947,
+       "height": 430.248,
+       "sp": 1
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "starter_vibes",
+   "name": "Good Vibes Neon",
+   "category": "Fun & Quotes",
+   "description": "Glowing neon words",
+   "tags": "neon,good vibes,quote,glow",
+   "sides": [],
+   "editableText": true,
+   "recolorable": true,
+   "customization": {
+    "apparelColorHex": "#0A0A0A",
+    "shirtStyle": "MaleClassicShirt",
+    "views": {
+     "Front": {
+      "texts": [
+       {
+        "id": "s024",
+        "text": "Good",
+        "font": "pacifico",
+        "size": 43.1,
+        "colorHex": "#FF2D78",
+        "offX": -0.05,
+        "offY": -38.74,
+        "effect": "neon"
+       },
+       {
+        "id": "s025",
+        "text": "VIBES",
+        "font": "monoton",
+        "size": 46.0,
+        "colorHex": "#00BCD4",
+        "offX": -0.05,
+        "offY": 21.5,
+        "effect": "neon"
+       }
+      ],
+      "images": [],
+      "shapes": [],
+      "customText": "",
+      "imageUrl": "",
+      "layerOrder": [
+       "text:s024",
+       "text:s025"
+      ],
+      "locked": [],
+      "area": {
+       "left": 0,
+       "top": 0,
+       "right": 1,
+       "bottom": 1
+      },
+      "ref": {
+       "left": -143.71513684210527,
+       "top": -219.44,
+       "width": 287.3232631578947,
+       "height": 430.248,
+       "sp": 1
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "starter_business",
+   "name": "Business Logo Spot",
+   "category": "Business",
+   "description": "Small left-chest name for uniforms",
+   "tags": "business,uniform,company,logo,chest",
+   "sides": [],
+   "editableText": true,
+   "recolorable": true,
+   "customization": {
+    "apparelColorHex": "#FFFFFF",
+    "shirtStyle": "MaleClassicShirt",
+    "views": {
+     "Front": {
+      "texts": [
+       {
+        "id": "s026",
+        "text": "YOUR SHOP",
+        "font": "archivo_black",
+        "size": 17.2,
+        "colorHex": "#0A0A0A",
+        "offX": 68.9,
+        "offY": -146.3
+       },
+       {
+        "id": "s027",
+        "text": "Since 2026",
+        "font": "oswald",
+        "size": 10.1,
+        "colorHex": "#FF5C00",
+        "offX": 68.9,
+        "offY": -129.09
+       }
+      ],
+      "images": [],
+      "shapes": [
+       {
+        "id": "s028",
+        "name": "Circle",
+        "path": "F0.0500:0.5000,0.0400 0.5451,0.0422 0.5897,0.0488 0.6335,0.0598 0.6760,0.0750 0.7168,0.0943 0.7556,0.1175 0.7918,0.1444 0.8253,0.1747 0.8556,0.2082 0.8825,0.2444 0.9057,0.2832 0.9250,0.3240 0.9402,0.3665 0.9512,0.4103 0.9578,0.4549 0.9600,0.5000 0.9578,0.5451 0.9512,0.5897 0.9402,0.6335 0.9250,0.6760 0.9057,0.7168 0.8825,0.7556 0.8556,0.7918 0.8253,0.8253 0.7918,0.8556 0.7556,0.8825 0.7168,0.9057 0.6760,0.9250 0.6335,0.9402 0.5897,0.9512 0.5451,0.9578 0.5000,0.9600 0.4549,0.9578 0.4103,0.9512 0.3665,0.9402 0.3240,0.9250 0.2832,0.9057 0.2444,0.8825 0.2082,0.8556 0.1747,0.8253 0.1444,0.7918 0.1175,0.7556 0.0943,0.7168 0.0750,0.6760 0.0598,0.6335 0.0488,0.5897 0.0422,0.5451 0.0400,0.5000 0.0422,0.4549 0.0488,0.4103 0.0598,0.3665 0.0750,0.3240 0.0943,0.2832 0.1175,0.2444 0.1444,0.2082 0.1747,0.1747 0.2082,0.1444 0.2444,0.1175 0.2832,0.0943 0.3240,0.0750 0.3665,0.0598 0.4103,0.0488 0.4549,0.0422",
+        "colorHex": "#FF5C00",
+        "offX": 68.9,
+        "offY": -176.42,
+        "scale": 0.18,
+        "rotation": 0,
+        "outline": false,
+        "repeat": 1,
+        "kind": "shape"
+       }
+      ],
+      "customText": "",
+      "imageUrl": "",
+      "layerOrder": [
+       "shape:s028",
+       "text:s026",
+       "text:s027"
+      ],
+      "locked": [],
+      "area": {
+       "left": 0,
+       "top": 0,
+       "right": 1,
+       "bottom": 1
+      },
+      "ref": {
+       "left": -143.71513684210527,
+       "top": -219.44,
+       "width": 287.3232631578947,
+       "height": 430.248,
+       "sp": 1
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "starter_vintage",
+   "name": "Vintage Varsity",
+   "category": "Retro",
+   "description": "Worn-look retro college letters",
+   "tags": "retro,vintage,college,varsity",
+   "sides": [],
+   "editableText": true,
+   "recolorable": true,
+   "customization": {
+    "apparelColorHex": "#9E9E9E",
+    "shirtStyle": "MaleClassicShirt",
+    "views": {
+     "Front": {
+      "texts": [
+       {
+        "id": "s029",
+        "text": "KUSTOMO",
+        "font": "alfa_slab_one",
+        "size": 43.1,
+        "colorHex": "#8D1B1B",
+        "offX": -0.05,
+        "offY": -47.34,
+        "curve": 35,
+        "effect": "distressed"
+       },
+       {
+        "id": "s030",
+        "text": "ATHLETICS",
+        "font": "oswald",
+        "size": 20.1,
+        "colorHex": "#0A0A0A",
+        "offX": -0.05,
+        "offY": 8.59,
+        "letterSpacing": 0.3,
+        "effect": "distressed"
+       },
+       {
+        "id": "s031",
+        "text": "EST. 2026",
+        "font": "oswald",
+        "size": 14.4,
+        "colorHex": "#0A0A0A",
+        "offX": -0.05,
+        "offY": 43.01,
+        "letterSpacing": 0.2
+       }
+      ],
+      "images": [],
+      "shapes": [],
+      "customText": "",
+      "imageUrl": "",
+      "layerOrder": [
+       "text:s029",
+       "text:s030",
+       "text:s031"
+      ],
+      "locked": [],
+      "area": {
+       "left": 0,
+       "top": 0,
+       "right": 1,
+       "bottom": 1
+      },
+      "ref": {
+       "left": -143.71513684210527,
+       "top": -219.44,
+       "width": 287.3232631578947,
+       "height": 430.248,
+       "sp": 1
+      }
+     }
+    }
+   }
+  }
+ ]
+}
