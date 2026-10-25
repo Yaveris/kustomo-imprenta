@@ -97,9 +97,10 @@ function statusBadge(s) {
   return `<span class="badge b-${key}">${label[key] || s}</span>`;
 }
 
-/** Escape HTML for safe rendering */
+/** Escape HTML for safe rendering. Anything can come in (an order's size or zip code may be saved as a number), so it
+ *  is turned into text first; nothing (null / undefined) is shown as nothing. */
 function esc(str) {
-  return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return (str == null ? '' : String(str)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 /** Order status progression (Cancelled is set apart, see setOrderStatus) */
