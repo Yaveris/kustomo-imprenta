@@ -660,9 +660,82 @@ function markChatRead(chatId) {
     .catch(() => {}).finally(() => { delete _marking[chatId]; });
 }
 
+/**
+ * One chat message as HTML (order page and Messages). Customers' pictures show in the chat; there is nothing to
+ * approve. kind "item": a card of an ordered item with its picture (sent by the app when the order is placed; older
+ * orders sent "design submissions", shown the same way). kind "cancel" / "change": the customer asks to cancel the
+ * order or change a design, answered with the buttons on the card (answerRequest).
+ */
+function chatMessageHtml(m, chatId) {
+  const isA = m.senderRole === 'admin', t = m.sentAt ? fmtDate(m.sentAt) : '';
+  const kind = m.kind || (m.isDesignSubmission ? 'item' : '');
+  const img = safeUrl(m.imageUrl);
+  const pic = img ? `<a class="cpic" href="${img}" target="_blank" rel="noopener" title="Open the full picture"><img src="${img}" alt="Picture sent in the chat" loading="lazy"></a>` : '';
+  const text = m.messageText ? esc(m.messageText).replace(/\n/g, '<br>') : '';
+  let body;
+  if (kind === 'item' || kind === 'cancel' || kind === 'change') {
+    const head = {
+      item: ['bi-receipt', 'Ordered item', 'var(--orange)'],
+      cancel: ['bi-x-octagon', 'Wants to cancel the order', '#FF6B6B'],
+      change: ['bi-palette', 'Wants a design change', 'var(--yellow)']
+    }[kind];
+    let foot = '';
+    if (kind !== 'item') {
+      const st = m.requestStatus || 'Open', a = (d) => `answerRequest('${esc(chatId)}','${esc(m.id)}','${kind}','${d}')`;
+      if (st === 'Open') foot = kind === 'cancel'
+        ? `<div class="req-btns"><button class="btn-no" onclick="${a('Accepted')}"><i class="bi bi-x-circle"></i> Cancel the order</button><button class="btn-ghost" onclick="${a('Declined')}">Keep it</button></div>`
+        : `<div class="req-btns"><button class="btn-ok" onclick="${a('Done')}"><i class="bi bi-check-lg"></i> Mark as changed</button><button class="btn-ghost" onclick="${a('Declined')}">Can't change it</button></div>`;
+      else foot = `<div class="req-state">${st === 'Accepted' ? '<i class="bi bi-check-circle"></i> Order cancelled' : st === 'Done' ? '<i class="bi bi-check-circle"></i> Changed' : '<i class="bi bi-chat-left-text"></i> Answered in the chat'}${m.answeredBy ? ' · ' + esc(m.answeredBy) : ''}</div>`;
+    }
+    body = `<div class="req-box ${kind}"><div class="req-head" style="color:${head[2]};"><i class="bi ${head[0]}"></i> ${head[1]}</div>${pic}${text ? `<div class="req-text">${text}</div>` : ''}${foot}</div>`;
+  } else {
+    body = pic + (text ? `<div class="cbubble">${text}</div>` : '');
+  }
+  return `<div class="cmsg ${isA ? 'admin-msg' : 'user-msg'}"><div class="cavatar">${isA ? 'A' : 'C'}</div><div>${body}<div class="ctime">${t}</div></div></div>`;
+}
+
+/**
+ * Answers a customer's request from the chat. Cancel: "Accepted" cancels the order (its stock goes back) and tells
+ * the customer about the refund; "Declined" asks staff why and sends that. Change: "Done" after the design was
+ * changed, "Declined" with a reason. The request's card shows the answer in the app too.
+ */
+async function answerRequest(chatId, msgId, kind, decision) {
+  const chat = db.collection('chats').doc(chatId);
+  const orderId = ((await chat.get()).data() || {}).orderId;
+  let reply = '';
+  if (kind === 'cancel' && decision === 'Accepted') {
+    const o = orderId ? await db.collection('orders').doc(orderId).get() : null;
+    const status = o && o.exists ? (o.data().status || 'Pending') : 'Pending';
+    if (!confirm(statusChangeQuestion(orderNo(orderId || ''), status, 'Cancelled') || 'Cancel this order?')) return;
+    if (orderId && status !== 'Cancelled') await setOrderStatus(orderId, 'Cancelled');
+    reply = '✅ Your order has been cancelled. We will refund what you paid to your GCash; we will message you here once it is sent.';
+  } else if (decision === 'Declined') {
+    const r = prompt(kind === 'cancel' ? 'Why can\'t it be cancelled? (sent to the customer)' : 'Why can\'t the design be changed? (sent to the customer)', '');
+    if (r === null) return;
+    reply = (kind === 'cancel' ? 'We can\'t cancel this order' : 'We can\'t make that change') + (r.trim() ? ': ' + r.trim() : '.') + ' Message us here if you have questions.';
+  } else if (decision === 'Done') {
+    const r = prompt('Anything to tell the customer about the change? (optional)', '');
+    if (r === null) return;
+    reply = '✅ We have changed your design' + (r.trim() ? ': ' + r.trim() : '.');
+  }
+  const ts = firebase.firestore.FieldValue.serverTimestamp(), who = (auth.currentUser && auth.currentUser.email) || '';
+  await chat.collection('messages').doc(msgId).update({ requestStatus: decision, answeredAt: ts, answeredBy: who });
+  if (reply) await chat.collection('messages').add({ senderId: (auth.currentUser && auth.currentUser.uid) || '', senderRole: 'admin', messageText: reply, sentAt: ts });
+  await chat.update({ lastMessageAt: ts, adminReadAt: ts, openRequest: firebase.firestore.FieldValue.delete() }).catch(() => {});
+  toast(decision === 'Accepted' ? 'Order cancelled and the customer told' : 'Answer sent', 'ok');
+  // The order page shows the new status straight away
+  if (typeof refreshStatus === 'function') refreshStatus().catch(() => {});
+}
+
+/** A Philippine mobile number as people read it: +63 917 123 4567 (the app saves +639171234567; older orders 0917…). */
+function prettyPhone(p) {
+  const d = String(p || '').replace(/\D/g, ''), n = d.startsWith('63') && d.length === 12 ? d.slice(2) : d.startsWith('0') && d.length === 11 ? d.slice(1) : d;
+  return /^9\d{9}$/.test(n) ? `+63 ${n.slice(0, 3)} ${n.slice(3, 6)} ${n.slice(6)}` : String(p || '').trim();
+}
+
 /** Replies staff send often; tapping one puts it in the message box to edit before sending. */
 const QUICK_REPLIES = [
-  'Thank you for your order! We are checking your design now.',
+  'Thank you for your order! We are getting it ready.',
   'Your order is now being printed.',
   'Your order is ready for pickup.',
   'Your order is on its way.',

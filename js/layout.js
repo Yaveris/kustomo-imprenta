@@ -210,7 +210,7 @@ const OrderAlert = (() => {
         <button type="button" data-mute title="Sound on or off"><i class="bi ${get(MUTE) === '1' ? 'bi-volume-mute' : 'bi-volume-up'}"></i></button>
         <button type="button" data-x title="Close" aria-label="Close">&times;</button></div>
       <div class="oa-body">${shown}
-        <div class="oa-row"><i class="bi bi-person"></i><span>${esc(o.fullName || 'Customer')}${o.phone ? ' · ' + esc(o.phone) : ''}</span></div>
+        <div class="oa-row"><i class="bi bi-person"></i><span>${esc(o.fullName || 'Customer')}${o.phone ? ' · ' + esc(typeof prettyPhone === 'function' ? prettyPhone(o.phone) : o.phone) : ''}</span></div>
         <div class="oa-row"><i class="bi bi-geo-alt"></i><span>${esc(place || 'No address given')}${o.landmark ? `<br><span style="color:#999;">Near ${esc(o.landmark)}</span>` : ''}</span></div>
         <div class="oa-tot"><span>${o.isDownpayment ? `Downpayment paid ${peso(o.downpaymentAmount)}` : 'Paid with GCash'}</span><span>${peso(o.totalAmount)}</span></div>
       </div>

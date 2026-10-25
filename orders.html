@@ -6,6 +6,37 @@
   <title>Orders — KustomoImprenta Admin</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    /* A row opens in place to show the whole order */
+    tr.row-link td:first-child .chev { display:inline-block; margin-right:6px; color:var(--muted); transition:transform .15s; }
+    tr.row-link.open { background:rgba(255,92,0,.07); }
+    tr.row-link.open td:first-child .chev { transform:rotate(90deg); color:var(--orange); }
+    tr.o-more > td { padding:0 !important; background:rgba(0,0,0,.22); border-bottom:2px solid rgba(255,92,0,.35); }
+    .om { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr); gap:18px; padding:16px 18px 18px; animation:om-in .18s ease-out; }
+    @keyframes om-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+    @media (max-width:1100px) { .om { grid-template-columns:minmax(0,1fr) minmax(0,1fr); } .om-items { grid-column:1 / -1; } }
+    @media (max-width:700px) { .om { grid-template-columns:minmax(0,1fr); } }
+    .om h4 { font-size:12.5px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin-bottom:8px; }
+    .om-it { display:flex; gap:12px; align-items:flex-start; padding:8px 0; border-top:1px solid var(--border); }
+    .om-it:first-of-type { border-top:none; padding-top:0; }
+    .om-pic { width:92px; height:92px; flex:0 0 92px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid var(--border); display:grid; place-items:center; overflow:hidden; font-size:28px; }
+    .om-pic img, .om-pic canvas { width:100%; height:100%; object-fit:contain; }
+    .om-pic a { display:block; width:100%; height:100%; }
+    .om-n { font-weight:700; font-size:14.5px; }
+    .om-s { font-size:13.5px; color:var(--muted); line-height:1.5; }
+    .om-p { margin-left:auto; font-weight:700; color:var(--orange); white-space:nowrap; }
+    .om-line { font-size:14px; line-height:1.6; }
+    .om-line i { color:var(--muted); width:18px; display:inline-block; }
+    .om-acts { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; align-items:center; }
+    .om-acts select { background:var(--card-bg); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:7px 9px; font-size:14px; }
+    .om-req { margin-bottom:12px; padding:9px 12px; border-radius:9px; font-size:14px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .om-req.cancel { background:rgba(255,68,68,.1); border:1px solid rgba(255,107,107,.4); color:#FFB3B3; }
+    .om-req.change { background:rgba(255,214,0,.08); border:1px solid rgba(255,214,0,.35); color:#F2DE8A; }
+    .om-req a { margin-left:auto; color:var(--orange); font-weight:700; }
+    .rq { display:inline-block; font-size:12px; font-weight:700; padding:1px 8px; border-radius:10px; margin-left:4px; }
+    .rq.cancel { color:#FF6B6B; border:1px solid rgba(255,107,107,.45); }
+    .rq.change { color:var(--yellow); border:1px solid rgba(255,214,0,.4); }
+  </style>
 </head>
 <body>
 <div id="toast-box"></div>
@@ -46,7 +77,7 @@
     <div class="card">
       <div class="card-head">
         <span class="card-title">Orders <span id="count" style="color:var(--muted);font-weight:400;font-size:14px;"></span></span>
-        <span style="font-size:13px;color:var(--muted);">Click a row for full details</span>
+        <span style="font-size:13px;color:var(--muted);">Click an order to open it here</span>
       </div>
       <div class="tbl-wrap">
         <table class="tbl">
@@ -88,8 +119,13 @@
 <script src="js/shop-map.js"></script>
 <script src="js/layout.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/studio-common.js"></script>
+<script src="js/design-render.js"></script>
 <script>
   let all = [], filter = 'all', editId = null, shopLoc = null;
+  const opened = new Set();          // orders shown open
+  let requests = {};                 // order id → the customer's unanswered request ({type: 'cancel' | 'change'})
+  let chatOf = {};                   // order id → chat id
 
   auth.onAuthStateChanged(u => {
     if (!u) return;
@@ -97,7 +133,15 @@
     db.collection('orders').orderBy('orderedAt','desc').onSnapshot(snap => {
       all = snap.docs.map(d=>({id:d.id,...d.data()}));
       render();
+    }, e => {
+      document.getElementById('tbody').innerHTML = `<tr><td colspan="9"><div class="empty"><i class="bi bi-exclamation-triangle"></i><p>Couldn't load the orders: ${esc(e.message)}</p></div></td></tr>`;
     });
+    // Customers' cancel and design-change requests, shown on their orders
+    db.collection('chats').onSnapshot(snap => {
+      requests = {}; chatOf = {};
+      snap.docs.forEach(d => { const c = d.data(); if (!c.orderId) return; chatOf[c.orderId] = d.id; if (c.openRequest && c.openRequest.type) requests[c.orderId] = c.openRequest; });
+      if (all.length) render();
+    }, () => {});
   });
 
   /** Orders placed in the chosen period. */
@@ -143,9 +187,11 @@
       const drv = o.driver && o.driver.name
         ? `<span class="pill ok" title="${esc(o.driver.name)}${o.driver.phone ? ' · ' + esc(o.driver.phone) : ''}"><i class="bi bi-person-check-fill"></i> ${esc(o.driver.name.length > 14 ? o.driver.name.slice(0, 13) + '…' : o.driver.name)}</span>`
         : st === 'Cancelled' || st === 'Delivered' ? '<span class="note">—</span>' : `<span class="pill${st === 'Ready' ? ' warn' : ''}"><i class="bi bi-person-dash"></i> Not yet</span>`;
-      return `<tr class="row-link" onclick="location.href='order-detail.html?id=${o.id}'">
-        <td><span style="font-family:monospace;font-size:14px;color:var(--muted);">${orderNo(o.id)}</span></td>
-        <td><strong>${esc(o.fullName||'—')}</strong><div class="o-sub">${esc([o.barangay,o.city].filter(Boolean).join(', ')||'No address')}${km !== null ? ` · <span title="Straight line from your shop">${fmtKm(km)} away</span>` : ''}</div></td>
+      const isOpen = opened.has(o.id), rq = requests[o.id];
+      const rqPill = rq ? `<span class="rq ${rq.type === 'cancel' ? 'cancel' : 'change'}">${rq.type === 'cancel' ? 'Wants to cancel' : 'Design change'}</span>` : '';
+      return `<tr class="row-link${isOpen ? ' open' : ''}" data-id="${esc(o.id)}" tabindex="0" aria-expanded="${isOpen}" onclick="toggleOrder('${esc(o.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleOrder('${esc(o.id)}');}">
+        <td style="white-space:nowrap;"><i class="bi bi-chevron-right chev" aria-hidden="true"></i><span style="font-family:monospace;font-size:14px;color:var(--muted);">${orderNo(o.id)}</span></td>
+        <td><strong>${esc(o.fullName||'—')}</strong>${rqPill}<div class="o-sub">${esc([o.barangay,o.city].filter(Boolean).join(', ')||'No address')}${km !== null ? ` · <span title="Straight line from your shop">${fmtKm(km)} away</span>` : ''}</div></td>
         <td style="text-align:center;font-weight:600;">${qty}</td>
         <td style="color:var(--orange);font-weight:700;">${peso(o.totalAmount)}</td>
         <td>${pay}</td>
@@ -153,8 +199,107 @@
         <td>${drv}</td>
         <td style="font-size:14px;color:var(--muted);white-space:nowrap;">${fmtDate(o.orderedAt,false)}</td>
         <td><button class="btn-icon" title="Update status" aria-label="Update the status of ${orderNo(o.id)}" onclick="event.stopPropagation();openStatus('${o.id}')"><i class="bi bi-pencil-square"></i></button></td>
-      </tr>`;
+      </tr>${isOpen ? `<tr class="o-more"><td colspan="9">${orderPanel(o)}</td></tr>` : ''}`;
     }).join('');
+    drawPictures();
+  }
+
+  // ── An order, opened in place ─────────────────────────────────────────────────────────────────────
+  function toggleOrder(id) {
+    if (opened.has(id)) opened.delete(id); else opened.add(id);
+    render();
+  }
+  const hexOk = h => (typeof h === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(h)) ? h : '';
+  /** Whether an item's design has anything on it. */
+  function designed(it) {
+    const views = ((it.customization || {}).views) || {};
+    return Object.values(views).some(v => v && ((v.texts || []).some(t => String(t.text || '').trim()) || (v.images || []).length || (v.shapes || []).length || v.customText || v.imageUrl));
+  }
+  function orderPanel(o) {
+    const items = o.items || [], rq = requests[o.id], st = o.status || 'Pending';
+    const lines = orderAddressLines(o), phone = String(o.phone || '').trim(), tel = phone.replace(/[^\d+]/g, '');
+    const pin = orderPin(o), km = shopLoc && pin ? distanceKm(shopLoc, pin) : null;
+    const chatLink = chatOf[o.id] ? `chats.html?chat=${encodeURIComponent(chatOf[o.id])}` : `chats.html?order=${encodeURIComponent(o.id)}`;
+    const itemsHtml = items.map((it, i) => {
+      const preview = safeUrl(it.previewUrl), photo = safeUrl(it.imageUrl), color = hexOk(it.colorHex) || hexOk((it.customization || {}).apparelColorHex);
+      // The app's picture of the design on the shirt; else the design drawn here; else the product photo
+      const pic = preview ? `<a href="${preview}" target="_blank" rel="noopener" title="Open the picture"><img src="${preview}" alt="${esc(it.productName || 'Item')}"></a>`
+        : designed(it) ? `<span class="om-draw" data-o="${esc(o.id)}" data-i="${i}"><span class="spinner" style="width:18px;height:18px;"></span></span>`
+        : photo ? `<img src="${photo}" alt="${esc(it.productName || 'Item')}" style="object-fit:cover;">` : '👕';
+      const notes = String(it.notes || '').replace(/\[(Scanned|Entered|Typed) Measurements - ([^\]]*)\]/, (m, a, b) => '📏 ' + b).trim();
+      return `<div class="om-it"><div class="om-pic">${pic}</div>
+        <div style="min-width:0;"><div class="om-n">${esc(it.productName || 'Product')}</div>
+          <div class="om-s">Size ${esc(it.size || '—')} · ×${it.quantity || 1}${color ? ` · <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};border:1px solid var(--border);vertical-align:middle;"></span> ${color}` : ''}${designed(it) ? ' · <span style="color:var(--orange);">Custom design</span>' : ''}</div>
+          ${notes ? `<div class="om-s">${esc(notes)}</div>` : ''}</div>
+        <div class="om-p">${peso((it.price || 0) * (it.quantity || 1))}</div></div>`;
+    }).join('') || '<div class="note">No items recorded.</div>';
+    return `<div class="om">
+      <div class="om-items">
+        ${rq ? `<div class="om-req ${rq.type === 'cancel' ? 'cancel' : 'change'}"><i class="bi ${rq.type === 'cancel' ? 'bi-x-octagon' : 'bi-palette'}"></i> The customer ${rq.type === 'cancel' ? 'wants to cancel this order' : 'wants a design changed'}.<a href="${chatLink}">Answer in the chat <i class="bi bi-arrow-right"></i></a></div>` : ''}
+        <h4>Items (${items.length})</h4>${itemsHtml}
+      </div>
+      <div>
+        <h4>Deliver to</h4>
+        <div class="om-line"><i class="bi bi-person"></i> ${esc(o.fullName || 'Customer')}</div>
+        ${phone ? `<div class="om-line"><i class="bi bi-telephone"></i> <a href="tel:${esc(tel)}" style="color:var(--text);">${esc(prettyPhone(phone))}</a></div>` : ''}
+        ${lines.length ? `<div class="om-line"><i class="bi bi-geo-alt"></i> ${lines.map(esc).join('<br><i></i> ')}</div>` : '<div class="note">No address on this order.</div>'}
+        ${o.landmark ? `<div class="om-line"><i class="bi bi-signpost"></i> ${esc(o.landmark)}</div>` : ''}
+        ${km !== null ? `<div class="om-line"><i class="bi bi-signpost-split"></i> ${fmtKm(km)} from your shop <span class="note">(straight line)</span></div>` : ''}
+        ${o.driver && o.driver.name ? `<div class="om-line"><i class="bi bi-truck"></i> ${esc(o.driver.name)}${o.driver.phone ? ' · ' + esc(o.driver.phone) : ''}</div>` : ''}
+        ${lines.length || pin ? `<div class="om-acts"><a class="btn-ghost" href="${esc(directionsUrl(shopLoc, o))}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><i class="bi bi-sign-turn-right"></i> Directions</a></div>` : ''}
+      </div>
+      <div>
+        <h4>Payment</h4>
+        <div class="om-line" style="display:flex;justify-content:space-between;"><span>Subtotal</span><span>${peso(o.subtotal)}</span></div>
+        <div class="om-line" style="display:flex;justify-content:space-between;"><span>Shipping</span><span>${+(o.shippingFee || 0) === 0 ? 'FREE' : peso(o.shippingFee)}</span></div>
+        <div class="om-line" style="display:flex;justify-content:space-between;font-weight:800;"><span>Total</span><span style="color:var(--orange);">${peso(o.totalAmount)}</span></div>
+        ${o.isDownpayment ? `<div class="om-line" style="display:flex;justify-content:space-between;color:var(--yellow);"><span>Paid now</span><span>${peso(o.downpaymentAmount)}</span></div>
+          <div class="om-line" style="display:flex;justify-content:space-between;"><span>Balance</span><span>${o.balancePaidAt ? '<span style="color:#00E676;">Collected</span>' : peso(o.remainingAmount) + ' to collect'}</span></div>` : ''}
+        <h4 style="margin-top:14px;">Status</h4>
+        <div class="om-acts" style="margin-top:0;">
+          <select aria-label="Status of ${orderNo(o.id)}" onclick="event.stopPropagation()" onchange="quickStatus('${esc(o.id)}', this)">
+            ${ALL_STATUSES.map(s => `<option value="${s}"${st === s ? ' selected' : ''}>${s === 'Ready' ? 'Ready for pickup' : s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="om-acts">
+          <a class="btn-ghost" href="${chatLink}"><i class="bi bi-chat-dots"></i> Chat</a>
+          <a class="btn-ghost" href="order-detail.html?id=${encodeURIComponent(o.id)}" title="Print files, driver, staff notes, history"><i class="bi bi-box-arrow-up-right"></i> Full page</a>
+        </div>
+      </div>
+    </div>`;
+  }
+  async function quickStatus(id, sel) {
+    const o = all.find(x => x.id === id), s = sel.value;
+    const q = statusChangeQuestion(orderNo(id), o && o.status, s);
+    if (q && !confirm(q)) { sel.value = (o && o.status) || 'Pending'; return; }
+    try { await setOrderStatus(id, s); toast(`Status updated to "${s === 'Ready' ? 'Ready for pickup' : s}"`, 'ok'); }
+    catch (e) { toast('Failed: ' + e.message, 'err'); sel.value = (o && o.status) || 'Pending'; }
+  }
+  // Designs without an app-made picture (older orders) are drawn here on their shirt, once each
+  let models = null;
+  const drawn = new Map();
+  async function drawPictures() {
+    const slots = [...document.querySelectorAll('.om-draw')];
+    if (!slots.length) return;
+    if (!models) { try { models = await loadModels(); } catch (e) { models = []; } }
+    for (const slot of slots) {
+      const o = all.find(x => x.id === slot.dataset.o), it = o && (o.items || [])[+slot.dataset.i];
+      if (!it) continue;
+      const key = o.id + '|' + slot.dataset.i;
+      try {
+        if (!drawn.has(key)) {
+          const c = it.customization || {}, m = productModel({ shirtStyle: c.shirtStyle, name: it.productName, category: it.category }, models);
+          if (!m) throw new Error('No model');
+          const views = c.views || {}, side = views.Front ? 'Front' : views.Back ? 'Back' : 'Front';
+          drawn.set(key, (await renderDesignCanvas(m, c, 300, side)).toDataURL('image/png'));
+        }
+        if (!drawn.get(key)) throw new Error('Not drawable');
+        slot.outerHTML = `<img src="${drawn.get(key)}" alt="${esc(it.productName || 'Design')}">`;
+      } catch (e) {
+        drawn.set(key, null);
+        slot.outerHTML = safeUrl(it.imageUrl) ? `<img src="${safeUrl(it.imageUrl)}" alt="" style="object-fit:cover;">` : '👕';
+      }
+    }
   }
 
   document.querySelectorAll('.f-tab').forEach(b=>{

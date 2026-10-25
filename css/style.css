@@ -485,6 +485,18 @@ table.tbl {
   border-radius:8px; padding:10px; font-size:12.5px;
 }
 .design-box img { width:100%; max-height:170px; object-fit:contain; border-radius:6px; margin-bottom:7px; }
+/* Pictures in the chat, item cards and customers' requests (chatMessageHtml) */
+.cpic { display:block; margin-bottom:5px; }
+.cpic img { display:block; max-width:240px; max-height:220px; width:auto; height:auto; object-fit:contain; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.04); }
+.req-box { border-radius:10px; padding:10px 12px; font-size:14px; border:1px solid var(--border); background:rgba(255,255,255,.04); max-width:280px; }
+.req-box.item   { border-color:rgba(255,92,0,.3); }
+.req-box.cancel { border-color:rgba(255,107,107,.45); background:rgba(255,68,68,.07); }
+.req-box.change { border-color:rgba(255,214,0,.4); background:rgba(255,214,0,.05); }
+.req-head { font-weight:700; font-size:13.5px; margin-bottom:6px; }
+.req-text { line-height:1.5; }
+.req-btns { display:flex; gap:7px; flex-wrap:wrap; margin-top:9px; }
+.req-btns .btn-ghost { padding:4px 11px; font-size:12.5px; }
+.req-state { margin-top:8px; font-size:13px; color:var(--muted); }
 .btn-ok  { padding:4px 12px; border-radius:6px; background:rgba(0,230,118,.13); color:#00E676; border:1px solid rgba(0,230,118,.28); font-size:12px; font-weight:600; transition:all .18s; }
 .btn-ok:hover  { background:rgba(0,230,118,.22); }
 .btn-no  { padding:4px 12px; border-radius:6px; background:rgba(255,68,68,.11); color:#FF4444; border:1px solid rgba(255,68,68,.24); font-size:12px; font-weight:600; transition:all .18s; }

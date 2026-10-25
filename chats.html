@@ -98,12 +98,19 @@
         <div class="cl-av">${esc(name.charAt(0).toUpperCase())}</div>
         <div class="cl-info">
           <div class="cl-name">${esc(name)}</div>
-          <div class="cl-prev">Order: ${orderNo(c.orderId)}${isNew?' · <span style="color:var(--orange);font-weight:700;">New</span>':''}</div>
+          <div class="cl-prev">Order: ${orderNo(c.orderId)}${isNew?' · <span style="color:var(--orange);font-weight:700;">New</span>':''}${requestPill(c)}</div>
         </div>
         <div class="cl-time" title="${c.lastMessageAt?esc(fmtDate(c.lastMessageAt)):''}">${shortWhen(c.lastMessageAt)}</div>
         ${isNew?'<span class="unread-dot" aria-label="New"></span>':''}
       </div>`;
     }).join('');
+  }
+
+  /** A label for a customer's unanswered cancel or design-change request (chats/{id}.openRequest, set by the app). */
+  function requestPill(c){
+    const r=c.openRequest&&c.openRequest.type;
+    return r==='cancel'?' · <span style="color:#FF6B6B;font-weight:700;">Wants to cancel</span>'
+      :r==='change'?' · <span style="color:var(--yellow);font-weight:700;">Design change</span>':'';
   }
 
   /** "3:05 PM" today, "Oct 14" this year, "Oct 14, 2025" before that. */
@@ -156,36 +163,7 @@
   function renderMsgs(msgs){
     const wrap=document.getElementById('msgs');if(!wrap)return;
     if(!msgs.length){wrap.innerHTML='<div style="text-align:center;color:var(--muted);font-size:14px;padding:30px 0;">No messages yet</div>';return;}
-    wrap.innerHTML=msgs.map(m=>{
-      const isA=m.senderRole==='admin';
-      const t=m.sentAt?fmtDate(m.sentAt):'';
-      if(m.isDesignSubmission)return `
-        <div class="cmsg user-msg">
-          <div class="cavatar">C</div>
-          <div>
-            <div class="design-box">
-              <div style="color:#8B5CF6;font-weight:600;margin-bottom:5px;font-size:13.5px;"><i class="bi bi-image"></i> Design Submission</div>
-              ${safeUrl(m.imageUrl)?`<a href="${safeUrl(m.imageUrl)}" target="_blank" rel="noopener"><img src="${safeUrl(m.imageUrl)}" alt="design"></a>`:''}
-              ${m.messageText?`<p style="font-size:14px;margin:5px 0;">${esc(m.messageText)}</p>`:''}
-              <div style="font-size:13px;color:var(--muted);margin-bottom:5px;">Status: <strong style="color:${m.approvalStatus==='Approved'?'#00E676':m.approvalStatus==='Rejected'?'#FF4444':'var(--yellow)'};">${m.approvalStatus||'Pending Approval'}</strong></div>
-              ${!m.approvalStatus||m.approvalStatus==='Pending Approval'?`
-                <div style="display:flex;gap:7px;margin-top:6px;">
-                  <button class="btn-ok" onclick="handleDesign('${active.id}','${m.id}',true)"><i class="bi bi-check-lg"></i> Approve</button>
-                  <button class="btn-no" onclick="handleDesign('${active.id}','${m.id}',false)"><i class="bi bi-x-lg"></i> Reject</button>
-                </div>`:''}
-            </div>
-            <div class="ctime">${t}</div>
-          </div>
-        </div>`;
-      return `
-        <div class="cmsg ${isA?'admin-msg':'user-msg'}">
-          <div class="cavatar">${isA?'A':'C'}</div>
-          <div>
-            <div class="cbubble">${esc(m.messageText||'')}</div>
-            <div class="ctime">${t}</div>
-          </div>
-        </div>`;
-    }).join('');
+    wrap.innerHTML=msgs.map(m=>chatMessageHtml(m,active.id)).join('');
     wrap.scrollTop=wrap.scrollHeight;
   }
 
@@ -203,9 +181,6 @@
     }catch(e){toast('Send failed','err');inp.value=txt;}
   }
 
-  async function handleDesign(chatId,msgId,approved){
-    try{await reviewDesign(chatId,msgId,approved,adminUid);}catch(e){toast('Action failed: '+e.message,'err');}
-  }
 </script>
 </body>
 </html>
