@@ -30,7 +30,7 @@
     /* top bar */
     header { position: sticky; top: 0; z-index: 10; background: rgba(10,10,10,.82); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
     header .wrap { display: flex; align-items: center; justify-content: space-between; height: 62px; gap: 12px; }
-    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; }
     .brand img { width: 38px; height: 38px; border-radius: 10px; background: #fff; object-fit: contain; padding: 2px; }
     .brand b { font-size: 20px; font-weight: 800; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: -.3px; }
     nav a { color: var(--muted); text-decoration: none; font-size: 14px; margin-left: 20px; }
@@ -127,7 +127,7 @@
 <body>
   <header>
     <div class="wrap">
-      <a class="brand" href="#top"><img src="img/logo.png" alt="K's Print Xpress logo"><b>Kustomo-Imprenta</b></a>
+      <a class="brand" id="brand" href="#top"><img src="img/logo.png" alt="K's Print Xpress logo"><b>Kustomo-Imprenta</b></a>
       <nav>
         <a href="#features" class="hide-sm">Features</a>
         <a href="#install" class="hide-sm">How to install</a>
@@ -252,6 +252,22 @@
     try {
       new QRCode(document.getElementById('qr'), { text: location.origin + location.pathname.replace(/index\.html$/, ''), width: 360, height: 360, correctLevel: QRCode.CorrectLevel.M });
     } catch (e) { document.querySelector('.qr-card').hidden = true; }
+  </script>
+  <script>
+    // Staff way in: tap the logo 8 times in a row (each tap within 1.5 s of the last) to open the admin login.
+    (function () {
+      var taps = 0, last = 0;
+      document.getElementById('brand').addEventListener('click', function (e) {
+        var now = Date.now();
+        taps = now - last < 1500 ? taps + 1 : 1;
+        last = now;
+        if (taps >= 8) {
+          e.preventDefault();
+          taps = 0;
+          location.href = 'login.html';
+        }
+      });
+    })();
   </script>
 </body>
 </html>
