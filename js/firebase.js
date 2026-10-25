@@ -251,14 +251,41 @@ const MODEL_KINDS = [
 ];
 
 /** Where the try-on Lens can attach a model, and the fit it starts with (cm / degrees, before the admin adjusts). */
+// `follow`: how it moves by default (FOLLOW_MODES). "Left" and "right" are the wearer's own.
 const WORN_ON = [
-  { id: 'head',       label: 'Head (caps, hats, glasses)', start: { y: 4.5 } },
-  { id: 'neck',       label: 'Neck (necklaces, scarves)',  start: {} },
-  { id: 'chest',      label: 'Chest (bags, badges, vests)', start: { z: 6 } },
-  { id: 'hips',       label: 'Hips (belts, waist bags)',   start: {} },
-  { id: 'leftWrist',  label: 'Left wrist (watches)',       start: {} },
-  { id: 'rightWrist', label: 'Right wrist (watches)',      start: {} }
+  { id: 'head',          group: 'Head and body', label: 'Head (caps, hats, glasses)',              start: { y: 4.5 }, follow: 'body' },
+  { id: 'neck',          group: 'Head and body', label: 'Neck (necklaces, scarves, lanyards)',     start: {},         follow: 'body' },
+  { id: 'chest',         group: 'Head and body', label: 'Chest (badges, vests)',                   start: { z: 6 },   follow: 'body' },
+  { id: 'back',          group: 'Head and body', label: 'Back (backpacks, capes)',                 start: { z: -12 }, follow: 'body' },
+  { id: 'hips',          group: 'Head and body', label: 'Hips (belts, waist bags)',                start: {},         follow: 'body' },
+  { id: 'leftShoulder',  group: 'Arms',          label: 'Left shoulder (shoulder bags, pads)',     start: {},         follow: 'body' },
+  { id: 'rightShoulder', group: 'Arms',          label: 'Right shoulder (shoulder bags, pads)',    start: {},         follow: 'body' },
+  { id: 'leftUpperArm',  group: 'Arms',          label: 'Left upper arm (armbands)',               start: {},         follow: 'limb' },
+  { id: 'rightUpperArm', group: 'Arms',          label: 'Right upper arm (armbands)',              start: {},         follow: 'limb' },
+  { id: 'leftForearm',   group: 'Arms',          label: 'Left forearm (arm sleeves, guards)',      start: {},         follow: 'limb' },
+  { id: 'rightForearm',  group: 'Arms',          label: 'Right forearm (arm sleeves, guards)',     start: {},         follow: 'limb' },
+  { id: 'leftWrist',     group: 'Arms',          label: 'Left wrist (watches, bracelets)',         start: {},         follow: 'limb' },
+  { id: 'rightWrist',    group: 'Arms',          label: 'Right wrist (watches, bracelets)',        start: {},         follow: 'limb' },
+  { id: 'leftHand',      group: 'Hands',         label: 'Left hand (held bags, flags, fans)',      start: {},         follow: 'hang' },
+  { id: 'rightHand',     group: 'Hands',         label: 'Right hand (held bags, flags, fans)',     start: {},         follow: 'hang' },
+  { id: 'leftKnee',      group: 'Legs',          label: 'Left knee (knee pads)',                   start: {},         follow: 'limb' },
+  { id: 'rightKnee',     group: 'Legs',          label: 'Right knee (knee pads)',                  start: {},         follow: 'limb' },
+  { id: 'leftFoot',      group: 'Legs',          label: 'Left foot (shoes, anklets)',              start: {},         follow: 'foot' },
+  { id: 'rightFoot',     group: 'Legs',          label: 'Right foot (shoes, anklets)',             start: {},         follow: 'foot' }
 ];
+/** How a model moves with the body part it's worn on. */
+const FOLLOW_MODES = [
+  { id: 'body', label: 'Turns with the body', hint: 'Stays on the point and faces the way the body faces. For caps, necklaces, belts, badges.' },
+  { id: 'limb', label: 'Moves with the arm or leg', hint: "Turns and tilts with the arm or leg it's on. For watches, bracelets, armbands, knee pads." },
+  { id: 'hang', label: 'Hangs straight down', hint: 'Follows the point but always hangs downward, like something held. For tote bags, flags, fans.' },
+  { id: 'foot', label: 'Points where the foot points', hint: 'Follows the foot and turns with it. For shoes and anklets.' }
+];
+/** The model's movement: its own choice, else the default for where it's worn. */
+function followOf(model) {
+  const own = model && model.follow;
+  if (FOLLOW_MODES.some(f => f.id === own)) return own;
+  return (WORN_ON.find(w => w.id === (model && model.wornOn)) || WORN_ON[0]).follow;
+}
 const AR_DEFAULT = { scale: 1, x: 0, y: 0, z: 0, rotX: 0, rotY: 0, rotZ: 0, roughness: 0.9 };
 
 /** Default AR fit for a new model worn on `wornOn` (glasses sit in front of the eyes, not on top of the head). */
@@ -289,7 +316,7 @@ function normalizeModel(id, d) {
   const side = s => (s && s.img) ? { img: s.img, w: +s.w || 1000, h: +s.h || 1000, cm: +s.cm || 0, zone: zone(s.zone), fromModel: s.fromModel !== false } : null;
   return {
     id, builtIn: false, label: d.label || id, blurb: d.blurb || '', kind: d.kind || 'accessory',
-    wornOn: d.wornOn || 'head', enabled: d.enabled !== false, order: typeof d.order === 'number' ? d.order : 100,
+    wornOn: d.wornOn || 'head', follow: d.follow || '', enabled: d.enabled !== false, order: typeof d.order === 'number' ? d.order : 100,
     modelUrl: d.modelUrl || '', modelFile: d.modelFile || null, thumbUrl: d.thumbUrl || (d.front && d.front.img) || '',
     front: side(d.front), back: side(d.back), tintable: d.tintable !== false,
     preview: { scale: +(d.preview && d.preview.scale) || 1 },

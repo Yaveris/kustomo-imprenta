@@ -303,6 +303,8 @@
           <h4><span class="num">4</span>Try-on fit</h4>
           <p>Where the AR try-on puts the model. Line it up on the mannequin (switch the view to <strong>Try-on fit</strong>), then check it on a real person in the app.</p>
           <div class="fg"><label for="f-wornon">Worn on</label><select id="f-wornon"></select></div>
+          <div class="fg"><label for="f-follow">How it moves</label><select id="f-follow"></select>
+            <div class="hint" id="f-follow-hint"></div></div>
           <div id="fit-sliders"></div>
           <label class="fg-check" style="margin-top:6px;"><input type="checkbox" id="f-tint" checked> Customers can pick its colour</label>
         </div>
@@ -449,7 +451,11 @@
   let mode = 'model';
 
   /** A rough mannequin in centimetres, standing on y = 0, facing +Z (towards the viewer), like the try-on's body. */
-  const ANCHORS = { head: [0, 165, 0], neck: [0, 150, 0], chest: [0, 132, 0], hips: [0, 100, 0], leftWrist: [25, 90, 0], rightWrist: [-25, 90, 0], body: [0, 125, 0] };
+  // The wearer's left is +X here (the mannequin faces the viewer); arms hang down, as in the Lens's rest pose
+  const ANCHORS = { head: [0, 165, 0], neck: [0, 150, 0], chest: [0, 132, 0], back: [0, 132, 0], hips: [0, 100, 0], body: [0, 125, 0],
+    leftShoulder: [19, 140, 0], rightShoulder: [-19, 140, 0], leftUpperArm: [21, 125, 0], rightUpperArm: [-21, 125, 0],
+    leftForearm: [23, 103, 0], rightForearm: [-23, 103, 0], leftWrist: [25, 90, 0], rightWrist: [-25, 90, 0],
+    leftHand: [25, 82, 0], rightHand: [-25, 82, 0], leftKnee: [9, 50, 0], rightKnee: [-9, 50, 0], leftFoot: [9, 6, 4], rightFoot: [-9, 6, 4] };
   const mannequin = (() => {
     const g = new THREE.Group();
     const mat = new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 0.8, transparent: true, opacity: 0.55, depthWrite: false });
@@ -488,7 +494,7 @@
   function frameView() {
     if (mode === 'fit') {
       const a = ANCHORS[ed && ed.wornOn] || ANCHORS.head;
-      const near = ['head', 'neck', 'leftWrist', 'rightWrist'].includes(ed && ed.wornOn);
+      const near = !['chest', 'back', 'hips', 'body'].includes(ed && ed.wornOn);
       controls.target.set(a[0], a[1], a[2]);
       camera.position.set(a[0] + (near ? 38 : 60), a[1] + (near ? 14 : 20), a[2] + (near ? 80 : 120));
       camera.near = 1; camera.far = 2000; camera.updateProjectionMatrix();
@@ -801,7 +807,8 @@
       front: m && m.front ? Object.assign({}, m.front, { zone: Object.assign({}, m.front.zone) }) : null,
       back: m && m.back ? Object.assign({}, m.back, { zone: Object.assign({}, m.back.zone) }) : null,
       hasBack: !!(m && m.back), tintable: m ? m.tintable : true, previewScale: m ? m.preview.scale : 1,
-      ar: m ? Object.assign({}, m.ar) : startFit(wornOn, kind), lensObjectName: m ? m.lensObjectName : '', dirty: false
+      ar: m ? Object.assign({}, m.ar) : startFit(wornOn, kind), lensObjectName: m ? m.lensObjectName : '', dirty: false,
+      follow: m ? (m.follow || "") : ""
     };
     // Built-in shirts keep their own fit; the sliders don't apply to them
     $('ed-title').textContent = m ? m.label : 'Add model';
@@ -810,7 +817,10 @@
     $('finish-num').textContent = ed.builtIn ? '2' : '5';
     $('f-label').value = ed.label; $('f-blurb').value = ed.blurb; $('f-order').value = ed.order; $('f-enabled').checked = ed.enabled;
     $('f-kind').innerHTML = MODEL_KINDS.map(k => `<option value="${k.id}">${esc(k.label)}</option>`).join(''); $('f-kind').value = ed.kind; $('f-kind').disabled = ed.builtIn;
-    $('f-wornon').innerHTML = WORN_ON.map(w => `<option value="${w.id}">${esc(w.label)}</option>`).join(''); $('f-wornon').value = ed.wornOn === 'body' ? 'chest' : ed.wornOn;
+    $('f-wornon').innerHTML = [...new Set(WORN_ON.map(w => w.group))].map(g => `<optgroup label="${esc(g)}">` +
+      WORN_ON.filter(w => w.group === g).map(w => `<option value="${w.id}">${esc(w.label)}</option>`).join('') + '</optgroup>').join('');
+    $('f-wornon').value = ed.wornOn === 'body' ? 'chest' : ed.wornOn;
+    renderFollow();
     $('f-tint').checked = ed.tintable; $('f-lensobj').value = ed.lensObjectName;
     $('f-rough').value = ed.ar.roughness; $('f-rough-v').textContent = (+ed.ar.roughness).toFixed(2);
     $('f-pscale').value = ed.previewScale; $('f-pscale-v').textContent = (+ed.previewScale).toFixed(2) + '×';
@@ -852,10 +862,22 @@
   $('f-kind').addEventListener('change', e => {
     ed.kind = e.target.value; setDirty();
     // A sensible place to wear it, unless one was chosen already
-    const guess = { headwear: 'head', eyewear: 'head', neckwear: 'neck', top: 'chest', accessory: 'chest' }[ed.kind];
-    if (guess && ed.isNew && !ed.wornTouched) { ed.wornOn = guess; $('f-wornon').value = guess; window.resetFit(); }
+    const guess = { headwear: 'head', eyewear: 'head', neckwear: 'neck', top: 'chest', accessory: 'rightHand' }[ed.kind];
+    if (guess && ed.isNew && !ed.wornTouched) { ed.wornOn = guess; $('f-wornon').value = guess; ed.follow = ''; renderFollow(); window.resetFit(); }
   });
-  $('f-wornon').addEventListener('change', e => { ed.wornOn = e.target.value; ed.wornTouched = true; window.resetFit(); frameView(); });
+  $('f-wornon').addEventListener('change', e => { ed.wornOn = e.target.value; ed.wornTouched = true; ed.follow = ''; renderFollow(); window.resetFit(); frameView(); });
+  /** The "How it moves" box: the usual choice for where it's worn is marked, and used unless the shop picked another. */
+  function renderFollow() {
+    const def = followOf({ wornOn: ed.wornOn });
+    $('f-follow').innerHTML = FOLLOW_MODES.map(f => `<option value="${f.id}">${esc(f.label)}${f.id === def ? ' (usual here)' : ''}</option>`).join('');
+    $('f-follow').value = followOf(ed);
+    $('f-follow-hint').textContent = (FOLLOW_MODES.find(f => f.id === followOf(ed)) || {}).hint || '';
+  }
+  $('f-follow').addEventListener('change', e => {
+    // Saved only when it differs from the usual choice, so changing "Worn on" later brings the right default
+    ed.follow = e.target.value === followOf({ wornOn: ed.wornOn }) ? '' : e.target.value;
+    renderFollow(); setDirty();
+  });
   $('f-tint').addEventListener('change', e => { ed.tintable = e.target.checked; setDirty(); });
   $('f-lensobj').addEventListener('input', e => { ed.lensObjectName = e.target.value.replace(/[^A-Za-z0-9_]/g, ''); if (e.target.value !== ed.lensObjectName) e.target.value = ed.lensObjectName; setDirty(); });
   $('f-rough').addEventListener('input', e => { ed.ar.roughness = +e.target.value; $('f-rough-v').textContent = (+e.target.value).toFixed(2); setDirty(); });
@@ -919,7 +941,7 @@
         const back = ed.hasBack ? await side(ed.back || null, 'back') : null;
         const mf = ed.modelFile ? Object.assign({}, ed.modelFile) : null;
         const doc = Object.assign({
-          builtIn: false, label, blurb: ed.blurb.trim(), kind: ed.kind, wornOn: ed.wornOn, enabled: ed.enabled, order: ed.order,
+          builtIn: false, label, blurb: ed.blurb.trim(), kind: ed.kind, wornOn: ed.wornOn, follow: ed.follow || '', enabled: ed.enabled, order: ed.order,
           modelUrl, modelFile: mf, thumbUrl: front ? front.img : '', front, back, tintable: ed.tintable,
           preview: { scale: ed.previewScale }, ar: Object.assign({}, ed.ar), lensObjectName: ed.lensObjectName || ''
         }, meta);
