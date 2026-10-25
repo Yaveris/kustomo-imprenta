@@ -37,52 +37,25 @@
 
   <div class="page-content">
 
-    <!-- Super Admin Banner (hidden for regular admin) -->
-    <div class="sa-banner sa-only" id="sa-banner">
-      <div>
-        <div class="sa-banner-label"><i class="bi bi-shield-fill-check"></i> &nbsp;Super Admin</div>
-        <div class="sa-banner-title">System Overview</div>
-        <div style="margin-top:8px;display:flex;gap:18px;flex-wrap:wrap;">
-          <span style="font-size:14px;color:rgba(255,255,255,.6);">Admins: <strong id="sa-admin-count" style="color:#fff;">—</strong></span>
-          <span style="font-size:14px;color:rgba(255,255,255,.6);">Customers: <strong id="sa-cust-count" style="color:#fff;">—</strong></span>
-        </div>
-      </div>
-      <div class="sa-banner-rev">
-        <div class="sa-banner-rev-label" title="GCash payments, plus balances marked as collected. Cancelled orders are left out.">Money received</div>
-        <div class="sa-banner-rev-val" id="sa-revenue">—</div>
-      </div>
+    <!-- Super Admin: money received, kept small -->
+    <div class="sa-strip sa-only" id="sa-banner">
+      <span class="sa-banner-label"><i class="bi bi-shield-fill-check"></i> Super Admin · System Overview</span>
+      <span class="sa-money" title="GCash payments, plus balances marked as collected. Cancelled orders are left out.">Money received <strong id="sa-revenue">—</strong></span>
     </div>
 
-    <!-- Stat Cards -->
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-icon si-orange"><i class="bi bi-bag-check-fill"></i></div><div><div class="stat-val" id="st-total">—</div><div class="stat-lbl">Total Orders</div></div></div>
-      <div class="stat-card"><div class="stat-icon si-yellow"><i class="bi bi-clock-fill"></i></div><div><div class="stat-val" id="st-pending">—</div><div class="stat-lbl">Pending</div></div></div>
-      <div class="stat-card"><div class="stat-icon si-blue"><i class="bi bi-gear-fill"></i></div><div><div class="stat-val" id="st-inprog">—</div><div class="stat-lbl">In Progress</div></div></div>
-      <div class="stat-card"><div class="stat-icon si-green"><i class="bi bi-check-circle-fill"></i></div><div><div class="stat-val" id="st-delivered">—</div><div class="stat-lbl">Delivered</div></div></div>
-      <div class="stat-card"><div class="stat-icon si-purple"><i class="bi bi-box-seam-fill"></i></div><div><div class="stat-val" id="st-products">—</div><div class="stat-lbl">Active Products</div></div></div>
-      <div class="stat-card"><div class="stat-icon si-pink"><i class="bi bi-currency-exchange"></i></div><div><div class="stat-val" id="st-revenue">—</div><div class="stat-lbl" title="GCash payments, plus balances marked as collected. Cancelled orders are left out.">Money received</div></div></div>
+    <!-- Order status at a glance -->
+    <div class="mini-stats" id="mini-stats">
+      <a class="ms" href="orders.html"><i class="bi bi-bag-check" style="color:var(--orange);"></i><b id="st-total">—</b> Total orders</a>
+      <a class="ms" href="orders.html?status=Pending"><i class="bi bi-clock" style="color:var(--yellow);"></i><b id="st-pending">—</b> Pending</a>
+      <a class="ms" href="orders.html?status=Printing"><i class="bi bi-gear" style="color:#378ADD;"></i><b id="st-inprog">—</b> In progress</a>
+      <a class="ms" href="orders.html?status=Delivered"><i class="bi bi-check-circle" style="color:#00E676;"></i><b id="st-delivered">—</b> Delivered</a>
+      <a class="ms" href="products.html"><i class="bi bi-box-seam" style="color:#8B5CF6;"></i><b id="st-products">—</b> Products for sale</a>
+      <a class="ms not-sa" href="orders.html" title="GCash payments, plus balances marked as collected. Cancelled orders are left out."><i class="bi bi-currency-exchange" style="color:var(--pink);"></i><b id="st-revenue">—</b> Received</a>
+      <span class="live-dot" id="live-dot" title="Updates by itself as orders come in"><i></i> Live</span>
     </div>
 
-    <!-- Sales chart + needs attention -->
+    <!-- Recent orders first, with what needs doing beside them -->
     <div class="dash-grid" style="margin-bottom:16px;align-items:start;">
-      <div class="card">
-        <div class="card-head"><span class="card-title">Orders placed, last 14 days</span><span class="note" id="sales-sum"></span></div>
-        <div style="padding:0 18px 16px;position:relative;">
-          <div class="sales-chart" id="sales-chart" role="img"></div>
-          <div class="sales-tip" id="sales-tip" hidden></div>
-          <details style="margin-top:8px;"><summary class="note" style="cursor:pointer;">Show as a table</summary><div id="sales-table" style="margin-top:8px;"></div></details>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-head"><span class="card-title">Needs attention</span></div>
-        <div style="padding:0 18px 16px;" id="attention"><div class="spinner"></div></div>
-      </div>
-    </div>
-
-    <!-- Bottom Row -->
-    <div class="dash-grid">
-
-      <!-- Recent Orders -->
       <div class="card">
         <div class="card-head">
           <span class="card-title">Recent Orders</span>
@@ -99,25 +72,63 @@
       </div>
 
       <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
-        <!-- Status Breakdown -->
+        <div class="card">
+          <div class="card-head"><span class="card-title">Needs attention</span></div>
+          <div style="padding:0 18px 16px;" id="attention"><div class="spinner"></div></div>
+        </div>
         <div class="card">
           <div class="card-head" style="margin-bottom:14px;"><span class="card-title">Status Breakdown</span></div>
           <div id="breakdown"><div class="spinner"></div></div>
         </div>
-        <!-- Best sellers -->
-        <div class="card">
-          <div class="card-head"><span class="card-title">Best sellers, last 30 days</span></div>
-          <div style="padding:0 18px 16px;" id="best"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Sales: last 14 days and best sellers, folded away unless opened -->
+    <details class="card sales-fold" id="sales-fold">
+      <summary class="card-head"><span class="card-title"><i class="bi bi-chevron-right fold-i"></i> Sales: orders placed and best sellers</span><span class="note" id="sales-sum"></span></summary>
+      <div class="sales-grid">
+        <div style="position:relative;min-width:0;">
+          <div class="sub-title">Orders placed, last 14 days</div>
+          <div class="sales-chart" id="sales-chart" role="img"></div>
+          <div class="sales-x" id="sales-x"></div>
+          <div class="sales-tip" id="sales-tip" hidden></div>
+          <details style="margin-top:8px;"><summary class="note" style="cursor:pointer;">Show as a table</summary><div id="sales-table" style="margin-top:8px;"></div></details>
+        </div>
+        <div style="min-width:0;">
+          <div class="sub-title">Best sellers, last 30 days</div>
+          <div id="best"><div class="spinner"></div></div>
         </div>
       </div>
-
-    </div>
+    </details>
 
   </div><!-- /page-content -->
 </div><!-- /main -->
 
 <style>
-  .sales-chart { display: flex; align-items: flex-end; gap: 2px; height: 170px; border-bottom: 1px solid var(--border); padding-top: 18px; }
+  .sa-strip { display: none; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 16px; margin-bottom: 14px; border-radius: 12px; border: 1px solid rgba(255,214,0,.2); background: linear-gradient(135deg, rgba(26,18,0,.9), rgba(26,0,10,.85)); }
+  .sa-strip .sa-banner-label { margin: 0; }
+  .sa-money { font-size: 13.5px; color: rgba(255,214,0,.75); }
+  .sa-money strong { font-size: 17px; color: var(--yellow); margin-left: 6px; }
+  .mini-stats { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+  .ms { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--card-bg); color: var(--muted); font-size: 13.5px; text-decoration: none; transition: border-color .15s; }
+  .ms:hover { border-color: rgba(255,92,0,.45); color: var(--text); }
+  .ms b { color: var(--text); font-size: 15px; }
+  .ms.bump b { animation: bump .6s ease-out; }
+  @keyframes bump { 0% { color: var(--orange); transform: scale(1.35); } 100% { transform: none; } }
+  .live-dot { margin-left: auto; font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+  .live-dot i { width: 8px; height: 8px; border-radius: 50%; background: #777; display: inline-block; }
+  .live-dot.on i { background: #00E676; box-shadow: 0 0 0 0 rgba(0,230,118,.6); animation: pulse 2s infinite; }
+  @keyframes pulse { 70% { box-shadow: 0 0 0 7px rgba(0,230,118,0); } 100% { box-shadow: 0 0 0 0 rgba(0,230,118,0); } }
+  tr.row-new td { animation: rownew 3s ease-out; }
+  @keyframes rownew { 0%, 40% { background: rgba(255,92,0,.18); } 100% { background: transparent; } }
+  .sales-fold > summary { list-style: none; cursor: pointer; margin-bottom: 0; }
+  .sales-fold > summary::-webkit-details-marker { display: none; }
+  .sales-fold .fold-i { display: inline-block; transition: transform .15s; font-size: 13px; margin-right: 4px; }
+  .sales-fold[open] .fold-i { transform: rotate(90deg); }
+  .sales-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; padding: 4px 18px 16px; }
+  @media (max-width: 900px) { .sales-grid { grid-template-columns: minmax(0, 1fr); } }
+  .sub-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+  .sales-chart { display: flex; align-items: flex-end; gap: 2px; height: 150px; border-bottom: 1px solid var(--border); padding-top: 18px; }
   .sales-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; cursor: default; position: relative; min-width: 0; }
   .sales-bar { background: var(--orange); border-radius: 4px 4px 0 0; min-height: 0; transition: opacity .15s; }
   .sales-col:hover, .sales-col:focus { background: rgba(255,255,255,.05); border-radius: 4px 4px 0 0; }
@@ -143,26 +154,42 @@
   document.getElementById('today-date').textContent =
     new Date().toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
-  // Called by auth.js after role is known
-  window.onAuthReady = (user, role) => { loadDashboard(role); };
+  // The Sales section stays open or closed the way you left it
+  const fold = document.getElementById('sales-fold');
+  try { fold.open = localStorage.getItem('dash-sales') === 'open'; } catch (e) {}
+  fold.addEventListener('toggle', () => { try { localStorage.setItem('dash-sales', fold.open ? 'open' : 'closed'); } catch (e) {} });
 
-  async function loadDashboard(role = 'admin') {
+  // Everything below follows the database live: orders, products and chats are listened to, not read once.
+  let orders = null, products = null, chatSnap = null, shop = Object.assign({}, SHOP_DEFAULTS), role = 'admin';
+  let knownIds = null, lastCounts = {};
+  window.onAuthReady = (user, r) => {
+    role = r;
+    if (role === 'super_admin') document.getElementById('sa-banner').style.display = 'flex';
+    document.querySelectorAll('.not-sa').forEach(el => el.hidden = role === 'super_admin');
+    loadShopSettings().then(s => { shop = Object.assign({}, SHOP_DEFAULTS, s || {}); render(); }).catch(() => {});
+    const fail = what => e => { console.error(e); toast(`Couldn't load the ${what}: ${e.message}`, 'err'); setLive(false); };
+    db.collection('orders').onSnapshot(s => { orders = s.docs.map(d => ({ id: d.id, ...d.data() })); setLive(!s.metadata.fromCache); render(); }, fail('orders'));
+    db.collection('products').onSnapshot(s => { products = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, fail('products'));
+    db.collection('chats').onSnapshot(s => { chatSnap = s; render(); }, () => { chatSnap = null; });
+  };
+  function setLive(on) {
+    const d = document.getElementById('live-dot');
+    d.classList.toggle('on', on);
+    d.lastChild.textContent = on ? ' Live' : ' Offline, showing saved data';
+  }
+  // Re-draw at most once per frame when several lists change together
+  let queued = false;
+  function render() { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; draw(); }); }
+
+  function setStat(id, v) {
+    const el = document.getElementById(id);
+    if (el.textContent !== String(v) && el.textContent !== '—') { const c = el.closest('.ms'); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); }
+    el.textContent = v;
+  }
+
+  function draw() {
+    if (!orders || !products) return;
     try {
-      const queries = [
-        db.collection('orders').get(),
-        db.collection('products').get(),
-        db.collection('chats').get().catch(() => null),
-        loadShopSettings()
-      ];
-      // Super admin also loads user counts
-      if (role === 'super_admin') {
-        queries.push(db.collection('users').where('role','in',['admin','super_admin']).get());
-        queries.push(db.collection('users').where('role','==','user').get());
-      }
-      const [oSnap, pSnap, cSnap, shop, adminSnap, custSnap] = await Promise.all(queries);
-
-      const orders = oSnap.docs.map(d => ({ id:d.id, ...d.data() }));
-      const products = pSnap.docs.map(d => ({ id:d.id, ...d.data() }));
       const sc = {};
       let revenue = 0;
       orders.forEach(o => {
@@ -174,48 +201,36 @@
           : +(o.totalAmount || 0);
       });
 
-      document.getElementById('st-total').textContent     = orders.length;
-      document.getElementById('st-pending').textContent   = sc.Pending || 0;
-      document.getElementById('st-inprog').textContent    = (sc.Processing||0)+(sc.Printing||0)+(sc.Ready||0);
-      document.getElementById('st-delivered').textContent = sc.Delivered || 0;
-      document.getElementById('st-products').textContent  = products.filter(p => p.isAvailable === true).length;
-      document.getElementById('st-revenue').textContent   = peso(revenue);
-      // Each card opens the matching list
-      [['st-total','orders.html'],['st-pending','orders.html?status=Pending'],['st-inprog','orders.html?status=Printing'],
-       ['st-delivered','orders.html?status=Delivered'],['st-products','products.html'],['st-revenue','orders.html']].forEach(([id, href]) => {
-        const card = document.getElementById(id).closest('.stat-card');
-        card.style.cursor = 'pointer'; card.tabIndex = 0; card.setAttribute('role', 'link');
-        card.onclick = () => location.href = href;
-        card.onkeydown = e => { if (e.key === 'Enter') location.href = href; };
-      });
+      setStat('st-total', orders.length);
+      setStat('st-pending', sc.Pending || 0);
+      setStat('st-inprog', (sc.Processing||0)+(sc.Printing||0)+(sc.Ready||0));
+      setStat('st-delivered', sc.Delivered || 0);
+      setStat('st-products', products.filter(p => p.isAvailable === true).length);
+      setStat('st-revenue', peso(revenue));
+      document.getElementById('sa-revenue').textContent = peso(revenue);
 
-      // Super Admin banner stats
-      if (role === 'super_admin' && adminSnap && custSnap) {
-        document.getElementById('sa-admin-count').textContent = adminSnap.size;
-        document.getElementById('sa-cust-count').textContent  = custSnap.size;
-        document.getElementById('sa-revenue').textContent     = peso(revenue);
-      }
-
-      // Recent orders
+      // Recent orders, newest first; ones that just arrived glow for a moment
       const sorted = orders
-        .filter(o => o.orderedAt)
+        .filter(o => o.orderedAt && o.orderedAt.toDate)
         .sort((a,b) => b.orderedAt.toDate() - a.orderedAt.toDate())
         .slice(0,10);
-
+      const isNew = id => knownIds && !knownIds.has(id);
       const tbody = document.getElementById('recent-body');
       tbody.innerHTML = sorted.length === 0
         ? '<tr><td colspan="6"><div class="empty"><i class="bi bi-bag-x"></i><p>No orders yet</p></div></td></tr>'
         : sorted.map(o => {
-            const qty = (o.items||[]).reduce((s,i)=>s+(i.quantity||1),0);
-            return `<tr class="row-link" onclick="location.href='order-detail.html?id=${o.id}'">
+            const qty = (o.items||[]).reduce((s,i)=>s+(Number(i.quantity)||1),0);
+            const first = (o.items||[])[0];
+            return `<tr class="row-link${isNew(o.id) ? ' row-new' : ''}" onclick="location.href='order-detail.html?id=${encodeURIComponent(o.id)}'">
               <td><span style="font-family:monospace;font-size:13px;color:var(--muted);">${orderNo(o.id)}</span></td>
               <td><strong>${esc(o.fullName||'—')}</strong><br><span style="font-size:13px;color:var(--muted);">${esc(o.city||'')}</span></td>
-              <td style="text-align:center;">${qty}</td>
+              <td><span title="${esc((o.items||[]).map(i => i.productName).join(', '))}">${first ? esc(first.productName || 'Product') : '—'}${(o.items||[]).length > 1 ? ` <span style="color:var(--muted);">+${o.items.length - 1}</span>` : ''}</span><br><span style="font-size:13px;color:var(--muted);">${qty} piece${qty === 1 ? '' : 's'}</span></td>
               <td style="color:var(--orange);font-weight:700;">${peso(o.totalAmount)}</td>
               <td>${statusBadge(o.status)}</td>
               <td style="font-size:13px;color:var(--muted);">${fmtDate(o.orderedAt,false)}</td>
             </tr>`;
           }).join('');
+      knownIds = new Set(orders.map(o => o.id));
 
       // Status breakdown bars
       const total = orders.length || 1;
@@ -242,7 +257,7 @@
 
       renderSales(orders);
       renderBest(orders);
-      renderAttention(orders, products, cSnap, shop);
+      renderAttention(orders, products, chatSnap, shop);
     } catch(e) {
       console.error(e);
       toast('Failed to load dashboard: ' + e.message,'err');
@@ -264,20 +279,20 @@
     });
     const max = Math.max(1, ...days.map(x => x.total));
     const sum = days.reduce((t, x) => t + x.total, 0), n = days.reduce((t, x) => t + x.count, 0);
-    document.getElementById('sales-sum').textContent = `${peso(sum)} · ${n} order${n === 1 ? '' : 's'}`;
+    document.getElementById('sales-sum').textContent = `Last 14 days: ${peso(sum)} · ${n} order${n === 1 ? '' : 's'}`;
     const label = d => d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
     const chart = document.getElementById('sales-chart');
     chart.setAttribute('aria-label', `Sales per day for the last 14 days, ${peso(sum)} in total`);
     chart.innerHTML = days.map((x, i) => `<div class="sales-col" tabindex="0" data-i="${i}" aria-label="${label(x.d)}: ${peso(x.total)}, ${x.count} orders">
         <div class="sales-bar" style="height:${x.total ? Math.max(2, x.total / max * 100) : 0}%;"></div></div>`).join('');
-    chart.insertAdjacentHTML('afterend', `<div class="sales-x">${days.map((x, i) => `<span>${i % 2 === 1 || i === 13 ? x.d.getDate() : ''}</span>`).join('')}</div>`);
+    document.getElementById('sales-x').innerHTML = days.map((x, i) => `<span>${i % 2 === 1 || i === 13 ? x.d.getDate() : ''}</span>`).join('');
     const tip = document.getElementById('sales-tip');
     const show = col => {
       const x = days[+col.dataset.i];
       tip.innerHTML = `<strong>${label(x.d)}</strong><br>${peso(x.total)} · ${x.count} order${x.count === 1 ? '' : 's'}`;
       tip.hidden = false;
       // Centred over the day, kept inside the card (offsetLeft already counts the card's padding)
-      const left = col.offsetLeft + col.offsetWidth / 2 - tip.offsetWidth / 2;
+      const left = col.offsetLeft - chart.offsetLeft + col.offsetWidth / 2 - tip.offsetWidth / 2;
       tip.style.left = Math.max(0, Math.min(chart.parentElement.clientWidth - tip.offsetWidth, left)) + 'px';
     };
     chart.querySelectorAll('.sales-col').forEach(col => {
