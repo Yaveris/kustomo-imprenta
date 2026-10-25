@@ -132,6 +132,29 @@
     .k-filled { color: var(--yellow) !important; }
     .k-warn-card { border-color: rgba(255,214,0,.35); background: rgba(255,214,0,.05); margin-bottom: 16px; }
     .k-warn-card .card-title { color: var(--yellow); }
+
+    /* Owner's view: one tile per thing the shop relies on */
+    .k-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 16px; }
+    .k-tile { display: flex; flex-direction: column; gap: 8px; padding: 18px; border-radius: 14px; border: 1px solid var(--border); background: rgba(255,255,255,.02); }
+    .k-tile.s-ok   { border-color: rgba(0,230,118,.28); }
+    .k-tile.s-warn { border-color: rgba(255,214,0,.35); }
+    .k-tile.s-bad  { border-color: rgba(255,68,68,.40); }
+    .k-tile-top { display: flex; align-items: center; gap: 10px; }
+    .k-tile-top .bi { font-size: 20px; color: var(--orange); }
+    .k-tile-name { font-size: 15.5px; font-weight: 800; }
+    .k-tile-state { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; }
+    .s-ok .k-tile-state { color: #00E676; } .s-warn .k-tile-state { color: var(--yellow); }
+    .s-bad .k-tile-state { color: #FF6B6B; } .s-unk .k-tile-state { color: var(--muted); }
+    .k-tile-text { font-size: 14px; line-height: 1.5; color: var(--muted); flex: 1; }
+    .k-tile-act { align-self: flex-start; font-size: 14px; font-weight: 700; color: var(--orange); text-decoration: none; }
+    .k-tile-act:hover { text-decoration: underline; }
+    .k-tile-act.k-dev-only { color: var(--muted); font-weight: 600; }
+    details.k-edit > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    details.k-edit > summary::-webkit-details-marker { display: none; }
+    details.k-edit > summary .k-open { margin-left: auto; font-size: 14px; font-weight: 700; color: var(--orange); }
+    details.k-edit[open] > summary .k-open { color: var(--muted); }
+    details.k-edit[open] > summary { margin-bottom: 16px; }
+    details.k-more > summary { cursor: pointer; color: var(--muted); font-size: 13.5px; margin: 4px 0 10px; }
   </style>
 </head>
 <body>
@@ -170,62 +193,37 @@
 
     <div class="card">
       <p class="k-intro">
-        The accounts the app uses for AR try-on and photo uploads. Changes here reach the app right away. Maps and address search need no key.
-        Payments (PayMongo) and the other settings at the bottom are built into the app, so your developer changes those.
+        The outside services your app depends on, and whether each one is working. You normally set these up once.
+        New to this? <a href="getting-started.html" style="color:var(--orange);font-weight:600;">Getting Started</a> walks you through each one.
       </p>
-      <p class="k-intro" style="margin-top:8px;"><i class="bi bi-flag" style="color:var(--orange);"></i> Setting these up for the first time? <a href="getting-started.html" style="color:var(--orange);font-weight:600;">Getting Started</a> walks through each account in plain steps.</p>
-      <div class="k-status" id="k-status"><span class="k-pill">Checking…</span></div>
+      <div class="k-tiles" id="k-tiles"><div class="k-tile s-unk"><div class="k-tile-name">Checking…</div></div></div>
     </div>
 
-    <!-- ── Checklist ──────────────────────────────────────────────────── -->
-    <section class="card k-card" id="checklist" style="margin-top:16px;">
-      <div class="card-head">
-        <span class="card-title"><i class="bi bi-list-check"></i>Key checklist</span>
-        <span class="k-from" id="k-from"></span>
-      </div>
-      <ul class="k-check" id="k-check"><li class="k-row s-unk"><span class="k-ico">?</span><div class="k-name">Checking the keys…</div></li></ul>
-    </section>
-
-    <!-- ── Presets ────────────────────────────────────────────────────── -->
-    <section class="card k-card" id="presets" style="margin-top:16px;" hidden>
-      <div class="card-head">
-        <span class="card-title"><i class="bi bi-collection"></i>Presets</span>
-        <span class="k-pill" id="preset-state">—</span>
-      </div>
-      <div class="k-preset-row">
-        <div class="fg">
-          <label for="preset-pick">Ready-made keys</label>
-          <select id="preset-pick" onchange="showPresetNote()"></select>
-        </div>
-        <button type="button" class="btn-ghost" onclick="fillPreset()"><i class="bi bi-input-cursor-text"></i> Fill the forms</button>
-        <button type="button" class="btn-grad" onclick="applyPreset()"><i class="bi bi-check2-all"></i> Fill and save</button>
-      </div>
-      <div class="k-hint" id="preset-note" style="margin-top:10px;font-size:13.5px;color:var(--muted);line-height:1.5;"></div>
-    </section>
-
-    <div class="k-section"><h2>Accounts you can change here</h2></div>
+    <div class="k-section"><h2>Change an account</h2><p>Only needed when you switch to a different account.</p></div>
 
     <!-- ── Snap Camera Kit ─────────────────────────────────────────────── -->
-    <section class="card k-card" id="snap">
-      <div class="card-head">
-        <span class="card-title"><i class="bi bi-camera"></i>Snap Camera Kit · AR try-on</span>
+    <details class="card k-card k-edit" id="snap">
+      <summary>
+        <span class="card-title"><i class="bi bi-camera"></i>AR try-on · Snap Camera Kit</span>
         <span class="k-pill" id="snap-state">—</span>
-      </div>
+        <span class="k-open">Change</span>
+      </summary>
       <div class="k-grid k-one">
         <form id="snap-form" autocomplete="off" onsubmit="saveSnap(event)">
           <div class="fg">
             <label for="snap-token">API token</label>
             <div class="k-secret">
-              <input id="snap-token" class="k-mono" type="password" spellcheck="false" placeholder="Blank = the token built into the app" oninput="checkToken()">
+              <input id="snap-token" class="k-mono" type="password" spellcheck="false" placeholder="Paste the API token" oninput="checkToken()">
               <button type="button" onclick="toggleSecret('snap-token', this)">Show</button>
             </div>
             <div class="k-hint" id="snap-token-hint">A long code starting with <code>eyJ</code>.</div>
           </div>
           <div class="fg">
             <label for="snap-group">Lens Group ID</label>
-            <input id="snap-group" class="k-mono" spellcheck="false" placeholder="Blank = the built-in group">
+            <input id="snap-group" class="k-mono" spellcheck="false" placeholder="Paste the Lens Group ID">
             <div class="k-hint" id="snap-group-hint">Looks like <code>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code>.</div>
           </div>
+          <details class="k-more"><summary>More options (only if your developer asks)</summary>
           <div class="fg-row">
             <div class="fg">
               <label for="snap-name">Lens name</label>
@@ -238,9 +236,10 @@
               <div class="k-hint" id="snap-lens-hint">Wins over the name if both are set.</div>
             </div>
           </div>
+          </details>
           <div class="k-actions">
-            <button type="submit" class="btn-grad"><i class="bi bi-check2"></i> Save Snap keys</button>
-            <button type="button" class="btn-ghost" onclick="resetSection('snap')"><i class="bi bi-arrow-counterclockwise"></i> Use built-in</button>
+            <button type="submit" class="btn-grad"><i class="bi bi-check2"></i> Save</button>
+            <button type="button" class="btn-ghost" onclick="resetSection('snap')"><i class="bi bi-arrow-counterclockwise"></i> Go back to the app's own</button>
           </div>
           <div class="k-saved k-filled" id="snap-filled" hidden></div>
           <div class="k-saved" id="snap-saved"></div>
@@ -254,37 +253,38 @@
             <li>Publish the shirt Lens to the shop's Organization: open the <code>lens-studio/FitFusionShirts</code> project from the app's source folder in Lens Studio, press <span class="k-ui">Publish Lens</span>, pick the Organization, create a Lens Folder, and submit. <span class="k-sub">“Save As Draft” or Offline is quickest because it only goes through automatic checks.</span> Type the name you gave it into <span class="k-ui">Lens name</span>.</li>
             <li>Open <span class="k-ui">Lens Scheduler</span> in My Lenses. Add your Lens Folder as a Lens Source. Then go to the <span class="k-ui">Lens Group</span> tab, choose <span class="k-ui">Add New Lens Group</span>, then <span class="k-ui">Add Lens</span>, pick the shirt Lens and press <span class="k-ui">Save Changes</span>.</li>
             <li>Click the group and copy its <span class="k-ui">Lens Group ID</span> into this form. <span class="k-sub">The Lens ID is optional; it's listed on the All Lenses tab.</span></li>
-            <li>Press <span class="k-ui">Save Snap keys</span>, then open AR try-on in the app to check.</li>
+            <li>Press <span class="k-ui">Save</span>, then open AR try-on in the app to check.</li>
           </ol>
           <p class="k-why">The token and the Lens Group must come from the <strong>same</strong> Camera Kit app, so this form saves them together.</p>
         </div></details>
       </div>
-    </section>
+    </details>
 
     <!-- ── Cloudinary ──────────────────────────────────────────────────── -->
-    <section class="card k-card" id="cloudinary">
-      <div class="card-head">
-        <span class="card-title"><i class="bi bi-images"></i>Cloudinary · design and photo uploads</span>
+    <details class="card k-card k-edit" id="cloudinary">
+      <summary>
+        <span class="card-title"><i class="bi bi-images"></i>Photo &amp; design uploads · Cloudinary</span>
         <span class="k-pill" id="cl-state">—</span>
-      </div>
+        <span class="k-open">Change</span>
+      </summary>
       <div class="k-grid k-one">
         <form id="cl-form" autocomplete="off" onsubmit="saveCloudinary(event)">
           <div class="fg-row">
             <div class="fg">
               <label for="cl-cloud">Cloud name</label>
-              <input id="cl-cloud" class="k-mono" spellcheck="false" placeholder="Blank = built-in">
+              <input id="cl-cloud" class="k-mono" spellcheck="false" placeholder="Paste the cloud name">
               <div class="k-hint" id="cl-cloud-hint">Letters, numbers and dashes.</div>
             </div>
             <div class="fg">
               <label for="cl-preset">Upload preset (Unsigned)</label>
-              <input id="cl-preset" class="k-mono" spellcheck="false" placeholder="Blank = built-in">
+              <input id="cl-preset" class="k-mono" spellcheck="false" placeholder="Paste the preset name">
               <div class="k-hint" id="cl-preset-hint">The preset's name, not an API key.</div>
             </div>
           </div>
           <div class="k-actions">
-            <button type="submit" class="btn-grad"><i class="bi bi-check2"></i> Save Cloudinary keys</button>
+            <button type="submit" class="btn-grad"><i class="bi bi-check2"></i> Save</button>
             <button type="button" class="btn-ghost" onclick="testCloudinary()"><i class="bi bi-cloud-arrow-up"></i> Test upload</button>
-            <button type="button" class="btn-ghost" onclick="resetSection('cloudinary')"><i class="bi bi-arrow-counterclockwise"></i> Use built-in</button>
+            <button type="button" class="btn-ghost" onclick="resetSection('cloudinary')"><i class="bi bi-arrow-counterclockwise"></i> Go back to the app's own</button>
           </div>
           <div class="k-result" id="cl-result" hidden></div>
           <div class="k-saved k-filled" id="cl-filled" hidden></div>
@@ -297,21 +297,12 @@
             <li>Copy the <span class="k-ui">Cloud name</span> shown on the Console's dashboard.</li>
             <li>Open <span class="k-ui">Settings</span> (the gear) → <span class="k-ui">Upload</span> → <span class="k-ui">Upload presets</span> → <span class="k-ui">Add upload preset</span>. Set <span class="k-ui">Signing mode</span> to <strong>Unsigned</strong>, save, and copy the preset's name.</li>
             <li>Fill in both boxes and press <span class="k-ui">Test upload</span>. It sends a 1-pixel image to the <code>kustomoimprenta/test</code> folder, which you can delete later.</li>
-            <li>Press <span class="k-ui">Save Cloudinary keys</span>. The app and this admin site's Design Studio upload to the new account from then on. Images uploaded before stay on the old account.</li>
+            <li>Press <span class="k-ui">Save</span>. The app and this admin site's Design Studio upload to the new account from then on. Images uploaded before stay on the old account.</li>
           </ol>
           <p class="k-why">Only an <strong>unsigned upload preset</strong> goes here. Never paste Cloudinary's <strong>API secret</strong>: anyone signed in to the app can read this page's keys.</p>
         </div></details>
       </div>
-    </section>
-
-    <!-- ── Maps & address search: OpenStreetMap, nothing to set ─────────── -->
-    <section class="card k-card" id="osm">
-      <div class="card-head">
-        <span class="card-title"><i class="bi bi-geo-alt"></i>Maps &amp; address search</span>
-        <span class="k-pill own">No key needed</span>
-      </div>
-      <p class="k-intro" style="margin:0;">The delivery map and address suggestions in the app use OpenStreetMap, which is free and needs no key or billing account.</p>
-    </section>
+    </details>
 
     <!-- Google key (address search): no longer used since the app moved to OpenStreetMap; kept hidden for its script -->
     <section class="card k-card" id="maps" hidden>
@@ -347,7 +338,34 @@
 
     <details class="card k-dev" id="developer">
       <summary><span class="card-title"><i class="bi bi-code-slash"></i>For your developer</span>
-        <span class="k-sum">Payments, the map picture, Firebase, the signing key, building the app and the database rules. These are built into the app file, so changing them needs a new app build.</span></summary>
+        <span class="k-sum">The full technical checklist, the payment key, Firebase, the signing key, building the app and the database rules. You don't need to open this to run the shop.</span></summary>
+    <!-- ── Checklist ──────────────────────────────────────────────────── -->
+    <section class="card k-card" id="checklist" >
+      <div class="card-head">
+        <span class="card-title"><i class="bi bi-list-check"></i>Key checklist</span>
+        <span class="k-from" id="k-from"></span>
+      </div>
+      <div class="k-status" id="k-status" style="margin:0 0 12px;"></div>
+      <ul class="k-check" id="k-check"><li class="k-row s-unk"><span class="k-ico">?</span><div class="k-name">Checking the keys…</div></li></ul>
+    </section>
+
+    <!-- ── Presets ────────────────────────────────────────────────────── -->
+    <section class="card k-card" id="presets"  hidden>
+      <div class="card-head">
+        <span class="card-title"><i class="bi bi-collection"></i>Presets</span>
+        <span class="k-pill" id="preset-state">—</span>
+      </div>
+      <div class="k-preset-row">
+        <div class="fg">
+          <label for="preset-pick">Ready-made keys</label>
+          <select id="preset-pick" onchange="showPresetNote()"></select>
+        </div>
+        <button type="button" class="btn-ghost" onclick="fillPreset()"><i class="bi bi-input-cursor-text"></i> Fill the forms</button>
+        <button type="button" class="btn-grad" onclick="applyPreset()"><i class="bi bi-check2-all"></i> Fill and save</button>
+      </div>
+      <div class="k-hint" id="preset-note" style="margin-top:10px;font-size:13.5px;color:var(--muted);line-height:1.5;"></div>
+    </section>
+
     <div class="k-section"><h2>Needs a new app build</h2><p>Built into the app file. Change them in the project, then build the app again.</p></div>
 
     <!-- ── PayMongo ───────────────────────────────────────────────────── -->
@@ -838,8 +856,59 @@ service cloud.firestore {
       count('warn') && pill('warn', `! ${count('warn')} usable, with a catch`),
       count('bad') && pill('bad', `✕ ${count('bad')} not usable`),
       count('unk') && pill('', `? ${count('unk')} not checked yet`)
-    ].filter(Boolean).join('') + ' <a class="k-fix" href="#checklist" style="align-self:center;">See the checklist</a>';
+    ].filter(Boolean).join('');
     $('k-from').textContent = build ? `Latest app report: version ${build.version}, ${seenOn(build.reportedAt)}` : '';
+    renderTiles(rows);
+  }
+
+  /**
+   * The owner's view: one tile per thing the shop relies on, in plain words, built from the checklist rows.
+   * The database tile only appears when something there is wrong.
+   */
+  function renderTiles(rows) {
+    const RANK = { bad: 3, warn: 2, unk: 1, ok: 0 };
+    const worst = list => list.reduce((w, r) => RANK[r.state] > RANK[w.state] ? r : w, list[0]);
+    const pick = name => rows.filter(r => r.name === name);
+    const STATE = { ok: 'Working', warn: 'Working, one thing to do', bad: 'Not working', unk: 'Not checked yet' };
+    const tiles = [];
+
+    const ar = worst([...pick('Snap Camera Kit token'), ...pick('AR shirt Lens')]);
+    const arText = {
+      ok: 'Customers can see the shirts on themselves in the app.',
+      warn: /Staging/.test(ar.where) ? 'Works, but the camera shows a “Staging” watermark. Switch to the Production token before customers use it.' : ar.detail,
+      bad: ar.detail,
+      unk: 'Open AR try-on in the app once, and this will show whether it works.'
+    }[ar.state];
+    tiles.push({ state: ar.state, icon: 'camera', name: 'AR try-on', text: arText, act: ar.state === 'ok' ? 'Change account' : 'Fix this', href: 'snap' });
+
+    const cl = worst(pick('Cloudinary uploads'));
+    tiles.push({ state: cl.state, icon: 'images', name: 'Photo & design uploads',
+      text: cl.state === 'ok' ? 'Customers\' designs and your product photos upload fine.' : cl.detail,
+      act: cl.state === 'ok' ? 'Change account' : 'Fix this', href: 'cloudinary' });
+
+    const pm = worst(pick('PayMongo secret key'));
+    const pmText = {
+      ok: 'GCash payments go to your PayMongo account.',
+      warn: /Test/.test(pm.where) ? 'In test mode: checkout works, but no real money moves. Ask your developer to switch to the live key before real orders.' : pm.detail,
+      bad: pm.detail + ' Ask your developer to fix it.',
+      unk: 'Open the app once, signed in, and this will show whether payments are set up.'
+    }[pm.state];
+    tiles.push({ state: pm.state, icon: 'wallet2', name: 'GCash payments', text: pmText, act: 'Your developer changes this', href: 'paymongo', dev: true });
+
+    const db = rows.filter(r => /^Database access|^Firebase project/.test(r.name) && r.state === 'bad');
+    if (db.length) tiles.push({ state: 'bad', icon: 'database', name: 'Shop database',
+      text: db[0].name === 'Firebase project'
+        ? 'The app and this admin site are connected to different databases, so orders and products may not match. Ask your developer.'
+        : 'A one-time database setup is missing, so some pages can\'t save. Your developer can do it in a few minutes.',
+      act: 'Steps for your developer', href: db[0].fix, dev: true });
+
+    $('k-tiles').innerHTML = tiles.map(t => `
+      <div class="k-tile s-${t.state}">
+        <div class="k-tile-top"><i class="bi bi-${t.icon}"></i><span class="k-tile-name">${esc(t.name)}</span></div>
+        <div class="k-tile-state">${STATE[t.state]}</div>
+        <div class="k-tile-text">${esc(t.text)}</div>
+        <a class="k-tile-act${t.dev ? ' k-dev-only' : ''}" href="#${t.href}">${esc(t.act)}</a>
+      </div>`).join('');
   }
 
   /** Jumps to a section, opening it if it's one of the folded ones. */
@@ -875,15 +944,15 @@ service cloud.firestore {
   function renderStatus() {
     const snapOwn = !!(current.snapApiToken && current.snapLensGroupId);
     const clOwn = !!(current.cloudinaryCloudName && current.cloudinaryUploadPreset);
-    setPill('snap-state', denied ? ['bad', 'Not readable yet'] : snapOwn ? ['own', 'Using these keys'] : ['', 'Using built-in keys']);
-    setPill('cl-state', denied ? ['bad', 'Not readable yet'] : clOwn ? ['own', 'Using these keys'] : ['', 'Using built-in keys']);
+    setPill('snap-state', denied ? ['bad', 'Not readable yet'] : snapOwn ? ['own', 'Using your account'] : ['', 'Using the app\'s own account']);
+    setPill('cl-state', denied ? ['bad', 'Not readable yet'] : clOwn ? ['own', 'Using your account'] : ['', 'Using the app\'s own account']);
     setPill('rule-state', (denied || modelsDenied || catsDenied) ? ['bad', 'Needed'] : ['own', 'Done']);
     setPill('maps-state', denied ? ['bad', 'Not readable yet'] : current.mapsApiKey ? ['own', 'Using this key'] : ['', 'Using built-in key']);
     const anySaved = [...SNAP_FIELDS, ...CL_FIELDS].some(f => current[f]);
     const match = presetMatching(current, [...SNAP_FIELDS, ...CL_FIELDS]);
     setPill('preset-state', denied ? ['bad', 'Not readable yet'] : !anySaved ? ['', 'Nothing saved yet'] : match ? ['own', 'Saved: ' + match.name] : ['', 'Custom keys saved']);
     $('k-rule-warn').hidden = !denied;
-    if (denied) $('rules').open = true;
+    if (denied) { $('developer').open = true; $('rules').open = true; }
 
   }
 
