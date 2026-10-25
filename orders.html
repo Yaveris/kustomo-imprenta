@@ -33,6 +33,24 @@
     .om-req.cancel { background:rgba(255,68,68,.1); border:1px solid rgba(255,107,107,.4); color:#FFB3B3; }
     .om-req.change { background:rgba(255,214,0,.08); border:1px solid rgba(255,214,0,.35); color:#F2DE8A; }
     .om-req a { margin-left:auto; color:var(--orange); font-weight:700; }
+    /* Bottom of an opened order: status changes and the chat, each folded until opened */
+    .om-fold { grid-column:1 / -1; border-top:1px solid var(--border); padding-top:12px; }
+    .om-tgl { display:flex; gap:8px; flex-wrap:wrap; }
+    .om-tgl button { display:inline-flex; align-items:center; gap:7px; padding:7px 13px; border-radius:20px; border:1px solid var(--border); background:rgba(255,255,255,.03); color:#cfcfcf; font-size:13.5px; cursor:pointer; }
+    .om-tgl button:hover { border-color:rgba(255,92,0,.5); color:var(--text); }
+    .om-tgl button[aria-expanded="true"] { border-color:var(--orange); background:rgba(255,92,0,.1); color:var(--text); }
+    .om-tgl button[aria-expanded="true"] .bi-chevron-down { transform:rotate(180deg); }
+    .om-tgl .bi-chevron-down { font-size:11px; transition:transform .15s; }
+    .om-tgl .n { font-size:11.5px; font-weight:800; padding:0 6px; border-radius:9px; background:rgba(255,255,255,.08); }
+    .om-tgl .n.new { background:var(--orange); color:#fff; }
+    .om-sec { margin-top:12px; }
+    .om-hist { list-style:none; margin:0; padding:0; display:grid; gap:2px; }
+    .om-hist li { display:flex; gap:10px; align-items:baseline; font-size:14px; padding:6px 0; border-bottom:1px dashed rgba(255,255,255,.06); }
+    .om-hist li:last-child { border-bottom:none; }
+    .om-hist .when { color:var(--muted); font-size:13px; margin-left:auto; white-space:nowrap; }
+    .om-hist .who { color:var(--muted); font-size:13px; }
+    .om-chat { max-width:760px; }
+    .om-chat .chat-wrap { height:300px; margin-bottom:10px; }
     .rq { display:inline-block; font-size:12px; font-weight:700; padding:1px 8px; border-radius:10px; margin-left:4px; }
     .rq.cancel { color:#FF6B6B; border:1px solid rgba(255,107,107,.45); }
     .rq.change { color:var(--yellow); border:1px solid rgba(255,214,0,.4); }
@@ -126,6 +144,7 @@
   const opened = new Set();          // orders shown open
   let requests = {};                 // order id → the customer's unanswered request ({type: 'cancel' | 'change'})
   let chatOf = {};                   // order id → chat id
+  let chatInfo = {};                 // chat id → the chat document (for its unread mark)
 
   auth.onAuthStateChanged(u => {
     if (!u) return;
@@ -138,8 +157,9 @@
     });
     // Customers' cancel and design-change requests, shown on their orders
     db.collection('chats').onSnapshot(snap => {
-      requests = {}; chatOf = {};
-      snap.docs.forEach(d => { const c = d.data(); if (!c.orderId) return; chatOf[c.orderId] = d.id; if (c.openRequest && c.openRequest.type) requests[c.orderId] = c.openRequest; });
+      requests = {}; chatOf = {}; chatInfo = {};
+      snap.docs.forEach(d => { const c = d.data(); if (!c.orderId) return; chatOf[c.orderId] = d.id; chatInfo[d.id] = c; if (c.openRequest && c.openRequest.type) requests[c.orderId] = c.openRequest; });
+      syncChats();
       if (all.length) render();
     }, () => {});
   });
@@ -157,7 +177,11 @@
     ? !['Delivered', 'Cancelled'].includes(o.status || 'Pending') && !(o.driver && o.driver.name)
     : (o.status || 'Pending') === tab;
   let shown = [];
+  let focusChat = null;
   function render() {
+    // A redraw replaces the chat boxes: remember which one was being typed in
+    const a = document.activeElement;
+    focusChat = a && a.id && a.id.startsWith('oc-in-') ? { id: a.id, pos: a.selectionStart || 0 } : null;
     const q = document.getElementById('q').value.trim().toLowerCase();
     const timed = all.filter(inPeriod);
     // How many orders each tab holds (in the chosen period)
@@ -202,11 +226,14 @@
       </tr>${isOpen ? `<tr class="o-more"><td colspan="9">${orderPanel(o)}</td></tr>` : ''}`;
     }).join('');
     drawPictures();
+    document.querySelectorAll('.om-chat .chat-wrap').forEach(b => { b.scrollTop = b.scrollHeight; });
+    if (focusChat) { const inp = document.getElementById(focusChat.id); if (inp) { inp.focus(); try { inp.setSelectionRange(focusChat.pos, focusChat.pos); } catch (e) {} } }
   }
 
   // ── An order, opened in place ─────────────────────────────────────────────────────────────────────
   function toggleOrder(id) {
     if (opened.has(id)) opened.delete(id); else opened.add(id);
+    syncChats();
     render();
   }
   const hexOk = h => (typeof h === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(h)) ? h : '';
@@ -262,12 +289,91 @@
           </select>
         </div>
         <div class="om-acts">
-          <a class="btn-ghost" href="${chatLink}"><i class="bi bi-chat-dots"></i> Chat</a>
           <a class="btn-ghost" href="order-detail.html?id=${encodeURIComponent(o.id)}" title="Print files, driver, staff notes, history"><i class="bi bi-box-arrow-up-right"></i> Full page</a>
         </div>
       </div>
+      ${foldsHtml(o)}
     </div>`;
   }
+
+  // ── Bottom of an opened order: its status changes and its chat, each opened with its own button ──
+  const histOpen = new Set(), chatOpen = new Set();
+  const msgsOf = {};        // chat id → messages, kept live while the chat is shown
+  const unsubOf = {};       // chat id → stops listening
+  const drafts = {};        // order id → what is typed in its chat box, kept across re-draws
+  function statusSteps(o) {
+    const hist = (Array.isArray(o.statusHistory) ? o.statusHistory : []).slice()
+      .sort((a, b) => (a.at && a.at.toMillis ? a.at.toMillis() : 0) - (b.at && b.at.toMillis ? b.at.toMillis() : 0));
+    return [{ status: 'Placed', at: o.orderedAt, by: o.fullName || 'Customer' }].concat(hist);
+  }
+  function foldsHtml(o) {
+    const steps = statusSteps(o), cid = chatOf[o.id], hOpen = histOpen.has(o.id), cOpen = chatOpen.has(o.id);
+    const unread = cid && chatInfo[cid] && chatIsUnread(chatInfo[cid]);
+    const hist = hOpen ? `<div class="om-sec"><ul class="om-hist">${steps.map(h => {
+        const key = String(h.status || '').toLowerCase();
+        return `<li><span style="color:var(--s-${key === 'placed' ? 'pending' : esc(key)},var(--muted));">●</span>
+          <strong>${esc(h.status === 'Ready' ? 'Ready for pickup' : h.status || '')}</strong>${h.by ? `<span class="who">by ${esc(h.by)}</span>` : ''}
+          <span class="when">${h.at ? fmtDate(h.at) : ''}</span></li>`;
+      }).join('')}</ul>${steps.length === 1 ? '<div class="note" style="margin-top:6px;">No status changes yet.</div>' : ''}</div>` : '';
+    let chat = '';
+    if (cOpen) {
+      chat = !cid ? '<div class="om-sec note">This order has no chat yet. It starts when the customer or you send a message from the Full page.</div>'
+        : `<div class="om-sec om-chat">
+            <div class="chat-wrap" id="oc-${esc(o.id)}">${chatHtml(cid)}</div>
+            <div class="chat-row">
+              <textarea id="oc-in-${esc(o.id)}" rows="1" placeholder="Type a message… (Enter to send)" onclick="event.stopPropagation()"
+                oninput="drafts['${esc(o.id)}']=this.value" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendInline('${esc(o.id)}');}">${esc(drafts[o.id] || '')}</textarea>
+              <button class="btn-send" onclick="event.stopPropagation();sendInline('${esc(o.id)}')" aria-label="Send"><i class="bi bi-send-fill"></i></button>
+            </div>
+          </div>`;
+    }
+    return `<div class="om-fold">
+      <div class="om-tgl">
+        <button type="button" aria-expanded="${hOpen}" onclick="event.stopPropagation();toggleFold(histOpen,'${esc(o.id)}')"><i class="bi bi-clock-history"></i> Status changes <span class="n">${steps.length - 1}</span><i class="bi bi-chevron-down"></i></button>
+        <button type="button" aria-expanded="${cOpen}" onclick="event.stopPropagation();toggleFold(chatOpen,'${esc(o.id)}')"><i class="bi bi-chat-dots"></i> ${cOpen ? 'Hide chat' : 'Show chat'}${unread ? ' <span class="n new">New</span>' : ''}<i class="bi bi-chevron-down"></i></button>
+      </div>${hist}${chat}
+    </div>`;
+  }
+  function chatHtml(cid) {
+    const msgs = msgsOf[cid];
+    if (!msgs) return '<div class="spinner" style="margin:20px auto;"></div>';
+    if (!msgs.length) return '<div style="text-align:center;color:var(--muted);font-size:14px;padding:30px 0;">No messages yet.</div>';
+    return msgs.map(m => chatMessageHtml(m, cid)).join('');
+  }
+  function toggleFold(set, id) {
+    if (set.has(id)) set.delete(id); else set.add(id);
+    syncChats();
+    render();
+  }
+  /** Listens to the chats that are shown and stops listening to the rest. */
+  function syncChats() {
+    const want = new Set([...chatOpen].filter(id => opened.has(id)).map(id => chatOf[id]).filter(Boolean));
+    Object.keys(unsubOf).forEach(cid => { if (!want.has(cid)) { unsubOf[cid](); delete unsubOf[cid]; delete msgsOf[cid]; } });
+    want.forEach(cid => {
+      if (unsubOf[cid]) return;
+      unsubOf[cid] = db.collection('chats').doc(cid).collection('messages').orderBy('sentAt', 'asc').onSnapshot(snap => {
+        msgsOf[cid] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Only that chat box is redrawn, so the rest of the page (and any typing) is left alone
+        Object.keys(chatOf).filter(oid => chatOf[oid] === cid).forEach(oid => {
+          const box = document.getElementById('oc-' + oid);
+          if (box) { box.innerHTML = chatHtml(cid); box.scrollTop = box.scrollHeight; }
+        });
+        markChatRead(cid);
+      }, () => { msgsOf[cid] = []; });
+    });
+  }
+  async function sendInline(oid) {
+    const cid = chatOf[oid], inp = document.getElementById('oc-in-' + oid);
+    const txt = ((inp && inp.value) || '').trim();
+    if (!txt || !cid) return;
+    inp.value = ''; drafts[oid] = '';
+    try {
+      const ts = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('chats').doc(cid).collection('messages').add({ senderId: (auth.currentUser && auth.currentUser.uid) || '', senderRole: 'admin', messageText: txt, sentAt: ts });
+      await db.collection('chats').doc(cid).update({ lastMessageAt: ts, adminReadAt: ts });
+    } catch (e) { toast('Send failed: ' + e.message, 'err'); inp.value = txt; drafts[oid] = txt; }
+  }
+
   async function quickStatus(id, sel) {
     const o = all.find(x => x.id === id), s = sel.value;
     const q = statusChangeQuestion(orderNo(id), o && o.status, s);
