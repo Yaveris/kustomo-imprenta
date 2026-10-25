@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Training — KustomoImprenta Admin</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="img/logo.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    .tr { max-width: 980px; }
+    .tr-hero { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+    .tr-hero .grow { flex: 1; min-width: 260px; }
+    .tr-hero h1 { font-size: 26px; font-weight: 800; line-height: 1.25; }
+    .tr-hero p { font-size: 16px; color: #c8c8c8; margin-top: 6px; max-width: 640px; line-height: 1.55; }
+    .tr-prog { min-width: 230px; padding: 16px 18px; border-radius: 14px; background: var(--card-bg); border: 1px solid var(--border); }
+    .tr-prog .v { font-size: 22px; font-weight: 800; }
+    .tr-prog .bar { height: 10px; border-radius: 6px; background: rgba(255,255,255,.07); margin-top: 10px; overflow: hidden; }
+    .tr-prog .bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--orange), var(--pink)); transition: width .3s; }
+
+    .tr-toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 26px; }
+    .tr-toc a { font-size: 14px; padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border); background: rgba(255,255,255,.03); color: #c8c8c8; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .tr-toc a:hover { border-color: var(--orange); color: var(--text); }
+    .tr-toc a.done { border-color: rgba(0,230,118,.4); color: #00E676; }
+
+    .lesson { padding: 22px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--border); margin-bottom: 18px; scroll-margin-top: 80px; }
+    .lesson.done { border-color: rgba(0,230,118,.35); }
+    .ls-head { display: flex; gap: 14px; align-items: flex-start; }
+    .ls-num { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; flex-shrink: 0; background: rgba(255,92,0,.13); color: var(--orange); }
+    .lesson.done .ls-num { background: rgba(0,230,118,.14); color: #00E676; }
+    .ls-head h2 { font-size: 20px; font-weight: 800; }
+    .ls-head p { font-size: 15.5px; color: #c8c8c8; margin-top: 4px; line-height: 1.55; }
+    .ls-time { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .lesson h3 { font-size: 16px; font-weight: 800; margin: 20px 0 8px; color: var(--text); }
+    .lesson ol, .lesson ul { margin: 6px 0 0 22px; display: grid; gap: 7px; font-size: 15px; line-height: 1.6; color: #dedede; }
+    .lesson ol li::marker { color: var(--orange); font-weight: 700; }
+    .lesson p.t { font-size: 15px; line-height: 1.6; color: #dedede; margin-top: 6px; }
+    b.ui { color: var(--text); background: rgba(255,255,255,.07); border: 1px solid var(--border); border-radius: 6px; padding: 0 6px; font-weight: 600; white-space: nowrap; }
+    .lesson a { color: var(--orange); font-weight: 600; }
+    .tip { margin-top: 14px; padding: 12px 14px; border-radius: 10px; font-size: 14.5px; line-height: 1.55; background: rgba(127,219,255,.06); border: 1px solid rgba(127,219,255,.25); color: #cfeefa; }
+    .tip i { color: #7FDBFF; margin-right: 6px; }
+    .warnbox { margin-top: 14px; padding: 12px 14px; border-radius: 10px; font-size: 14.5px; line-height: 1.55; background: rgba(255,214,0,.07); border: 1px solid rgba(255,214,0,.25); color: #e8dca0; }
+    .warnbox i { color: var(--yellow); margin-right: 6px; }
+    .ls-acts { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .ls-acts a.btn-grad { color: #fff; } .ls-acts a.btn-ghost { color: #c4c4c4; }
+    .learned { display: inline-flex; align-items: center; gap: 8px; font-size: 14.5px; color: var(--muted); cursor: pointer; margin-left: auto; }
+    .learned input { width: 18px; height: 18px; accent-color: #00E676; cursor: pointer; }
+
+    /* Field guide: what each box on the product form does */
+    .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin-top: 8px; }
+    .field { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.02); font-size: 14px; line-height: 1.5; color: #c8c8c8; }
+    .field b { display: block; color: var(--text); font-size: 14.5px; margin-bottom: 2px; }
+
+    /* How it fits together */
+    .map { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 14px; align-items: center; margin-top: 12px; }
+    @media (max-width: 760px) { .map { grid-template-columns: 1fr; } }
+    .node { padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.03); font-size: 14px; line-height: 1.5; color: #c8c8c8; }
+    .node h4 { font-size: 15.5px; color: var(--text); display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .node h4 i { color: var(--orange); }
+    .node.core { border-color: rgba(255,92,0,.45); background: rgba(255,92,0,.06); text-align: center; }
+    .node.core h4 { justify-content: center; }
+    .services { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 12px; }
+
+    /* Life of an order */
+    .journey { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .journey button { flex: 1; min-width: 108px; padding: 10px 8px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.03); color: #c8c8c8; cursor: pointer; font-size: 14px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .journey button .e { font-size: 20px; }
+    .journey button.on { border-color: var(--orange); background: rgba(255,92,0,.1); color: var(--text); }
+    .jdetail { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    @media (max-width: 700px) { .jdetail { grid-template-columns: 1fr; } }
+    .jcol { padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.02); font-size: 14.5px; line-height: 1.6; color: #dedede; }
+    .jcol h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 6px; }
+    .jcol ul { margin-left: 18px; }
+
+    /* Price calculator */
+    .calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+    .calc .fg { margin: 0; }
+    .calc-out { margin-top: 12px; padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid var(--border); font-size: 15px; line-height: 1.8; }
+    .calc-out .row { display: flex; justify-content: space-between; gap: 10px; }
+    .calc-out .row.total { font-weight: 800; font-size: 17px; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 6px; }
+    .calc-out .muted { color: var(--muted); font-size: 13.5px; }
+
+    /* Design showcase */
+    .show { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
+    .show figure { margin: 0; padding: 10px; border-radius: 12px; border: 1px solid var(--border); background: radial-gradient(circle at 50% 40%, rgba(255,92,0,.08), transparent 70%); text-align: center; }
+    .show .pic { height: 170px; display: grid; place-items: center; }
+    .show canvas { max-width: 100%; max-height: 170px; }
+    .show figcaption { font-size: 13px; color: #dedede; margin-top: 6px; line-height: 1.35; }
+    .show figcaption b { display: block; font-size: 13.5px; color: var(--text); }
+    .chip { display: inline-block; font-size: 11.5px; font-weight: 800; padding: 2px 8px; border-radius: 20px; margin-top: 4px; }
+    .chip.ready { color: #7FDBFF; border: 1px solid rgba(127,219,255,.4); }
+    .chip.open { color: var(--orange); border: 1px solid rgba(255,92,0,.4); }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+    @media (max-width: 700px) { .two { grid-template-columns: 1fr; } }
+    .kind { padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.02); font-size: 14.5px; line-height: 1.55; color: #dedede; }
+    .kind h4 { font-size: 15.5px; margin-bottom: 4px; display: flex; gap: 8px; align-items: center; }
+
+    /* Status table */
+    .st { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14.5px; }
+    .st th, .st td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+    .st th { font-size: 12.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+    .st td:first-child { white-space: nowrap; font-weight: 700; }
+
+    /* Quiz */
+    .quiz { display: grid; gap: 14px; margin-top: 10px; }
+    .q { padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.02); }
+    .q p { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .q label { display: flex; gap: 8px; align-items: flex-start; font-size: 14.5px; padding: 6px 8px; border-radius: 8px; cursor: pointer; color: #dedede; }
+    .q label:hover { background: rgba(255,255,255,.04); }
+    .q input { accent-color: var(--orange); margin-top: 4px; }
+    .q .why { display: none; font-size: 14px; margin-top: 6px; line-height: 1.5; }
+    .q.right .why, .q.wrong .why { display: block; }
+    .q.right { border-color: rgba(0,230,118,.4); } .q.right .why { color: #8ff0bd; }
+    .q.wrong { border-color: rgba(255,68,68,.4); } .q.wrong .why { color: #ffb3b3; }
+    .score { font-size: 16px; font-weight: 800; }
+  </style>
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar"><div class="topbar-title">Staff <span>Training</span></div></div>
+  <div class="page-content">
+  <div class="tr">
+
+    <div class="tr-hero">
+      <div class="grow">
+        <h1>How the shop runs, from product to doorstep</h1>
+        <p>Nine short lessons for new staff. Each one explains a part of the system and ends with something to try on this site. Add the example products first, so there is something to practise on.</p>
+      </div>
+      <div class="tr-prog"><div class="v" id="prog-v">0 of 9 learned</div><div class="bar"><span id="prog-bar"></span></div></div>
+    </div>
+    <nav class="tr-toc" id="toc" aria-label="Lessons"></nav>
+
+    <!-- 1 ─────────────────────────────────────────────────────────────── -->
+    <section class="lesson" id="system" data-lesson="system">
+      <div class="ls-head"><div class="ls-num"><i class="bi bi-diagram-3"></i></div><div>
+        <h2>1 · How it all fits together</h2>
+        <p>The app and this admin site share one database. What you change here shows in customers' phones within seconds, and what customers do in the app shows up here.</p>
+        <div class="ls-time">5 minutes</div></div></div>
+      <div class="map">
+        <div class="node"><h4><i class="bi bi-laptop"></i> This admin site</h4>Staff add products and designs, set prices and stock, handle orders, chat with customers and arrange delivery.</div>
+        <div class="node core"><h4><i class="bi bi-database"></i> The shop's database</h4>Products · designs · orders · chats · customers · settings<br><span style="color:var(--muted);font-size:13px;">(Google Firebase, updated live both ways)</span></div>
+        <div class="node"><h4><i class="bi bi-phone"></i> The customer app</h4>Customers browse, design their shirt, try it on with the camera, find their size, pay with GCash and follow their order.</div>
+      </div>
+      <div class="services">
+        <div class="node"><h4><i class="bi bi-images"></i> Cloudinary</h4>Keeps the pictures: product photos and the images customers put on their designs.</div>
+        <div class="node"><h4><i class="bi bi-wallet2"></i> PayMongo (GCash)</h4>Takes the payment. An order only reaches you once its payment went through.</div>
+        <div class="node"><h4><i class="bi bi-camera"></i> Snap Camera Kit</h4>The AR try-on: customers see the shirt and their design on themselves.</div>
+        <div class="node"><h4><i class="bi bi-truck"></i> Your driver</h4>Not in the system: you assign one to each order and the customer is told.</div>
+      </div>
+      <h3>The life of an order</h3>
+      <p class="t">Click each step to see what you do and what the customer sees in the app.</p>
+      <div class="journey" id="journey"></div>
+      <div class="jdetail" id="jdetail"></div>
+      <div class="ls-acts"><a class="btn-ghost" href="dashboard.html"><i class="bi bi-speedometer2"></i> Open the Dashboard</a><label class="learned"><input type="checkbox" data-learn="system"> I understand this</label></div>
+    </section>
+
+    <!-- 2 ─────────────────────────────────────────────────────────────── -->
+    <section class="lesson" id="products" data-lesson="products">
+      <div class="ls-head"><div class="ls-num"><i class="bi bi-box-seam"></i></div><div>
+        <h2>2 · Adding a product</h2>
+        <p>Everything customers can buy is a product. Each product is one shirt style in one design idea, with its price, sizes and (if you count it) the stock in storage.</p>
+        <div class="ls-time">10 minutes</div></div></div>
+      <h3>Step by step</h3>
+      <ol>
+        <li>Open <a href="products.html">Products &amp; Stock</a> and press <b class="ui">Add Product</b>. If a shirt style has nothing for sale yet, a button for it at the top of the form fills it in for you.</li>
+        <li>Type the <b>name</b> customers will see, pick a <b>category</b> (the shelf it sits on) and the <b>price</b>.</li>
+        <li>Choose whether customers can change the design: <b class="ui">Customers can change it</b> or <b class="ui">Ready-made</b> (lesson 4).</li>
+        <li>Add a <b>photo</b>, or click a ready-made design under the photo box to use a picture of it. No photo? The app shows the 3D shirt instead.</li>
+        <li>Pick the <b>sizes</b> and decide whether to count the stock (lesson 5).</li>
+        <li>Press <b class="ui">Save</b>. A new product goes straight to the Design Studio to make its design.</li>
+        <li>Check that <b class="ui">For sale in the app</b> is on. It's in the app at once.</li>
+      </ol>
+      <h3>What each part of the form does</h3>
+      <div class="fields">
+        <div class="field"><b>Name and description</b>What customers read on the product page. Keep the name short, like “Team Ballers Jersey Tee”.</div>
+        <div class="field"><b>Category</b>The shelf in the app (Tees, Hoodies…). Set the shelves up with <b class="ui">Categories</b>.</div>
+        <div class="field"><b>Price and discount</b>The regular price, and an optional % off. The app shows the old price crossed out with a “-20%” badge.</div>
+        <div class="field"><b>For sale in the app</b>Off hides it from customers without deleting it. Good for seasonal items.</div>
+        <div class="field"><b>Design</b>Whether customers can change your design, or buy it exactly as made.</div>
+        <div class="field"><b>Photo</b>The picture in the shop list. A picture of the design works well.</div>
+        <div class="field"><b>Sizes and stock</b>The sizes offered, and either “made to order” or how many of each are in storage.</div>
+        <div class="field"><b>Advanced: 3D model</b>Which shirt shape the app uses for the 3D view, the designer and AR try-on. Usually set by the name.</div>
+        <div class="field"><b>Advanced: tag and measurements</b>A New / Sale / Hot badge, and the size chart customers see when choosing a size.</div>
+      </div>
+      <div class="tip"><i class="bi bi-lightbulb"></i><b>Practise safely:</b> the <b class="ui">Add example products</b> button on Products &amp; Stock adds 10 sample products, two for each shirt style, marked “Example”. Edit them as much as you like, then press <b class="ui">Remove the examples</b> before the shop opens.</div>
+      <div class="ls-acts"><a class="btn-grad" href="products.html"><i class="bi bi-box-seam"></i> Open Products &amp; Stock</a><label class="learned"><input type="checkbox" data-learn="products"> I added or edited a product</label></div>
+    </section>
+
+    <!-- 3 ─────────────────────────────────────────────────────────────── -->
+    <section class="lesson" id="pricing" data-lesson="pricing">
+      <div class="ls-head"><div class="ls-num"><i class="bi bi-tag"></i></div><div>
+        <h2>3 · Pricing, discounts, shipping and downpayments</h2>
+        <p>What a customer pays is the product price (after any discount) times the quantity, plus shipping. Big orders can pay part now and the rest on delivery.</p>
+        <div class="ls-time">8 minutes</div></div></div>
+      <h3>The rules</h3>
+      <ul>
+        <li><b>Lowest price ₱20.</b> GCash doesn't accept smaller payments, so the form won't save a price or discount below that.</li>
+        <li><b>Discounts</b> are a whole % from 0 to 90. The price is rounded down to whole pesos, so customers never save less than shown.</li>
+        <li><b>Shipping</b> is one fee per order, and free from a set subtotal. Both are set in <a href="settings.html">Shop Settings</a> (Super Admin).</li>
+        <li><b>Downpayment</b>: carts with enough items can pay a part now through GCash. The rest is collected on delivery and marked on the order (lesson 8).</li>
+      </ul>
+      <h3>Try it: what will the customer pay?</h3>
+      <p class="t">Uses this shop's own shipping and downpayment settings.</p>
+      <div class="calc">
+        <div class="fg"><label for="c-price">Price (₱)</label><input type="number" id="c-price" value="449" min="20"></div>
+        <div class="fg"><label for="c-disc">Discount (%)</label><input type="number" id="c-disc" value="20" min="0" max="90"></div>
+        <div class="fg"><label for="c-qty">Pieces in the cart</label><input type="number" id="c-qty" value="3" min="1"></div>
+      </div>
+      <div class="calc-out" id="calc-out"></div>
+      <div class="ls-acts"><a class="btn-ghost" href="settings.html"><i class="bi bi-sliders"></i> Shop Settings (Super Admin)</a><label class="learned"><input type="checkbox" data-learn="pricing"> I can work out a customer's total</label></div>
+    </section>
+
+    <!-- 4 ─────────────────────────────────────────────────────────────── -->
+    <section class="lesson" id="designs" data-lesson="designs">
+      <div class="ls-head"><div class="ls-num"><i class="bi bi-palette"></i></div><div>
+        <h2>4 · Designs: starting designs and ready-made products</h2>
+        <p>The shop makes designs in the <a href="design.html">Design Studio</a>. A product's design is used in one of two ways, chosen on the product form.</p>
+        <div class="ls-time">12 minutes</div></div></div>
+      <div class="two">
+        <div class="kind"><h4><i class="bi bi-pencil-square" style="color:var(--orange);"></i> Starting design · customers can change it</h4>
+          The product opens in the app's designer with your design already on it. Customers change the words, move things, add their own pictures and pick any shirt colour. Best for group shirts, birthdays, school batches and business uniforms.</div>
+        <div class="kind"><h4><i class="bi bi-patch-check" style="color:#7FDBFF;"></i> Ready-made · can't be changed</h4>
+          Sold exactly as you designed it, in its own colour. Customers only pick the size and quantity; the app shows “Ready-made design, printed exactly as shown”. Best for your own collections, seasonal prints and stock you've already printed.</div>
+      </div>
+      <h3>Making a product's design</h3>
+      <ol>
+        <li>On the product's card, press <b class="ui">Create one</b> (or <b class="ui">Make the design</b> for a ready-made product). The Design Studio opens with that product's shirt.</li>
+        <li>Add text, a picture or shapes. Drag them into place inside the dashed print area. Use <b class="ui">Front</b> / <b class="ui">Back</b> to switch sides.</li>
+        <li>Pick the shirt colour. For a ready-made product, this is the colour it's sold in.</li>
+        <li>Press <b class="ui">Save</b>. The product card shows a small picture of it, and customers see it at once.</li>
+      </ol>
+      <div class="tip"><i class="bi bi-lightbulb"></i>Designs you'll reuse belong in the <a href="design-library.html">Design Library</a>: customers pick them under <b>Shop designs</b> in the app's designer. The library has 12 starter designs you can add with one click. Fonts and limits for the designer are on <a href="studio-settings.html">Studio Settings</a>.</div>
+      <h3>Showcase: the example products</h3>
+      <p class="t">One ready-made and one starting design for each shirt style, drawn live from the example set.</p>
+      <div class="show" id="showcase"><div class="spinner"></div></div>
+      <div class="ls-acts"><a class="btn-grad" href="design.html"><i class="bi bi-palette"></i> Open the Design Studio</a><a class="btn-ghost" href="design-library.html"><i class="bi bi-collection"></i> Design Library</a><label class="learned"><input type="checkbox" data-learn="designs"> I made or changed a design</label></div>
+    </section>
+
+    <!-- 5 ─────────────────────────────────────────────────────────────── -->
+    <section class="lesson" id="stock" data-lesson="stock">
+      <div class="ls-head"><div class="ls-num"><i class="bi bi-boxes"></i></div><div>
+        <h2>5 · Stock</h2>
+        <p>Each product is either <b>made to order</b> (any size, any quantity) or <b>counted</b>: you enter how many of each size are in storage and the system keeps the count.</p>
+        <div class="ls-time">6 minutes</div></div></div>
+      <ul>
+        <li><b>Counting is automatic.</b> When an order comes in, its pieces are taken off the moment any admin page is open. Each order is counted once only.</li>
+        <li><b>Cancelling gives stock back.</b> Setting an order to Cancelled returns its pieces to storage.</li>
+        <li><b>Customers can't over-buy.</b> The app shows how many are left and greys out sold-out sizes.</li>
+        <li><b>Low and out of stock</b> sizes turn yellow and red. The level counted as “low” is set in Shop Settings.</li>
+      </ul>
+      <h3>Daily stock work</h3>
+      <ol>
+        <li>Press <b class="ui">In storage</b> at the top of Products &amp; Stock to see every count, with the low ones first.</li>
+        <li>New delivery from your supplier? Press <b class="ui">Stock</b> on the product and use <b class="ui">+</b>, or type the count after counting the shelf.</li>
+        <li>Print shirts only when ordered? Turn off <b class="ui">Count how many are in storage</b>, and it's made to order.</li>
+      </ol>
+      <div class="ls-acts"><a class="btn-grad" href="products.html?view=stock"><i class="bi bi-boxes"></i> Open In storage</a><label class="learned"><input type="checkbox" data-learn="stock"> I changed a stock count</label></div>
+    </section>
+
+    <!-- 6 ─────────────────────────────────────────────────────────────── -->
+    <section class="lesson" id="orders" data-lesson="orders">
+      <div class="ls-head"><div class="ls-num"><i class="bi bi-bag-check"></i></div><div>
+        <h2>6 · Orders</h2>
+        <p>Paid orders arrive in <a href="orders.html">Orders</a> with a badge in the menu. Open one to see the customer, the items with their designs and print files, the delivery address, the chat and its history.</p>
+        <div class="ls-time">12 minutes</div></div></div>
+      <h3>The statuses</h3>
+      <table class="st">
+        <thead><tr><th>Status</th><th>Means</th><th>What you do</th></tr></thead>
+        <tbody>
+          <tr><td>⏳ Pending</td><td>Paid and waiting for you.</td><td>Check the items, sizes and designs. Ask in the chat if anything is unclear.</td></tr>
+          <tr><td>⚙️ Processing</td><td>Accepted, being prepared.</td><td>Download the print files and get the shirts ready.</td></tr>
+          <tr><td>🖨️ Printing</td><td>On the press.</td><td>Print. From here, the order can't be cancelled by the customer.</td></tr>
+          <tr><td>📦 Ready</td><td>Packed, waiting for pickup or delivery.</td><td>Assign a driver (lesson 8).</td></tr>
+          <tr><td>✅ Delivered</td><td>In the customer's hands.</td><td>Collect any balance first and mark it.</td></tr>
+          <tr><td>✖️ Cancelled</td><td>Not going ahead.</td><td>Refund through PayMongo if paid. Stock goes back automatically.</td></tr>
+        </tbody>
+      </table>
+      <h3>Inside an order</h3>
+      <ul>
+        <li><b>Order items</b>: each item with its size, colour and design. A ready-made product shows its ready-made design.</li>
+        <li><b>Print files</b>: each side as a PNG at its real printed size. Use these for printing, not screenshots.</li>
+        <li><b>Fit Scan measurements</b>, when the customer sent them, show with the item.</li>
+        <li><b>Staff notes</b>: notes only staff see, like “use the heavier cotton”.</li>
+        <li><b>Status history</b>: who changed what and when.</li>
+      </ul>
+      <div class="ls-acts"><a class="btn-grad" href="orders.html"><i class="bi bi-bag-check"></i> Open Orders</a><label class="learned"><input type="checkbox" data-learn="orders"> I opened an order and found its print files</label></div>
+    </section>
+
+    <!-- 7 ─────────────────────────────────────────────────────────────── -->
+    <section class="lesson" id="chats" data-lesson="chats">
+      <div class="ls-head"><div class="ls-num"><i class="bi bi-chat-dots"></i></div><div>
+        <h2>7 · Chats with customers</h2>
+        <p>Every order has its own chat. Customers write from <b>My Orders</b> in the app, and you answer from the order page or from <a href="chats.html">Messages</a>, which lists every chat with the unread ones first.</p>
+        <div class="ls-time">5 minutes</div></div></div>
+      <ul>
+        <li>A number on <b>Messages</b> in the menu shows unread chats.</li>
+        <li>You and the customer can send pictures, such as a design proof or a photo of a misprint.</li>
+        <li>Use the chat to confirm details before printing, and to tell the customer about delays or the driver.</li>
+        <li>Cancellations and reprints are agreed in the chat too (see the shop's Terms in Shop Settings).</li>
+      </ul>
+      <div class="tip"><i class="bi bi-lightbulb"></i>Good habit: answer every chat on the same day, and send a proof picture for big group orders before moving them to Printing.</div>
+      <div class="ls-acts"><a class="btn-grad" href="chats.html"><i class="bi bi-chat-dots"></i> Open Messages</a><label class="learned"><input type="checkbox" data-learn="chats"> I know where chats are</label></div>
+    </section>
+
+    <!-- 8 ─────────────────────────────────────────────────────────────── -->
+    <section class="lesson" id="delivery" data-lesson="delivery">
+      <div class="ls-head"><div class="ls-num"><i class="bi bi-truck"></i></div><div>
+        <h2>8 · Delivery</h2>
+        <p>Customers pin their address on a map when they order. The order page shows where they are, how far from the shop, and the driver you send.</p>
+        <div class="ls-time">8 minutes</div></div></div>
+      <ol>
+        <li><b>Set the shop's location once</b> (<a href="getting-started.html">Getting Started</a>, step 2). Every order then shows the distance from your door.</li>
+        <li>When the order is <b>Ready</b>, open its <b>Delivery</b> box: the address, the map, the distance by road and a <b class="ui">Directions</b> button for Google Maps.</li>
+        <li><b>Assign a driver</b>: their name, phone and plate or booking number (a Lalamove booking number works too). Drivers you've used before are suggested.</li>
+        <li>Press <b class="ui">Tell the customer</b>. It writes a message with the driver's details in the order chat; check it and press send.</li>
+        <li>Paid with a <b>downpayment</b>? The order shows the <b>Balance on delivery</b>. Once the driver collects it, press <b class="ui">Mark as collected</b>.</li>
+        <li>When it arrives, set the status to <b>Delivered</b>.</li>
+      </ol>
+      <div class="warnbox"><i class="bi bi-exclamation-triangle"></i>A wrong pin means a lost driver. If the map pin looks far from the typed address, ask the customer in the chat before sending anyone.</div>
+      <div class="ls-acts"><a class="btn-grad" href="orders.html"><i class="bi bi-truck"></i> Open Orders</a><label class="learned"><input type="checkbox" data-learn="delivery"> I know how to send a driver</label></div>
+    </section>
+
+    <!-- 9 ─────────────────────────────────────────────────────────────── -->
+    <section class="lesson" id="quiz" data-lesson="quiz">
+      <div class="ls-head"><div class="ls-num"><i class="bi bi-patch-question"></i></div><div>
+        <h2>9 · Quick check</h2>
+        <p>Six questions about everyday situations. Get them all right to finish the training.</p>
+        <div class="ls-time">5 minutes</div></div></div>
+      <div class="quiz" id="quiz-list"></div>
+      <div class="ls-acts"><span class="score" id="quiz-score"></span><button class="btn-ghost" type="button" onclick="resetQuiz()"><i class="bi bi-arrow-counterclockwise"></i> Try again</button><label class="learned"><input type="checkbox" data-learn="quiz" disabled> All answered right</label></div>
+    </section>
+
+  </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/studio-common.js"></script>
+<script src="js/design-render.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  const LESSONS = [...document.querySelectorAll('.lesson')].map(s => ({ id: s.dataset.lesson, title: s.querySelector('h2').textContent.replace(/^\d+ · /, '') }));
+  const KEY = 'ki-training';
+
+  // ── Progress: what this person ticked, kept in this browser ──
+  function loadDone() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } }
+  function saveDone(d) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) { /* private window */ } }
+  let done = loadDone();
+  function renderProgress() {
+    const n = LESSONS.filter(l => done[l.id]).length;
+    $('prog-v').textContent = `${n} of ${LESSONS.length} learned`;
+    $('prog-bar').style.width = (100 * n / LESSONS.length) + '%';
+    LESSONS.forEach(l => {
+      const sec = document.querySelector(`.lesson[data-lesson="${l.id}"]`);
+      sec.classList.toggle('done', !!done[l.id]);
+      const box = sec.querySelector('[data-learn]'); if (box) box.checked = !!done[l.id];
+    });
+    $('toc').innerHTML = LESSONS.map((l, i) => `<a href="#${l.id}" class="${done[l.id] ? 'done' : ''}">${done[l.id] ? '<i class="bi bi-check-circle-fill"></i>' : (i + 1) + '.'} ${esc(l.title.split(':')[0])}</a>`).join('');
+  }
+  document.querySelectorAll('[data-learn]').forEach(box => box.addEventListener('change', () => {
+    done[box.dataset.learn] = box.checked; saveDone(done); renderProgress();
+  }));
+  renderProgress();
+
+  // ── The life of an order ──
+  const JOURNEY = [
+    { s: 'Paid', e: '💳', you: ['Nothing yet: the customer is paying with GCash.', 'An order only appears once the payment goes through.'],
+      them: ['Picks the size and colour (or designs it), adds it to the cart.', 'Fills in the address, pins it on the map, pays with GCash (or a downpayment for big orders).'] },
+    { s: 'Pending', e: '⏳', you: ['The order appears in Orders with a badge; counted stock comes off automatically.', 'Check the items, sizes and designs. Ask in the chat if something is unclear.'],
+      them: ['Sees the order in My Orders as Pending.', 'Can chat with the shop about it.'] },
+    { s: 'Processing', e: '⚙️', you: ['Set the status to Processing.', 'Download each design\'s print file and prepare the blank shirts.'],
+      them: ['Sees Processing: the shop accepted it.'] },
+    { s: 'Printing', e: '🖨️', you: ['Set Printing, then print.', 'From now on, the order can\'t be cancelled for a change of mind.'],
+      them: ['Sees Printing.'] },
+    { s: 'Ready', e: '📦', you: ['Pack it and set Ready.', 'Assign a driver and press Tell the customer, then send the message.'],
+      them: ['Sees Ready, and in the chat who is coming and when.'] },
+    { s: 'Delivered', e: '✅', you: ['Collect any downpayment balance and press Mark as collected.', 'Set Delivered.'],
+      them: ['Sees Delivered. Can still chat within 7 days about a damaged or wrong print.'] }
+  ];
+  let jAt = 1;
+  function renderJourney() {
+    $('journey').innerHTML = JOURNEY.map((j, i) => `<button type="button" class="${i === jAt ? 'on' : ''}" onclick="jAt=${i};renderJourney()"><span class="e">${j.e}</span>${esc(j.s)}</button>`).join('');
+    const j = JOURNEY[jAt];
+    $('jdetail').innerHTML = `<div class="jcol"><h4><i class="bi bi-laptop"></i> You, on this site</h4><ul>${j.you.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
+      <div class="jcol"><h4><i class="bi bi-phone"></i> The customer, in the app</h4><ul>${j.them.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`;
+  }
+  renderJourney();
+
+  // ── Price calculator, with the shop's own settings ──
+  let shopSet = Object.assign({}, SHOP_DEFAULTS);
+  function renderCalc() {
+    const price = Math.max(0, +$('c-price').value || 0), disc = Math.min(90, Math.max(0, Math.round(+$('c-disc').value || 0))), qty = Math.max(1, Math.round(+$('c-qty').value || 1));
+    const each = disc ? Math.floor(Math.round(price * 100) * (100 - disc) / 10000) : price;
+    const sub = each * qty;
+    const ship = shopSet.shippingFee > 0 && !(shopSet.freeShippingMin > 0 && sub >= shopSet.freeShippingMin) ? shopSet.shippingFee : 0;
+    const total = sub + ship;
+    const dpOk = shopSet.downpaymentEnabled && qty >= shopSet.downpaymentMinItems;
+    const dp = Math.round(total * shopSet.downpaymentPercent / 100);
+    const rows = [
+      ['Price each', disc ? `${peso(each)} <span class="muted">(was ${peso(price)}, ${disc}% off)</span>` : peso(each)],
+      [`${qty} piece${qty === 1 ? '' : 's'}`, peso(sub)],
+      ['Shipping', ship ? peso(ship) + (shopSet.freeShippingMin > 0 ? ` <span class="muted">(free from ${peso(shopSet.freeShippingMin)})</span>` : '') : '<span style="color:#00E676;">FREE</span>']
+    ];
+    $('calc-out').innerHTML = rows.map(([a, b]) => `<div class="row"><span>${a}</span><span>${b}</span></div>`).join('')
+      + `<div class="row total"><span>Customer pays</span><span>${peso(total)}</span></div>`
+      + (each < 20 ? '<div class="muted" style="color:#FF6B6B;">Below ₱20 per piece: GCash won\'t accept it, so the product form won\'t save this.</div>' : '')
+      + `<div class="muted">${dpOk ? `This cart can pay a ${shopSet.downpaymentPercent}% downpayment: ${peso(dp)} now with GCash, ${peso(total - dp)} on delivery.`
+          : shopSet.downpaymentEnabled ? `A downpayment is offered from ${shopSet.downpaymentMinItems} pieces.` : 'Downpayments are turned off in Shop Settings.'}</div>`;
+  }
+  ['c-price', 'c-disc', 'c-qty'].forEach(id => $(id).addEventListener('input', renderCalc));
+  renderCalc();
+
+  // ── Showcase: the example products' designs, drawn on their shirts ──
+  async function renderShowcase() {
+    const box = $('showcase');
+    try {
+      const [ex, st, models] = await Promise.all([fetch('js/example-products.json').then(r => r.json()), fetch('js/starter-designs.json').then(r => r.json()), loadModels()]);
+      const starters = Object.fromEntries((st.designs || []).map(d => [d.id, d]));
+      box.innerHTML = '';
+      for (const e of ex.products) {
+        const views = {};
+        Object.entries(e.design).forEach(([side, sid]) => { const c = starters[sid] && starters[sid].customization; const v = c && (c.views[side] || Object.values(c.views)[0]); if (v) views[side] = v; });
+        const fig = document.createElement('figure');
+        const disc = e.discount || 0, pay = disc ? Math.floor(e.price * (100 - disc) / 100) : e.price;
+        fig.innerHTML = `<div class="pic"><div class="spinner"></div></div><figcaption><b>${esc(e.name)}</b>${peso(pay)}${disc ? ` <s style="color:var(--muted);">${peso(e.price)}</s>` : ''}<br>
+          <span class="chip ${e.locked ? 'ready' : 'open'}">${e.locked ? 'Ready-made' : 'Starting design'}</span></figcaption>`;
+        box.appendChild(fig);
+        const m = productModel({ shirtStyle: e.style }, models);
+        renderDesignCanvas(m, { apparelColorHex: e.color, shirtStyle: e.style, views }, 340)
+          .then(cv => { const pic = fig.querySelector('.pic'); pic.innerHTML = ''; pic.appendChild(cv); })
+          .catch(err => { fig.querySelector('.pic').innerHTML = `<i class="bi bi-exclamation-triangle" title="${esc(err.message)}"></i>`; });
+      }
+    } catch (err) {
+      box.innerHTML = `<p class="t">Couldn't draw the examples: ${esc(err.message)}</p>`;
+    }
+  }
+
+  // ── Quick check ──
+  const QUIZ = [
+    { q: 'A customer wants their own name on the “Kain Muna Tee”, which is Ready-made. What do you tell them?',
+      a: ['Edit the design for them in the Design Studio', 'Ready-made products are printed exactly as shown; suggest a product with a starting design they can change', 'Turn off For sale'], ok: 1,
+      why: 'Ready-made products can\'t be changed in the app. Point them to a product that starts with a design they can edit, or make one for them.' },
+    { q: 'You set a product to ₱25 with 30% off. What happens?',
+      a: ['It saves at ₱17', 'The form won\'t save it: customers would pay less than ₱20, the lowest GCash accepts', 'The app rounds it up to ₱20'], ok: 1,
+      why: 'GCash doesn\'t accept payments under ₱20, so the price after the discount must be at least ₱20.' },
+    { q: 'A customer cancels an order of 3 counted shirts. What happens to the stock?',
+      a: ['You add the 3 back by hand', 'Setting the order to Cancelled puts the 3 back automatically', 'Nothing; stock only goes down'], ok: 1,
+      why: 'Cancelling an order returns its pieces to storage. You don\'t count anything by hand.' },
+    { q: 'Where do you get the picture to print a customer\'s design?',
+      a: ['A screenshot of the order page', 'The print file (PNG) of each side, in the order\'s items', 'Ask the customer to email it'], ok: 1,
+      why: 'Each side has a print file at its real printed size. Screenshots are too small and blurry.' },
+    { q: 'An order is Ready. What do you do before the driver leaves?',
+      a: ['Assign the driver and press Tell the customer, then send the message', 'Set it to Delivered', 'Nothing; the app tells the customer'], ok: 0,
+      why: 'The driver is assigned on the order page, and Tell the customer writes their details in the chat for you to send.' },
+    { q: 'An order was paid with a downpayment. What happens on delivery?',
+      a: ['The rest is paid with GCash later', 'The driver collects the balance shown on the order; then you press Mark as collected', 'The customer pays nothing more'], ok: 1,
+      why: 'The order shows the Balance on delivery. Mark it collected once the driver has the money, then set Delivered.' }
+  ];
+  function renderQuiz() {
+    $('quiz-list').innerHTML = QUIZ.map((x, i) => `<div class="q" id="q${i}"><p>${i + 1}. ${esc(x.q)}</p>
+      ${x.a.map((a, j) => `<label><input type="radio" name="q${i}" value="${j}"> <span>${esc(a)}</span></label>`).join('')}
+      <div class="why"></div></div>`).join('');
+    QUIZ.forEach((x, i) => document.querySelectorAll(`input[name=q${i}]`).forEach(r => r.addEventListener('change', () => answer(i, +r.value))));
+    scoreQuiz();
+  }
+  const answers = {};
+  function answer(i, j) {
+    answers[i] = j;
+    const el = $('q' + i), right = j === QUIZ[i].ok;
+    el.classList.toggle('right', right); el.classList.toggle('wrong', !right);
+    el.querySelector('.why').textContent = (right ? '✓ Right. ' : '✕ Not quite. ') + QUIZ[i].why;
+    scoreQuiz();
+  }
+  function scoreQuiz() {
+    const n = Object.keys(answers).length, right = QUIZ.filter((x, i) => answers[i] === x.ok).length;
+    $('quiz-score').textContent = n ? `${right} of ${QUIZ.length} right` : '';
+    if (right === QUIZ.length && !done.quiz) { done.quiz = true; saveDone(done); renderProgress(); toast('Training complete. Well done!', 'ok'); }
+  }
+  function resetQuiz() { Object.keys(answers).forEach(k => delete answers[k]); renderQuiz(); }
+  renderQuiz();
+
+  window.onAuthReady = () => {
+    loadShopSettings().then(s => { shopSet = Object.assign({}, SHOP_DEFAULTS, s || {}); renderCalc(); }).catch(() => {});
+    renderShowcase();
+  };
+</script>
+</body>
+</html>

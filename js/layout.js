@@ -11,6 +11,7 @@
     ['', [
       ['dashboard.html', 'bi-speedometer2', 'Dashboard'],
       ['getting-started.html', 'bi-flag', 'Getting Started'],
+      ['training.html', 'bi-mortarboard', 'Training'],
       ['help.html', 'bi-question-circle', 'Help']
     ]],
     ['Shop', [

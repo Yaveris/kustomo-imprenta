@@ -27,6 +27,21 @@
     .pc-badges { position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
     .pc-badge { font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 20px; background: var(--pink); color: #fff; letter-spacing: .3px; }
     .pc-badge.tag { background: rgba(10,10,10,.82); color: var(--yellow); border: 1px solid rgba(255,214,0,.35); }
+    .pc-badge.ready { background: rgba(10,10,10,.82); color: #7FDBFF; border: 1px solid rgba(127,219,255,.4); }
+    .pc-badge.example { background: rgba(10,10,10,.82); color: #c8c8c8; border: 1px solid var(--border); }
+    .pc-dlbl.warn { color: var(--yellow); }
+    .design-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 640px) { .design-mode { grid-template-columns: 1fr; } }
+    .dm-opt { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.03); cursor: pointer; font-size: 14.5px; line-height: 1.45; }
+    .dm-opt input { margin-top: 3px; accent-color: var(--orange); width: 17px; height: 17px; flex-shrink: 0; }
+    .dm-opt b { display: block; font-size: 15px; margin-bottom: 2px; }
+    .dm-opt span { color: var(--muted); }
+    .dm-opt:has(input:checked) { border-color: var(--orange); background: rgba(255,92,0,.07); }
+    .dm-state { font-size: 14px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+    .dm-state a { color: var(--orange); font-weight: 600; }
+    .ex-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px; margin-bottom: 16px; border-radius: 12px; border: 1px dashed var(--border); background: rgba(255,255,255,.02); font-size: 14.5px; color: var(--muted); }
+    .ex-bar b { color: var(--text); }
+    .ex-bar .grow { flex: 1; min-width: 220px; }
     .pc-hidden { position: absolute; left: 0; right: 0; bottom: 0; padding: 7px 12px; background: rgba(10,10,10,.85); color: var(--yellow); font-size: 13px; font-weight: 600; }
     .pc-body { padding: 14px 16px 6px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
     .pc-name { font-size: 17px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
@@ -202,6 +217,7 @@
     <div class="filter-bar" id="cat-tabs"></div>
 
     <section id="view-list">
+      <div class="ex-bar" id="ex-bar" hidden></div>
       <div class="pgrid" id="grid"><div class="spinner"></div></div>
     </section>
 
@@ -247,6 +263,15 @@
         <span class="avail"><input type="checkbox" id="p-avail" checked><span class="avail-sl"></span></span>
         <span>For sale in the app<small>Turn off to hide it from customers without deleting it.</small></span>
       </label>
+
+      <div class="f-sec">Design</div>
+      <div class="design-mode" role="radiogroup" aria-label="Can customers change the design?">
+        <label class="dm-opt"><input type="radio" name="p-dmode" value="open" checked>
+          <div><b>Customers can change it</b><span>Your design is a starting point. Customers can edit it, add their own text and pick any colour.</span></div></label>
+        <label class="dm-opt"><input type="radio" name="p-dmode" value="locked" id="p-locked">
+          <div><b>Ready-made (can't be changed)</b><span>Sold exactly as you designed it, in its own colour. Customers only pick the size and how many.</span></div></label>
+      </div>
+      <div class="dm-state" id="p-dm-state"></div>
 
       <div class="f-sec">Photo</div>
       <div class="fg">
@@ -449,7 +474,77 @@
     return Number.isInteger(p.discountPercent) && p.discountPercent > 0 ? p.discountPercent : Math.max(1, Math.round((1 - p.price / p.originalPrice) * 100));
   }
 
+  /** The strip above the products that adds (or removes) the example products. */
+  function renderExampleBar() {
+    const bar = $('ex-bar'); if (!bar) return;
+    const n = all.filter(p => p.exampleId).length;
+    bar.hidden = !loaded;
+    bar.innerHTML = n
+      ? `<i class="bi bi-mortarboard" style="color:var(--orange);font-size:18px;"></i><div class="grow"><b>${n} example product${n === 1 ? '' : 's'}</b> are in the shop, marked “Example”. Practise on them, then remove them before real customers come.</div>
+         <a class="btn-ghost" href="training.html">Open Training</a><button class="btn-ghost" onclick="removeExamples()"><i class="bi bi-trash3"></i> Remove the examples</button>`
+      : `<i class="bi bi-mortarboard" style="color:var(--orange);font-size:18px;"></i><div class="grow"><b>New here?</b> Add 10 example products, two for each shirt style: ready-made ones customers can't change, and ones that start with a design customers can make their own. Prices from ₱299 to ₱899, some on sale, some counted in storage.</div>
+         <button class="btn-grad" id="ex-add" onclick="addExamples()"><i class="bi bi-magic"></i> Add example products</button>`;
+  }
+
+  /** Adds the example products (js/example-products.json), each with its design made from the starter designs,
+   *  put on its own shirt and colour, and a photo of the design (when picture uploads work). Skips ones already there. */
+  async function addExamples() {
+    if (!confirm('Add 10 example products to the shop? They show in the app right away, marked as examples here, and can be removed again with one click.')) return;
+    const btn = $('ex-add'); if (btn) btn.disabled = true;
+    try {
+      const [ex, st] = await Promise.all([fetch('js/example-products.json').then(r => r.json()), fetch('js/starter-designs.json').then(r => r.json())]);
+      const starters = Object.fromEntries((st.designs || []).map(d => [d.id, d]));
+      const FV = firebase.firestore.FieldValue;
+      let added = 0, noPhoto = 0;
+      const todo = ex.products.filter(e => !all.some(p => p.exampleId === e.id));
+      for (const e of todo) {
+        const views = {};
+        Object.entries(e.design).forEach(([side, sid]) => {
+          const cust = starters[sid] && starters[sid].customization;
+          const v = cust && (cust.views[side] || Object.values(cust.views)[0]);
+          if (v) views[side] = JSON.parse(JSON.stringify(v));
+        });
+        const custom = { apparelColorHex: e.color, shirtStyle: e.style, views };
+        const disc = e.discount || 0;
+        const price = disc ? Math.floor(Math.round(e.price * 100) * (100 - disc) / 10000) : e.price;
+        // A photo of the design on its shirt, so the shop list and the product page show it
+        let imageUrl = null;
+        const m = models.find(x => x.id === e.style);
+        try {
+          if (m) imageUrl = await uploadToCloudinary(await canvasToPngFile(await renderDesignCanvas(m, custom, 900), e.id + '.png'), { folder: 'kustomoimprenta/products' });
+        } catch (err) { console.warn('Example photo', e.id, err); noPhoto++; }
+        const data = {
+          name: e.name, category: productCategory({ category: 'Tees' }) || 'Tees', price, originalPrice: disc ? e.price : null,
+          description: e.description, imageUrl, tag: e.tag || '', shirtStyle: e.style, isAvailable: true, sizes: e.sizes,
+          defaultCustomization: custom, designLocked: !!e.locked, exampleId: e.id, createdAt: FV.serverTimestamp()
+        };
+        if (disc) data.discountPercent = disc;
+        if (e.stock) data.inventory = e.stock;
+        await db.collection('products').add(data);
+        added++;
+        toast(`Added ${added} of ${todo.length}: ${e.name}`);
+      }
+      toast(added ? `${added} example products added${noPhoto ? ` (${noPhoto} without a photo; the app shows the shirt instead)` : ''}.` : 'The examples are already in the shop.', 'ok');
+    } catch (err) {
+      toast('Examples not added: ' + err.message, 'err');
+    } finally { if (btn) btn.disabled = false; }
+  }
+
+  /** Deletes every product added by addExamples (only those: real products are never touched). */
+  async function removeExamples() {
+    const list = all.filter(p => p.exampleId);
+    if (!list.length) return;
+    if (!confirm(`Delete the ${list.length} example products? Only products marked “Example” are deleted. Orders placed for them stay in Orders.`)) return;
+    try {
+      const batch = db.batch();
+      list.forEach(p => batch.delete(db.collection('products').doc(p.id)));
+      await batch.commit();
+      toast('Example products removed', 'ok');
+    } catch (err) { toast('Not removed: ' + err.message, 'err'); }
+  }
+
   function renderGrid() {
+    renderExampleBar();
     const grid = $('grid');
     if (!loaded) { grid.innerHTML = '<div class="spinner"></div>'; return; }
     const rows = shownProducts();
@@ -471,12 +566,12 @@
       }
       const design = m ? (p.defaultCustomization
         ? `<div class="pc-design"><div class="pc-dthumb" data-dp="${esc(p.id)}"><i class="bi bi-hourglass-split"></i></div>
-             <div><div class="pc-dlbl">Starting design</div><div class="pc-dlinks"><a href="design.html?product=${encodeURIComponent(p.id)}">Change</a><button type="button" class="linkbtn muted" data-cleardesign="${esc(p.id)}">Remove</button></div></div></div>`
+             <div><div class="pc-dlbl">${p.designLocked === true ? 'Ready-made design' : 'Starting design'}</div><div class="pc-dlinks"><a href="design.html?product=${encodeURIComponent(p.id)}">Change</a><button type="button" class="linkbtn muted" data-cleardesign="${esc(p.id)}">Remove</button></div></div></div>`
         : `<div class="pc-design"><div class="pc-dthumb none"><i class="bi bi-plus-lg"></i></div>
-             <div><div class="pc-dlbl">No starting design</div><div class="pc-dlinks"><a href="design.html?product=${encodeURIComponent(p.id)}">Create one</a></div></div></div>`) : '';
+             <div><div class="pc-dlbl${p.designLocked === true ? ' warn' : ''}">${p.designLocked === true ? 'Ready-made, needs a design' : 'No starting design'}</div><div class="pc-dlinks"><a href="design.html?product=${encodeURIComponent(p.id)}">${p.designLocked === true ? 'Make the design' : 'Create one'}</a></div></div></div>`) : '';
       return `<article class="pcard${p.isAvailable === true ? '' : ' off'}">
         <div class="pc-media">${photo || '<i class="bi bi-bag pc-ico"></i>'}
-          <div class="pc-badges">${d ? `<span class="pc-badge">-${d}%</span>` : ''}${p.tag ? `<span class="pc-badge tag">${esc(p.tag)}</span>` : ''}</div>
+          <div class="pc-badges">${d ? `<span class="pc-badge">-${d}%</span>` : ''}${p.tag ? `<span class="pc-badge tag">${esc(p.tag)}</span>` : ''}${p.designLocked === true ? '<span class="pc-badge ready" title="Customers can\'t change its design">Ready-made</span>' : ''}${p.exampleId ? '<span class="pc-badge example" title="Added with “Add example products”">Example</span>' : ''}</div>
           ${p.isAvailable === true ? '' : '<div class="pc-hidden"><i class="bi bi-eye-slash"></i> Hidden from the app</div>'}
         </div>
         <div class="pc-body">
@@ -1042,15 +1137,28 @@
     $('edit-id').value = '';
     ['p-name', 'p-desc', 'p-img', 'p-price', 'p-disc'].forEach(i => $(i).value = '');
     $('p-tag').value = ''; $('p-style').value = ''; $('p-avail').checked = true;
+    document.querySelector('input[name=p-dmode][value=open]').checked = true;
     loadedPrice = null; tagTouched = false; loadedStock = null; formStock = {};
     $('adv').open = false;
   }
+  /** The line under the design choice: whether this product has its design yet, and where to make it. */
+  function renderDesignState() {
+    const eid = $('edit-id').value, p = eid ? all.find(x => x.id === eid) : null, locked = $('p-locked').checked;
+    const has = !!(p && p.defaultCustomization);
+    const link = eid ? `<a href="design.html?product=${encodeURIComponent(eid)}">${has ? 'Change the design' : 'Make the design'} in the Design Studio</a>` : '';
+    $('p-dm-state').innerHTML = has
+      ? `<i class="bi bi-check-circle" style="color:#00E676;"></i> This product has its design. ${link}`
+      : eid ? `<i class="bi bi-exclamation-triangle" style="color:var(--yellow);"></i> No design yet${locked ? ': a ready-made product needs one before customers can buy it' : ''}. ${link}`
+      : `After you save, you'll be taken to the Design Studio to make ${locked ? 'its design' : 'its starting design (optional)'}.`;
+  }
+  document.querySelectorAll('input[name=p-dmode]').forEach(r => r.addEventListener('change', renderDesignState));
+
   function openAdd() {
     resetForm('Add Product');
     fillCatSelect(cat !== 'all' ? cat : '');
     showPreview(); updatePriceTag();
     setSizes([]); $('p-track').checked = true; renderFormStock();
-    setChart(null); renderPresetPicker(); renderModelLine(); renderQuickStart(true);
+    setChart(null); renderPresetPicker(); renderModelLine(); renderQuickStart(true); renderDesignState();
     $('prod-overlay').classList.add('show');
     setTimeout(() => $('p-name').focus(), 60);
   }
@@ -1084,6 +1192,8 @@
     $('p-tag').value = p.tag || '';
     $('p-style').value = models.some(m => m.id === p.shirtStyle) ? p.shirtStyle : '';
     $('p-avail').checked = p.isAvailable !== false;
+    document.querySelector(`input[name=p-dmode][value=${p.designLocked === true ? 'locked' : 'open'}]`).checked = true;
+    renderDesignState();
     setSizes(p.sizes || []);
     $('p-track').checked = tracksStock(p);
     if (tracksStock(p)) { loadedStock = {}; Object.keys(p.inventory).forEach(z => { loadedStock[z] = stockOf(p, z); }); formStock = Object.assign({}, loadedStock); }
@@ -1176,7 +1286,8 @@
 
     const btn = $('save-btn'); btn.disabled = true;
     const FV = firebase.firestore.FieldValue, eid = $('edit-id').value;
-    const data = { name, category: cat2, price, originalPrice: disc ? regular : null, description: desc, imageUrl: img || null, tag: tag || '', shirtStyle: style || '', isAvailable: avail, sizes };
+    const locked = $('p-locked').checked;
+    const data = { name, category: cat2, price, originalPrice: disc ? regular : null, description: desc, imageUrl: img || null, tag: tag || '', shirtStyle: style || '', isAvailable: avail, sizes, designLocked: locked };
     if (disc) data.discountPercent = disc; else if (eid) data.discountPercent = FV.delete();
     if (chart) data.sizeChart = chart; else if (eid) data.sizeChart = FV.delete();
     // Stock: a new count is saved as is; on a product already counted only the change made here is added, so an
@@ -1192,9 +1303,17 @@
     } else if (track) data.inventory = Object.fromEntries(sizes.map(z => [z, formStock[z] || 0]));
     else if (eid) data.inventory = FV.delete();
     try {
+      let id = eid;
       if (eid) { await db.collection('products').doc(eid).update(data); toast('Product updated', 'ok'); }
-      else { data.createdAt = FV.serverTimestamp(); await db.collection('products').add(data); toast('Product added', 'ok'); }
+      else { data.createdAt = FV.serverTimestamp(); id = (await db.collection('products').add(data)).id; toast('Product added', 'ok'); }
       closeModal();
+      // A new product goes on to its design; a ready-made one can't be sold without it
+      const saved = all.find(x => x.id === id);
+      if (!eid && (locked || confirm('Make its starting design in the Design Studio now? (You can also do it later from its card.)'))) {
+        location.href = 'design.html?product=' + encodeURIComponent(id);
+      } else if (locked && !(saved && saved.defaultCustomization)) {
+        toast('Ready-made, but it has no design yet. Make it with “Make the design” on its card.', 'warn');
+      }
     } catch (e) { toast('Save failed: ' + e.message, 'err'); }
     finally { btn.disabled = false; }
   }
