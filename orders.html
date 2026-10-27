@@ -12,9 +12,9 @@
     tr.row-link.open { background:rgba(255,92,0,.07); }
     tr.row-link.open td:first-child .chev { transform:rotate(90deg); color:var(--orange); }
     tr.o-more > td { padding:0 !important; background:rgba(0,0,0,.22); border-bottom:2px solid rgba(255,92,0,.35); }
-    .om { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr); gap:18px; padding:16px 18px 18px; animation:om-in .18s ease-out; }
+    .om { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; padding:16px 18px 18px; animation:om-in .18s ease-out; }
+    .om-items { grid-column:1 / -1; }
     @keyframes om-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
-    @media (max-width:1100px) { .om { grid-template-columns:minmax(0,1fr) minmax(0,1fr); } .om-items { grid-column:1 / -1; } }
     @media (max-width:700px) { .om { grid-template-columns:minmax(0,1fr); } }
     .om h4 { font-size:12.5px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin-bottom:8px; }
     .om-it { display:flex; gap:12px; align-items:flex-start; padding:8px 0; border-top:1px solid var(--border); }
@@ -161,6 +161,7 @@
 <script src="js/auth.js"></script>
 <script src="js/studio-common.js"></script>
 <script src="js/design-render.js"></script>
+<script src="js/order-parts.js"></script>
 <script>
   let all = [], filter = 'all', editId = null, shopLoc = null;
   /** An order on this page by id (for buttons: inside an onclick attribute, `all` means the browser's document.all). */
@@ -251,6 +252,7 @@
       </tr>${isOpen ? `<tr class="o-more"><td colspan="9">${orderPanel(o)}</td></tr>` : ''}`;
     }).join('');
     drawPictures();
+    OrderParts.drawPreviews();
     document.querySelectorAll('.om-chat .chat-wrap').forEach(b => { b.scrollTop = b.scrollHeight; });
     if (focusChat) { const inp = document.getElementById(focusChat.id); if (inp) { inp.focus(); try { inp.setSelectionRange(focusChat.pos, focusChat.pos); } catch (e) {} } }
   }
@@ -274,23 +276,10 @@
     const lines = orderAddressLines(o), phone = String(o.phone || '').trim(), tel = phone.replace(/[^\d+]/g, '');
     const pin = orderPin(o), km = shopLoc && pin ? distanceKm(shopLoc, pin) : null;
     const chatLink = chatOf[o.id] ? `chats.html?chat=${encodeURIComponent(chatOf[o.id])}` : `chats.html?order=${encodeURIComponent(o.id)}`;
-    const itemsHtml = items.map((it, i) => {
-      const preview = safeUrl(it.previewUrl), photo = safeUrl(it.imageUrl), color = hexOk(it.colorHex) || hexOk((it.customization || {}).apparelColorHex);
-      // The app's picture of the design on the shirt; else the design drawn here; else the product photo
-      const pic = preview ? `<a href="${preview}" target="_blank" rel="noopener" title="Open the picture"><img src="${preview}" alt="${esc(it.productName || 'Item')}"></a>`
-        : designed(it) ? `<span class="om-draw" data-o="${esc(o.id)}" data-i="${i}"><span class="spinner" style="width:18px;height:18px;"></span></span>`
-        : photo ? `<img src="${photo}" alt="${esc(it.productName || 'Item')}" style="object-fit:cover;">` : '👕';
-      const notes = String(it.notes || '').replace(/\[(Scanned|Entered|Typed) Measurements - ([^\]]*)\]/, (m, a, b) => '📏 ' + b).trim();
-      return `<div class="om-it"><div class="om-pic">${pic}</div>
-        <div style="min-width:0;"><div class="om-n">${esc(it.productName || 'Product')}</div>
-          <div class="om-s">Size ${esc(it.size || '—')} · ×${it.quantity || 1}${color ? ` · <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};border:1px solid var(--border);vertical-align:middle;"></span> ${color}` : ''}${designed(it) ? ' · <span style="color:var(--orange);">Custom design</span>' : ''}</div>
-          ${notes ? `<div class="om-s">${esc(notes)}</div>` : ''}</div>
-        <div class="om-p">${peso((it.price || 0) * (it.quantity || 1))}</div></div>`;
-    }).join('') || '<div class="note">No items recorded.</div>';
     return `<div class="om">
       <div class="om-items">
-        ${rq ? `<div class="om-req ${rq.type === 'cancel' ? 'cancel' : 'change'}"><i class="bi ${rq.type === 'cancel' ? 'bi-x-octagon' : 'bi-palette'}"></i> The customer ${rq.type === 'cancel' ? 'wants to cancel this order' : 'wants a design changed'}.<a href="${chatLink}">Answer in the chat <i class="bi bi-arrow-right"></i></a></div>` : ''}
-        <h4>Items (${items.length})</h4>${itemsHtml}
+        ${rq && rq.type === 'cancel' ? `<div class="om-req cancel"><i class="bi bi-x-octagon"></i> The customer wants to cancel this order.<a href="${chatLink}" onclick="event.stopPropagation()">Answer in the chat <i class="bi bi-arrow-right"></i></a></div>` : ''}
+        ${OrderParts.html(o, { request: rq && rq.type !== 'cancel' ? `<div class="om-req change" style="margin:0;"><i class="bi bi-palette"></i> The customer wants a design changed.<a href="${chatLink}" onclick="event.stopPropagation()">Answer in the chat <i class="bi bi-arrow-right"></i></a></div>` : '' })}
       </div>
       <div>
         <h4>Deliver to</h4>
