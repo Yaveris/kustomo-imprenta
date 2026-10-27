@@ -175,7 +175,12 @@ const OrderAlert = (() => {
     if (document.getElementById('oa-css')) return;
     const s = document.createElement('style'); s.id = 'oa-css';
     s.textContent = `
-#oa-box{position:fixed;right:20px;bottom:20px;z-index:9998;display:flex;flex-direction:column;gap:8px;width:350px;max-width:calc(100vw - 32px);max-height:calc(100vh - 40px);overflow-y:auto;}
+#oa-box{position:fixed;right:20px;bottom:20px;z-index:9998;display:flex;flex-direction:column;gap:8px;width:350px;max-width:calc(100vw - 32px);max-height:calc(100vh - 40px);overflow-y:auto;transition:transform .3s ease .35s,opacity .3s ease .35s;}
+@media (hover: hover){
+  #oa-box{transform:translateX(calc(100% - 64px));opacity:.92;}
+  #oa-box:hover,#oa-box:focus-within{transform:none;opacity:1;transition-delay:0s;}
+}
+@media (prefers-reduced-motion: reduce){#oa-box{transition:none;}}
 .oa{background:#16161c;border:1px solid rgba(255,92,0,.6);border-radius:14px;box-shadow:0 0 0 3px rgba(255,92,0,.3),0 14px 40px rgba(0,0,0,.55);overflow:hidden;font-size:14px;color:#eee;flex-shrink:0;animation:oa-in .28s ease-out;}
 .oa.pulse{animation:oa-pulse 1.4s ease-in-out infinite;}
 @keyframes oa-in{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
