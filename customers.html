@@ -96,7 +96,7 @@
           ${safeUrl(c.photoUrl)?`<img src="${safeUrl(c.photoUrl)}" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;" onerror="this.remove()">`:`<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--pink));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;">${esc(name.charAt(0).toUpperCase())}</div>`}
           <strong style="font-size:14.5px;">${esc(name)}</strong>${off}
         </div></td>
-        <td style="font-size:14px;color:var(--muted);">${esc(c.email||'—')}</td>
+        <td style="font-size:14px;color:var(--muted);">${esc(c.email||'—')}${c.email?(c.emailVerified?' <i class="bi bi-patch-check-fill" style="color:#00E676;" title="Email confirmed"></i>':''):''}</td>
         <td style="font-size:14px;">${esc(c.phone||'—')}</td>
         <td style="font-size:14px;">${esc(c.city||'—')}</td>
         <td style="text-align:center;">${c.recommendedSize?`<span style="background:rgba(255,92,0,.1);color:var(--orange);padding:2px 8px;border-radius:4px;font-size:13px;font-weight:700;">${esc(c.recommendedSize)}</span>`:'—'}</td>
@@ -149,6 +149,7 @@
         <div class="ii"><label>Joined</label><span>${fmtDate(c.createdAt,false)}</span></div>
         <div class="ii"><label>Terms &amp; Privacy</label><span>${c.termsAcceptedAt?'Agreed '+fmtDate(c.termsAcceptedAt,false)+(c.termsVersion==='shop'?' (shop’s own text)':c.termsVersion?' (version '+esc(c.termsVersion)+')':''):'<span style="color:var(--muted);">No record (joined before sign-up agreement)</span>'}</span></div>
         <div class="ii"><label>Account</label><span style="color:${c.status==='Disabled'?'#FF4444':'#00E676'};font-weight:700;">${c.status==='Disabled'?'Disabled':'Active'}</span></div>
+        <div class="ii"><label>Email</label><span>${c.emailVerified?'<span style="color:#00E676;font-weight:700;"><i class="bi bi-patch-check-fill"></i> Confirmed</span>':'<span style="color:var(--muted);">Not confirmed yet</span> <span class="note">(asked before their next checkout)</span>'}</span></div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
         <button class="btn-ghost" id="acct-btn" onclick="setDisabled('${uid}',${c.status==='Disabled'?'false':'true'})">

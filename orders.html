@@ -163,6 +163,8 @@
 <script src="js/design-render.js"></script>
 <script>
   let all = [], filter = 'all', editId = null, shopLoc = null;
+  /** An order on this page by id (for buttons: inside an onclick attribute, `all` means the browser's document.all). */
+  const findOrder = id => all.find(x => x.id === id);
   const opened = new Set();          // orders shown open
   let requests = {};                 // order id → the customer's unanswered request ({type: 'cancel' | 'change'})
   let chatOf = {};                   // order id → chat id
@@ -256,7 +258,7 @@
   // ── An order, opened in place ─────────────────────────────────────────────────────────────────────
   function toggleOrder(id) {
     // One order open at a time: opening one closes the others
-    if (opened.has(id)) opened.delete(id); else { opened.clear(); opened.add(id); }
+    if (opened.has(id)) opened.delete(id); else { opened.clear(); opened.add(id); if (typeof OrderAlert !== 'undefined') OrderAlert.handled(id); }
     if (pickFor && !opened.has(pickFor)) pickFor = null;
     syncChats();
     render();
@@ -309,6 +311,7 @@
           <div class="om-line" style="display:flex;justify-content:space-between;"><span>Balance</span><span>${o.balancePaidAt ? '<span style="color:#00E676;">Collected</span>' : peso(o.remainingAmount) + ' to collect'}</span></div>` : ''}
         <div class="om-acts">
           <a class="btn-ghost" href="order-detail.html?id=${encodeURIComponent(o.id)}" title="Print files, driver, staff notes, history"><i class="bi bi-box-arrow-up-right"></i> Full page</a>
+          <button type="button" class="btn-ghost" onclick="event.stopPropagation();printOrderSlip(findOrder('${esc(o.id)}'))" title="A slip to tape to the finished package"><i class="bi bi-printer"></i> Print slip</button>
         </div>
       </div>
       ${statusHtml(o)}
@@ -325,7 +328,10 @@
       return `<button type="button" class="stb${on ? ' on' : ''}" style="--c:var(--s-${key},#888);" ${on ? 'aria-pressed="true"' : 'aria-pressed="false"'}${busy ? ' disabled' : ''}
         onclick="event.stopPropagation();pickStatus('${esc(o.id)}','${s}')" title="${on ? 'Current status' : 'Set to ' + statusLabel(s)}"><i class="bi ${STATUS_ICONS[s] || 'bi-circle'}"></i> ${statusLabel(s)}</button>`;
     }).join('');
-    return `<div class="om-status"><h4>Status</h4><div class="stb-row" role="group" aria-label="Status of ${orderNo(o.id)}">${btns}</div>${pickFor === o.id ? driverPickHtml(o) : ''}</div>`;
+    const newBar = st === 'Pending' ? `<div class="ob-bar" onclick="event.stopPropagation()"><span class="t"><b>New order.</b> Accept it to tell the customer when it will be ready.</span>
+      <button type="button" class="btn-grad ob-ok" onclick="openAcceptOrder(findOrder('${esc(o.id)}'))"><i class="bi bi-check-lg"></i> Accept</button>
+      <button type="button" class="btn-ghost ob-no" onclick="openDeclineOrder(findOrder('${esc(o.id)}'))"><i class="bi bi-x-lg"></i> Can't take it</button></div>` : '';
+    return `${newBar}<div class="om-status"><h4>Status</h4><div class="stb-row" role="group" aria-label="Status of ${orderNo(o.id)}">${btns}</div>${pickFor === o.id ? driverPickHtml(o) : ''}</div>`;
   }
   function driverPickHtml(o) {
     const cur = o.driver && o.driver.name ? o.driver : null;

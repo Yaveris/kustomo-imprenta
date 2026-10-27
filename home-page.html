@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home Page — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    .hp { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; align-items: start; max-width: 1180px; }
+    @media (max-width: 980px) { .hp { grid-template-columns: minmax(0, 1fr); } .hp-preview { position: static !important; justify-self: center; } }
+    .hp-intro { font-size: 15px; color: #c8c8c8; line-height: 1.55; margin-bottom: 16px; max-width: 680px; }
+    .hp .card { margin-bottom: 16px; }
+    .modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    @media (max-width: 640px) { .modes { grid-template-columns: minmax(0, 1fr); } }
+    .mode { text-align: left; padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.03); color: var(--text); cursor: pointer; display: grid; gap: 4px; }
+    .mode b { font-size: 15px; display: flex; gap: 8px; align-items: center; }
+    .mode span { font-size: 13px; color: var(--muted); line-height: 1.45; }
+    .mode.on { border-color: var(--orange); background: rgba(255,92,0,.08); }
+    .mode.on b { color: var(--orange); }
+    .mode:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+    .sub { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .note { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+    .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+    @media (max-width: 640px) { .row2 { grid-template-columns: minmax(0, 1fr); } }
+    .pic-pick { display: flex; gap: 12px; align-items: center; }
+    .pic-pick .thumb { width: 72px; height: 72px; border-radius: 10px; border: 1px dashed var(--border); display: grid; place-items: center; overflow: hidden; background: rgba(255,255,255,.03); color: var(--muted); flex-shrink: 0; }
+    .pic-pick .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .feat-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); }
+    .feat-row:first-child { border-top: 0; }
+    .feat-row .th { width: 44px; height: 44px; border-radius: 8px; background: rgba(255,255,255,.05); overflow: hidden; flex-shrink: 0; display: grid; place-items: center; color: var(--muted); }
+    .feat-row .th img { width: 100%; height: 100%; object-fit: cover; }
+    .feat-row .nm { flex: 1; min-width: 0; font-weight: 600; }
+    .feat-row .nm small { display: block; font-weight: 400; color: var(--muted); }
+    .feat-row button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); }
+    .feat-row button:hover:not(:disabled) { border-color: var(--orange); color: var(--orange); }
+    .feat-row button:disabled { opacity: .35; cursor: default; }
+    .feat-row button.x:hover { border-color: #FF6B6B; color: #FF6B6B; }
+    .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); }
+    .switch-row:first-of-type { border-top: 0; }
+    .switch-row small { display: block; color: var(--muted); font-size: 13px; }
+    .save-bar { position: sticky; bottom: 0; display: flex; align-items: center; gap: 12px; padding: 14px 0; background: var(--dark); border-top: 1px solid var(--border); z-index: 5; }
+    .save-bar .state { font-size: 13.5px; color: var(--muted); }
+
+    /* the phone preview: the app's own look */
+    .hp-preview { position: sticky; top: 80px; }
+    .phone { width: 300px; border-radius: 30px; border: 7px solid #2b2b2b; background: #0D0D0D; padding: 14px 12px; display: grid; gap: 10px; font-family: Roboto, 'Segoe UI', sans-serif; color: #F0F0F0; max-height: 640px; overflow: hidden; }
+    .ph-cap { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 8px; }
+    .ph-top { display: flex; justify-content: space-between; font-weight: 900; letter-spacing: 1.8px; font-size: 13px; }
+    .bn { position: relative; height: 130px; border-radius: 16px; overflow: hidden; background: linear-gradient(135deg, #1A0800, #2D1200); }
+    .bn img.pic { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 112px; height: 112px; object-fit: contain; }
+    .bn img.cover { position: absolute; right: 0; top: 0; height: 100%; width: 55%; object-fit: cover; }
+    .bn .fade { position: absolute; inset: 0; background: linear-gradient(90deg, #1A0800 0%, rgba(26,8,0,.93) 55%, transparent 100%); }
+    .bn .words { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 150px; display: grid; gap: 4px; }
+    .bn small { color: #FF5C00; font-weight: 700; letter-spacing: 1.6px; font-size: 9px; }
+    .bn b { font-size: 17px; font-weight: 900; line-height: 1.1; white-space: pre-line; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+    .bn .pr { color: #FFB27A; font-weight: 700; font-size: 12px; }
+    .bn i { font-style: normal; justify-self: start; margin-top: 4px; padding: 5px 12px; border-radius: 14px; background: linear-gradient(90deg, #FF5C00, #FF2D78); font-weight: 700; font-size: 10.5px; }
+    .dots { display: flex; gap: 4px; justify-content: center; margin-top: -4px; }
+    .dots span { width: 5px; height: 5px; border-radius: 3px; background: #3A3A3A; }
+    .dots .on { width: 14px; background: #FF5C00; }
+    .ph-sec { display: flex; justify-content: space-between; font-weight: 800; font-size: 13px; }
+    .ph-sec span { color: #FF5C00; font-size: 11px; font-weight: 600; }
+    .ph-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .ph-tiles div { height: 44px; border-radius: 8px; background: #1A1A1A; }
+    .ph-chips { display: flex; gap: 6px; overflow: hidden; }
+    .ph-chips span { padding: 4px 9px; border-radius: 12px; background: #1A1A1A; font-size: 10px; color: #bbb; white-space: nowrap; }
+    .ph-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .ph-prod { background: #1A1A1A; border-radius: 10px; overflow: hidden; font-size: 10.5px; }
+    .ph-prod .im { height: 70px; background: #262626; }
+    .ph-prod .im img { width: 100%; height: 100%; object-fit: cover; }
+    .ph-prod p { padding: 6px 7px; margin: 0; }
+    .ph-prod p b { color: #FF5C00; display: block; }
+  </style>
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar"><div class="topbar-title">Home <span>Page</span></div></div>
+  <div class="page-content">
+    <p class="hp-intro">What customers see first when they open the app. Change it here and press <b>Save</b>; the app updates within a few seconds, with no app update. The phone on the right shows how it will look.</p>
+    <div class="hp" id="hp" hidden>
+      <div>
+        <div class="card">
+          <div class="card-head"><span class="card-title"><i class="bi bi-stars" style="color:var(--orange);"></i> Top banner</span></div>
+          <div class="modes" role="radiogroup" aria-label="What the top banner shows">
+            <button type="button" class="mode" data-mode="new" role="radio"><b><i class="bi bi-lightning-charge"></i> New products</b><span>Slides through products tagged <b>New</b>. Adding a new product is enough to show it.</span></button>
+            <button type="button" class="mode" data-mode="custom" role="radio"><b><i class="bi bi-megaphone"></i> Your own banner</b><span>Your words and picture, for a sale, school season or an event.</span></button>
+            <button type="button" class="mode" data-mode="off" role="radio"><b><i class="bi bi-eye-slash"></i> Off</b><span>No banner. Home starts with the shirt styles.</span></button>
+          </div>
+
+          <div class="sub" id="sub-new">
+            <p class="note" id="new-note"></p>
+            <div class="row2" style="margin-top:12px;">
+              <div class="fg"><label for="f-slide">Show each product for</label>
+                <select id="f-slide"><option value="4">4 seconds</option><option value="5">5 seconds</option><option value="7">7 seconds</option><option value="10">10 seconds</option></select></div>
+              <div class="fg"><label for="f-newlabel">Small label above the name</label><input id="f-newlabel" maxlength="24" placeholder="NEW ARRIVAL"></div>
+            </div>
+          </div>
+
+          <div class="sub" id="sub-custom">
+            <div class="row2">
+              <div class="fg"><label for="f-label">Small label</label><input id="f-label" maxlength="24" placeholder="e.g. NEW COLLECTION"></div>
+              <div class="fg"><label for="f-button">Button text</label><input id="f-button" maxlength="20" placeholder="Shop Now →"></div>
+            </div>
+            <div class="fg"><label for="f-title">Headline</label><textarea id="f-title" rows="2" maxlength="60" placeholder="e.g. Graduation tees are here"></textarea></div>
+            <div class="row2">
+              <div class="fg"><label for="f-link">The button opens</label><select id="f-link"></select></div>
+              <div class="fg"><label>Picture <span class="note">(optional)</span></label>
+                <div class="pic-pick"><div class="thumb" id="pic-thumb"><i class="bi bi-image"></i></div>
+                  <div style="display:grid;gap:6px;"><label class="btn-ghost" for="f-pic" style="cursor:pointer;"><i class="bi bi-upload"></i> Choose picture</label>
+                  <input id="f-pic" type="file" accept="image/*" hidden><button type="button" class="btn-ghost" id="pic-clear" hidden>Remove picture</button></div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title"><i class="bi bi-grid" style="color:var(--orange);"></i> Featured products</span></div>
+          <p class="note" style="margin-bottom:10px;">Pick the products to show under <b>Featured</b>, in this order. With none picked, every product shows.</p>
+          <div id="feat-list"></div>
+          <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+            <select id="feat-add" style="flex:1;min-width:200px;"></select>
+            <button type="button" class="btn-ghost" id="feat-add-btn"><i class="bi bi-plus-lg"></i> Add</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title"><i class="bi bi-layout-text-window" style="color:var(--orange);"></i> Sections</span></div>
+          <label class="switch-row"><span>Shop by Style<small>A row with one tile per shirt style</small></span><input type="checkbox" id="f-styles"></label>
+          <label class="switch-row"><span>Categories<small>The row of category buttons under it</small></span><input type="checkbox" id="f-cats"></label>
+        </div>
+
+        <div class="save-bar">
+          <button class="btn-grad" id="save"><i class="bi bi-check-lg"></i> Save</button>
+          <span class="state" id="state">No changes</span>
+        </div>
+      </div>
+
+      <div class="hp-preview" aria-label="Preview of the app's Home screen">
+        <div class="ph-cap">How the app will look</div>
+        <div class="phone" id="phone"></div>
+      </div>
+    </div>
+    <div id="loading"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  // Firestore appConfig/home (read by the app's Home screen, HomeShowcase.kt):
+  //   { bannerMode: 'new'|'custom'|'off', label, title, buttonText, imageUrl, link: 'all'|'category:<name>'|'product:<id>',
+  //     slideSeconds, featured: [productId], showStyles, showCategories, updatedAt, updatedBy }
+  const $ = id => document.getElementById(id);
+  const DEF = { bannerMode: 'new', label: '', title: '', buttonText: '', imageUrl: '', link: 'all', slideSeconds: 5, featured: [], showStyles: true, showCategories: true };
+  let cfg = { ...DEF }, products = [], dirty = false, picBlob = null, picPreview = '', slide = 0, slideTimer = null;
+  const ms = t => (t && typeof t.toMillis === 'function') ? t.toMillis() : 0;
+  const forSale = () => products.filter(p => p.isAvailable !== false);
+
+  window.onAuthReady = async () => {
+    try {
+      const [home, snap] = await Promise.all([db.collection('appConfig').doc('home').get(), db.collection('products').get()]);
+      if (home.exists) cfg = { ...DEF, ...home.data() };
+      products = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+      fill(); $('loading').hidden = true; $('hp').hidden = false; render();
+    } catch (e) {
+      $('loading').innerHTML = `<div class="empty"><i class="bi bi-exclamation-triangle"></i><p>Couldn't load the Home Page settings: ${esc(e.message)}</p></div>`;
+    }
+  };
+
+  /** Puts the saved settings into the form. */
+  function fill() {
+    $('f-label').value = cfg.bannerMode === 'custom' ? (cfg.label || '') : '';
+    $('f-newlabel').value = cfg.bannerMode === 'new' ? (cfg.label || '') : '';
+    $('f-title').value = cfg.title || ''; $('f-button').value = cfg.buttonText || '';
+    $('f-slide').value = String([4, 5, 7, 10].includes(+cfg.slideSeconds) ? +cfg.slideSeconds : 5);
+    $('f-styles').checked = cfg.showStyles !== false; $('f-cats').checked = cfg.showCategories !== false;
+    const cats = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
+    $('f-link').innerHTML = '<option value="all">All products</option>' +
+      (cats.length ? '<optgroup label="A category">' + cats.map(c => `<option value="category:${esc(c)}">${esc(c)}</option>`).join('') + '</optgroup>' : '') +
+      (forSale().length ? '<optgroup label="One product">' + forSale().map(p => `<option value="product:${esc(p.id)}">${esc(p.name || 'Product')}</option>`).join('') + '</optgroup>' : '');
+    $('f-link').value = cfg.link || 'all'; if (!$('f-link').value) $('f-link').value = 'all';
+  }
+
+  /** Reads the form back into cfg. */
+  function read() {
+    cfg.label = (cfg.bannerMode === 'custom' ? $('f-label').value : $('f-newlabel').value).trim();
+    cfg.title = $('f-title').value.trim(); cfg.buttonText = $('f-button').value.trim();
+    cfg.link = $('f-link').value || 'all'; cfg.slideSeconds = +$('f-slide').value || 5;
+    cfg.showStyles = $('f-styles').checked; cfg.showCategories = $('f-cats').checked;
+  }
+
+  function changed() { read(); dirty = true; $('state').textContent = 'Not saved yet'; render(); }
+  document.querySelectorAll('#hp input:not([type=file]), #hp textarea, #hp select:not(#feat-add)').forEach(el => el.addEventListener('input', changed));
+  document.querySelectorAll('.mode').forEach(b => b.addEventListener('click', () => { read(); cfg.bannerMode = b.dataset.mode; fill(); changed(); }));
+  $('f-pic').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    if (!f.type.startsWith('image/')) { toast('Choose a picture file', 'warn'); return; }
+    picBlob = f; picPreview = URL.createObjectURL(f); changed();
+  });
+  $('pic-clear').onclick = () => { picBlob = null; picPreview = ''; cfg.imageUrl = ''; changed(); };
+  $('feat-add-btn').onclick = () => {
+    const id = $('feat-add').value; if (!id) { toast('Pick a product to add', 'warn'); return; }
+    if (!cfg.featured.includes(id)) cfg.featured = [...cfg.featured, id];
+    changed();
+  };
+  function moveFeat(i, d) { const f = [...cfg.featured]; const j = i + d; if (j < 0 || j >= f.length) return; [f[i], f[j]] = [f[j], f[i]]; cfg.featured = f; changed(); }
+  function dropFeat(i) { cfg.featured = cfg.featured.filter((_, k) => k !== i); changed(); }
+  window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  /** The products the "New products" banner shows, as the app picks them (HomeConfig.showcaseProducts). */
+  function showcase() {
+    const sale = forSale(), tagged = sale.filter(p => String(p.tag || '').toLowerCase() === 'new');
+    return (tagged.length ? tagged : sale).slice().sort((a, b) => ms(b.createdAt) - ms(a.createdAt)).slice(0, 6);
+  }
+
+  function render() {
+    document.querySelectorAll('.mode').forEach(b => { const on = b.dataset.mode === cfg.bannerMode; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
+    $('sub-new').hidden = cfg.bannerMode !== 'new'; $('sub-custom').hidden = cfg.bannerMode !== 'custom';
+    const sc = showcase(), tagged = forSale().filter(p => String(p.tag || '').toLowerCase() === 'new').length;
+    $('new-note').innerHTML = tagged
+      ? `<b>${tagged}</b> product${tagged === 1 ? ' is' : 's are'} tagged New${tagged > 6 ? ' (the 6 newest show)' : ''}. To add or remove one, change its <b>Label</b> on the <a href="products.html" style="color:var(--orange);">Products</a> page.`
+      : `No products are tagged New, so the ${Math.min(6, sc.length)} newest products show. Tag a product <b>New</b> (its Label on the <a href="products.html" style="color:var(--orange);">Products</a> page) to choose which.`;
+    const img = picPreview || cfg.imageUrl;
+    $('pic-thumb').innerHTML = img ? `<img src="${esc(img)}" alt="">` : '<i class="bi bi-image"></i>';
+    $('pic-clear').hidden = !img;
+    // Featured list and its "Add" choices
+    const byId = Object.fromEntries(products.map(p => [p.id, p]));
+    cfg.featured = cfg.featured.filter(id => byId[id]);
+    $('feat-list').innerHTML = cfg.featured.length ? cfg.featured.map((id, i) => {
+      const p = byId[id], im = safeUrl(p.imageUrl);
+      return `<div class="feat-row"><span class="th">${im ? `<img src="${im}" alt="">` : '<i class="bi bi-image"></i>'}</span>
+        <span class="nm">${esc(p.name || 'Product')}<small>${peso(p.price)}${p.isAvailable === false ? ' · hidden from the app' : ''}</small></span>
+        <button type="button" onclick="moveFeat(${i},-1)" ${i ? '' : 'disabled'} aria-label="Move up"><i class="bi bi-arrow-up"></i></button>
+        <button type="button" onclick="moveFeat(${i},1)" ${i < cfg.featured.length - 1 ? '' : 'disabled'} aria-label="Move down"><i class="bi bi-arrow-down"></i></button>
+        <button type="button" class="x" onclick="dropFeat(${i})" aria-label="Remove"><i class="bi bi-x-lg"></i></button></div>`;
+    }).join('') : '<p class="note">None picked: every product shows.</p>';
+    const left = forSale().filter(p => !cfg.featured.includes(p.id));
+    $('feat-add').innerHTML = '<option value="">Choose a product…</option>' + left.map(p => `<option value="${esc(p.id)}">${esc(p.name || 'Product')} · ${peso(p.price)}</option>`).join('');
+    phone();
+  }
+
+  /** The phone preview, drawn like the app's Home screen. */
+  function phone() {
+    clearInterval(slideTimer);
+    let banner = '';
+    if (cfg.bannerMode === 'custom') {
+      const img = picPreview || cfg.imageUrl;
+      banner = `<div class="bn">${img ? `<img class="cover" src="${esc(img)}" alt=""><span class="fade"></span>` : ''}
+        <div class="words">${cfg.label ? `<small>${esc(cfg.label.toUpperCase())}</small>` : ''}<b>${esc(cfg.title || 'WEAR YOUR\nSTYLE')}</b><i>${esc(cfg.buttonText || 'Shop Now →')}</i></div></div>`;
+    } else if (cfg.bannerMode === 'new') {
+      const sc = showcase();
+      if (!sc.length) banner = `<div class="bn"><div class="words"><small>NEW COLLECTION</small><b>WEAR YOUR\nSTYLE</b><i>Shop Now →</i></div></div>`;
+      else {
+        slide = slide % sc.length;
+        const p = sc[slide], im = safeUrl(p.imageUrl);
+        banner = `<div class="bn">${im ? `<img class="pic" src="${im}" alt="">` : ''}<div class="words"><small>${esc((cfg.label || 'NEW ARRIVAL').toUpperCase())}</small><b>${esc(p.name || 'Product')}</b><span class="pr">₱${Math.round(+p.price || 0).toLocaleString()}</span><i>View →</i></div></div>` +
+          (sc.length > 1 ? `<div class="dots">${sc.map((_, k) => `<span class="${k === slide ? 'on' : ''}"></span>`).join('')}</div>` : '');
+        if (sc.length > 1) slideTimer = setInterval(() => { slide = (slide + 1) % sc.length; phone(); }, (+cfg.slideSeconds || 5) * 1000);
+      }
+    }
+    const byId = Object.fromEntries(products.map(p => [p.id, p]));
+    const feat = (cfg.featured.length ? cfg.featured.map(id => byId[id]).filter(p => p && p.isAvailable !== false) : forSale()).slice(0, 4);
+    const cats = [...new Set(forSale().map(p => p.category).filter(Boolean))].slice(0, 4);
+    $('phone').innerHTML = `<div class="ph-top">KUSTOMOIMPRENTA <span>🛒</span></div>${banner}
+      ${cfg.showStyles !== false ? '<div class="ph-sec">Shop by Style <span>View all →</span></div><div class="ph-tiles"><div></div><div></div><div></div><div></div></div>' : ''}
+      ${cfg.showCategories !== false ? `<div class="ph-chips"><span>Saved</span>${cats.map(c => `<span>${esc(c)}</span>`).join('')}</div>` : ''}
+      <div class="ph-sec">Featured <span>See all →</span></div>
+      <div class="ph-grid">${feat.map(p => { const im = safeUrl(p.imageUrl); return `<div class="ph-prod"><div class="im">${im ? `<img src="${im}" alt="">` : ''}</div><p>${esc(p.name || 'Product')}<b>₱${Math.round(+p.price || 0).toLocaleString()}</b></p></div>`; }).join('') || '<p class="note">No products yet</p>'}</div>`;
+  }
+
+  $('save').onclick = async () => {
+    read();
+    if (cfg.bannerMode === 'custom' && !cfg.title) { toast('Write a headline for your banner', 'warn'); $('f-title').focus(); return; }
+    const btn = $('save'); btn.disabled = true; $('state').textContent = 'Saving…';
+    try {
+      if (picBlob) { $('state').textContent = 'Uploading the picture…'; cfg.imageUrl = await uploadToCloudinary(picBlob, { folder: 'kustomoimprenta/home' }); picBlob = null; picPreview = ''; }
+      const data = { bannerMode: cfg.bannerMode, label: cfg.label, title: cfg.title, buttonText: cfg.buttonText, imageUrl: cfg.imageUrl || '',
+        link: cfg.link, slideSeconds: cfg.slideSeconds, featured: cfg.featured, showStyles: cfg.showStyles, showCategories: cfg.showCategories,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: (auth.currentUser && auth.currentUser.email) || '' };
+      await db.collection('appConfig').doc('home').set(data);
+      dirty = false; $('state').textContent = 'Saved. The app shows it within a few seconds.'; toast('Home Page saved', 'ok'); render();
+    } catch (e) {
+      $('state').textContent = 'Not saved';
+      toast(e.code === 'permission-denied' ? 'Not saved: publish the updated database rules first (Home Page rule).' : 'Not saved: ' + e.message, 'err');
+    } finally { btn.disabled = false; }
+  };
+</script>
+</body>
+</html>

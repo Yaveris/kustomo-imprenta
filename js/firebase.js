@@ -815,3 +815,235 @@ async function reviewDesign(chatId, msgId, approved, staffUid) {
   await chat.update({ lastMessageAt: ts, adminReadAt: ts }).catch(() => {});
   toast(`Design ${approved ? 'approved' : 'rejected'}`, approved ? 'ok' : 'warn');
 }
+
+// ─────────────────────────────────────────────
+//  NEW ORDER HANDLING: Accept, Can't take it, order slip
+//  Like a food-delivery merchant app. Nothing new is stored: accepting moves the order to Processing and tells the
+//  customer the ready date in the order's chat; "Can't take it" sends the reason and cancels it the usual way.
+// ─────────────────────────────────────────────
+
+/** The order's chat id, making the chat if the order has none yet (same fields the order page uses). */
+async function orderChatId(o) {
+  const snap = await db.collection('chats').where('orderId', '==', o.id).limit(1).get();
+  if (!snap.empty) return snap.docs[0].id;
+  const ts = firebase.firestore.FieldValue.serverTimestamp();
+  const ref = await db.collection('chats').add({ orderId: o.id, userId: o.userId || '', customerName: o.fullName || '',
+    createdAt: ts, lastMessageAt: ts, adminReadAt: ts });
+  return ref.id;
+}
+
+/** Sends a message from the shop in the order's chat. */
+async function sendOrderMessage(o, text) {
+  const chatId = await orderChatId(o), chat = db.collection('chats').doc(chatId);
+  const ts = firebase.firestore.FieldValue.serverTimestamp();
+  await chat.collection('messages').add({ senderId: (auth.currentUser && auth.currentUser.uid) || '', senderRole: 'admin', messageText: text, sentAt: ts });
+  await chat.update({ lastMessageAt: ts, adminReadAt: ts }).catch(() => {});
+}
+
+const READY_CHOICES = [['Today', 0], ['Tomorrow', 1], ['In 2 days', 2], ['In 3 days', 3]];
+const DECLINE_REASONS = ['Out of stock', 'Too many orders right now', "We can't print this design"];
+const _fmtDay = d => d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' });
+const _isoDay = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/** A small box over the page, closed by Back, the ×, Escape or a click outside; returns its element. */
+function _orderBox(title, bodyHtml, footHtml) {
+  document.querySelectorAll('.ob-overlay').forEach(x => x.remove());
+  const ov = document.createElement('div');
+  ov.className = 'overlay show ob-overlay';
+  ov.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <div class="modal-hd"><h3>${esc(title)}</h3><button type="button" class="modal-x" data-close aria-label="Close">&times;</button></div>
+      <div class="modal-bd">${bodyHtml}</div>
+      <div class="modal-ft">${footHtml}</div></div>`;
+  const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('[data-close]')) close(); });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(ov);
+  ov.close = close;
+  return ov;
+}
+
+/** Accept a Pending order: pick when it will be ready, then it moves to Processing and the customer is told. */
+function openAcceptOrder(o, onDone) {
+  if (!o) return;
+  const no = orderNo(o.id);
+  const chips = READY_CHOICES.map(([label, add], i) =>
+    `<button type="button" class="ob-chip${i === 1 ? ' on' : ''}" data-add="${add}">${label}</button>`).join('') +
+    `<label class="ob-chip ob-pick"><span>Pick a date</span><input type="date" data-pick min="${_isoDay(new Date())}"></label>`;
+  const ov = _orderBox('Accept ' + no, `
+      <p class="ob-q">When will it be ready?</p>
+      <div class="ob-chips" role="group" aria-label="Ready date">${chips}</div>
+      <label class="ob-q" for="ob-note">Note for the customer <span class="note">(optional)</span></label>
+      <input id="ob-note" class="inp" maxlength="200" placeholder="e.g. Ready for pickup after 2 PM">
+      <p class="ob-q" style="margin-top:14px;">The customer gets this in the chat:</p>
+      <div class="ob-preview" id="ob-preview"></div>`,
+    `<button type="button" class="btn-ghost" data-close>Back</button>
+     <button type="button" class="btn-grad ob-ok" id="ob-go"><i class="bi bi-check-lg"></i> Accept and send</button>`);
+  let day = new Date(); day.setDate(day.getDate() + 1);
+  const text = () => {
+    const note = ov.querySelector('#ob-note').value.trim();
+    return `✅ We accepted your order ${no}. It should be ready by ${_fmtDay(day)}.` + (note ? ' ' + note : '');
+  };
+  const show = () => { ov.querySelector('#ob-preview').textContent = text(); };
+  ov.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
+    day = new Date(); day.setDate(day.getDate() + Number(b.dataset.add));
+    ov.querySelectorAll('.ob-chip').forEach(c => c.classList.toggle('on', c === b));
+    ov.querySelector('[data-pick]').value = ''; show();
+  });
+  const pick = ov.querySelector('[data-pick]');
+  pick.onchange = () => {
+    if (!pick.value) return;
+    const [y, m, d] = pick.value.split('-').map(Number); day = new Date(y, m - 1, d);
+    ov.querySelectorAll('.ob-chip').forEach(c => c.classList.toggle('on', c.classList.contains('ob-pick'))); show();
+  };
+  ov.querySelector('#ob-note').oninput = show;
+  show();
+  ov.querySelector('#ob-go').onclick = async () => {
+    const btn = ov.querySelector('#ob-go'); btn.disabled = true;
+    try {
+      await setOrderStatus(o.id, 'Processing');
+      if (typeof OrderAlert !== 'undefined') OrderAlert.handled(o.id);
+      try { await sendOrderMessage(o, text()); toast(`${no} accepted and the customer was told`, 'ok'); }
+      catch (e) { toast(`${no} accepted, but the chat message wasn't sent: ${e.message}`, 'warn'); }
+      ov.close(); if (onDone) onDone();
+    } catch (e) { toast('Not accepted: ' + e.message, 'err'); btn.disabled = false; }
+  };
+}
+
+/** Turn down a Pending order: say why in the chat, then cancel it (stock goes back, as with the Cancelled button). */
+function openDeclineOrder(o, onDone) {
+  if (!o) return;
+  const no = orderNo(o.id);
+  const reasons = DECLINE_REASONS.map((r, i) => `<button type="button" class="ob-chip${i === 0 ? ' on' : ''}" data-r="${esc(r)}">${esc(r)}</button>`).join('') +
+    `<button type="button" class="ob-chip" data-r="">Something else</button>`;
+  // Owners can send the money back in the same step, through the payment server
+  const paid = orderPaidAmount(o), canRefund = window.ADMIN_ROLE === 'super_admin' && !!o.payMongoSourceId && paid >= 20;
+  const ov = _orderBox("Can't take " + no, `
+      <p class="ob-q">Why can't the shop take it?</p>
+      <div class="ob-chips" role="group" aria-label="Reason">${reasons}</div>
+      <label class="ob-q" for="ob-why">In your own words <span class="note">(optional)</span></label>
+      <input id="ob-why" class="inp" maxlength="200" placeholder="e.g. The white shirts in size XL are sold out">
+      <p class="ob-q" style="margin-top:14px;">The customer gets this in the chat:</p>
+      <div class="ob-preview" id="ob-preview"></div>
+      ${canRefund ? `<label class="ob-refund"><input type="checkbox" id="ob-refund" checked> Refund ${esc(peso(paid))} to their GCash now</label>` : ''}
+      <p class="note" style="margin-top:12px;">The order is cancelled and any stock taken for it is put back.${canRefund ? '' : ' Refund what the customer paid on the Payments page.'}</p>`,
+    `<button type="button" class="btn-ghost" data-close>Back</button>
+     <button type="button" class="btn-ghost ob-no" id="ob-go"><i class="bi bi-x-lg"></i> Cancel the order and send</button>`);
+  let reason = DECLINE_REASONS[0];
+  const refunding = () => { const c = ov.querySelector('#ob-refund'); return !!(c && c.checked); };
+  const text = (refunded) => {
+    const own = ov.querySelector('#ob-why').value.trim();
+    const why = [reason, own].filter(Boolean).join('. ');
+    const money = (refunded === undefined ? refunding() : refunded)
+      ? ` We have sent ${peso(paid)} back to your GCash; it can take a few days to show.`
+      : ' What you paid will be refunded to your GCash.';
+    return `Sorry, we can't take your order ${no}` + (why ? ': ' + why : '') + '. It has been cancelled.' + money;
+  };
+  const show = () => { ov.querySelector('#ob-preview').textContent = text(); };
+  ov.querySelectorAll('[data-r]').forEach(b => b.onclick = () => {
+    reason = b.dataset.r; ov.querySelectorAll('.ob-chip').forEach(c => c.classList.toggle('on', c === b));
+    if (!reason) ov.querySelector('#ob-why').focus(); show();
+  });
+  ov.querySelector('#ob-why').oninput = show;
+  const rc = ov.querySelector('#ob-refund'); if (rc) rc.onchange = show;
+  show();
+  ov.querySelector('#ob-go').onclick = async () => {
+    if (!reason && !ov.querySelector('#ob-why').value.trim()) { toast('Write the reason for the customer', 'warn'); ov.querySelector('#ob-why').focus(); return; }
+    const btn = ov.querySelector('#ob-go'); btn.disabled = true;
+    try {
+      await setOrderStatus(o.id, 'Cancelled');
+      if (typeof OrderAlert !== 'undefined') OrderAlert.handled(o.id);
+      let refunded = false;
+      if (refunding()) {
+        try { await callPaymentServer('refund', { sourceId: o.payMongoSourceId, amountCentavos: Math.round(paid * 100), reason: 'others', notes: 'Order ' + no + ' cancelled by the shop' }); refunded = true; }
+        catch (e) { toast(`${no} cancelled, but the refund didn't go through: ${e.message} Try again on the Payments page.`, 'warn'); }
+      }
+      try { await sendOrderMessage(o, text(refunded)); toast(`${no} cancelled${refunded ? ', refunded' : ''} and the customer was told`, 'ok'); }
+      catch (e) { toast(`${no} cancelled, but the chat message wasn't sent: ${e.message}`, 'warn'); }
+      ov.close(); if (onDone) onDone();
+    } catch (e) { toast('Not cancelled: ' + e.message, 'err'); btn.disabled = false; }
+  };
+}
+
+/** Opens a half-page slip for the order in a new tab and starts printing, to tape onto the finished package. */
+function printOrderSlip(o) {
+  if (!o) return;
+  const w = window.open('', '_blank');
+  if (!w) { toast('Allow pop-ups for this site to print the slip', 'warn'); return; }
+  const items = Array.isArray(o.items) ? o.items : [];
+  const place = [o.streetAddress, o.barangay ? (/^brgy\.?|^barangay/i.test(o.barangay) ? o.barangay : 'Brgy. ' + o.barangay) : '', o.city, o.zipCode].filter(Boolean).join(', ');
+  const toCollect = o.isDownpayment && !o.balancePaidAt ? Number(o.remainingAmount) || 0 : 0;
+  const rows = items.map(it => {
+    const img = safeUrl(it.previewUrl) || safeUrl(it.imageUrl);
+    const qty = Number(it.quantity) || 1;
+    return `<div class="it">${img ? `<img src="${img}" alt="">` : '<span class="ph"></span>'}
+      <div><b>${esc(it.productName || 'Item')}</b><br>${[it.size ? 'Size ' + esc(it.size) : '', '× ' + qty, it.colorHex ? esc(it.colorHex) : ''].filter(Boolean).join(' · ')}
+      ${it.notes ? `<br><i>${esc(it.notes)}</i>` : ''}</div></div>`;
+  }).join('');
+  const phone = typeof prettyPhone === 'function' ? prettyPhone(o.phone || '') : (o.phone || '');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Slip ${esc(orderNo(o.id))}</title>
+<style>
+  @page { size: A5; margin: 10mm; }
+  body { font: 13px/1.45 'Segoe UI', Arial, sans-serif; color: #111; margin: 0; }
+  .slip { max-width: 128mm; margin: 0 auto; display: grid; gap: 10px; }
+  .top { display: flex; justify-content: space-between; align-items: flex-end; }
+  .no { font: 800 34px/1 'Segoe UI', Arial, sans-serif; letter-spacing: .5px; }
+  .shop { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #555; }
+  hr { border: 0; border-top: 1.5px dashed #999; margin: 0; }
+  .it { display: flex; gap: 10px; align-items: center; break-inside: avoid; }
+  .it img, .it .ph { width: 48px; height: 48px; object-fit: contain; border: 1px solid #ccc; border-radius: 6px; flex-shrink: 0; }
+  .due { display: flex; justify-content: space-between; font-weight: 800; font-size: 16px; border: 2px solid #111; border-radius: 6px; padding: 6px 10px; }
+  .muted { color: #555; }
+</style></head><body><div class="slip">
+  <div class="shop">KustomoImprenta · Order slip</div>
+  <div class="top"><span class="no">${esc(orderNo(o.id))}</span><span>${esc(fmtDate(o.orderedAt, false))}</span></div>
+  <div><b>${esc(o.fullName || 'Customer')}</b>${phone ? ' · ' + esc(phone) : ''}<br>${esc(place || 'No address given')}
+    ${o.landmark ? `<br><span class="muted">Near: ${esc(o.landmark)}</span>` : ''}</div>
+  <hr>${rows || '<div class="muted">No items</div>'}<hr>
+  <div class="due"><span>${toCollect ? 'Collect on delivery' : 'Payment'}</span><span>${toCollect ? esc(peso(toCollect)) : 'Paid'}</span></div>
+  ${o.driver && o.driver.name ? `<div class="muted">Driver: ${esc(o.driver.name)}${o.driver.phone ? ' · ' + esc(o.driver.phone) : ''}</div>` : ''}
+</div>
+<script>
+  // Print once the pictures have loaded (or after 3 seconds), then close the tab
+  const imgs = [...document.images].filter(i => !i.complete);
+  let left = imgs.length, done = false;
+  const go = () => { if (done) return; done = true; window.print(); };
+  imgs.forEach(i => { i.onload = i.onerror = () => { if (--left <= 0) go(); }; });
+  if (!left) setTimeout(go, 50); else setTimeout(go, 3000);
+  window.onafterprint = () => window.close();
+<\/script></body></html>`);
+  w.document.close();
+}
+
+// ─────────────────────────────────────────────
+//  PAYMENT SERVER (FitFusionServer on Render): holds the PayMongo key, lists payments, gives refunds.
+//  Its address is appConfig/payments.serverUrl, set on the Payments page.
+// ─────────────────────────────────────────────
+let _payUrl = null;
+async function paymentServerUrl(force) {
+  if (_payUrl !== null && !force) return _payUrl;
+  try { const d = await db.collection('appConfig').doc('payments').get(); _payUrl = String((d.exists && d.data().serverUrl) || '').trim().replace(/\/+$/, ''); }
+  catch (e) { _payUrl = ''; }
+  return _payUrl;
+}
+/** One step on the payment server, signed in as this staff member. Throws an Error with a message to show. */
+async function callPaymentServer(step, data) {
+  const url = await paymentServerUrl();
+  if (!url) throw new Error('The payment server isn\'t set up yet (Payments page → Setup).');
+  const token = await auth.currentUser.getIdToken();
+  let res;
+  try {
+    res = await fetch(url + '/paymongo/' + step, { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(data || {}) });
+  } catch (e) { throw new Error('Couldn\'t reach the payment server. It may be waking up; try again in a minute.'); }
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const m = json.message || ('HTTP ' + res.status);
+    const err = new Error(m === 'no-paymongo-key' ? 'No PayMongo key is saved yet.'
+      : m === 'paymongo-key-rejected' ? 'PayMongo didn\'t accept the saved key. Paste the secret key again.'
+      : res.status === 404 && !json.error ? 'Nothing is running at the payment server address.' : m);
+    err.code = json.error || ''; throw err;
+  }
+  return json;
+}
+/** What the customer paid in GCash for an order (the downpayment, or the whole total). */
+function orderPaidAmount(o) { return o.isDownpayment ? (+o.downpaymentAmount || 0) : (+o.totalAmount || 0); }

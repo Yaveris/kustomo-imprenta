@@ -374,17 +374,17 @@
         <span class="card-title"><i class="bi bi-wallet2"></i>PayMongo · GCash payments</span>
         <span class="k-pill warn">Money goes to this account</span>
         <i class="bi bi-chevron-down k-chev"></i>
-        <span class="k-sum">Customer payments go to whichever PayMongo account this key belongs to. Change it before the shop takes real orders.</span>
+        <span class="k-sum">Customer payments go to whichever PayMongo account this key belongs to. The key is now saved on the <a href="payments.html" style="color:var(--orange);">Payments</a> page.</span>
       </summary>
       <div class="k-steps">
         <ol>
           <li>Sign in at <a href="https://dashboard.paymongo.com/" target="_blank" rel="noopener">dashboard.paymongo.com</a> with the shop's account. To take real payments, the shop must first complete PayMongo's business verification.</li>
           <li>Go to <span class="k-ui">Developers</span> → <span class="k-ui">API Keys</span> and copy the <span class="k-ui">Secret key</span>. Use the test key (<code>sk_test_…</code>) until a full order works, then the live key (<code>sk_live_…</code>).</li>
-          <li>In the app's project folder, open <code>local.properties</code> and put the key after <code>paymongo.secret.key=</code> (see <a href="#apply">Build the new app</a>).</li>
-          <li>Build the new app and place a test order with GCash.</li>
+          <li>Paste it on the <a href="payments.html" style="color:var(--orange);">Payments</a> page and press <span class="k-ui">Save key</span>. No new app build is needed.</li>
+          <li>Place a test order with GCash.</li>
         </ol>
       </div>
-      <p class="k-why"><strong>Why it isn't a box on this page:</strong> the secret key can take and refund money. The app reads this page's keys, so a key saved here could be read by any customer account. A safer setup for later is a small payment server that holds the key instead of the app.</p>
+      <p class="k-why"><strong>How it's kept safe:</strong> the Payments page saves the key where nobody can read it back, not even this site or the app. Only the shop's payment server reads it. Until that server is set up (Payments → Setup), the app uses <code>paymongo.secret.key</code> from <code>local.properties</code> if the build has one.</p>
     </details>
 
 
@@ -490,10 +490,7 @@ cloudinary.upload.preset=</pre>
 // KustomoImprenta: who may read and change what. Paste into Firebase console → Firestore Database → Rules → Publish.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Employees (the shop's drivers): only staff can see or change them
-    match /employees/{id} {
-      allow read, write: if isAdmin();
-    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
     function signedIn() { return request.auth != null; }
     function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
@@ -555,6 +552,11 @@ service cloud.firestore {
       }
     }
 
+    // ── Employees (the shop's drivers): names and numbers, only for staff ──────
+    match /employees/{id} {
+      allow read, write: if isAdmin();
+    }
+
     // ── Catalog ───────────────────────────────────────────────────────────────
     match /products/{productId} {
       allow read: if true;
@@ -591,6 +593,22 @@ service cloud.firestore {
     match /appConfig/{doc} {
       allow read: if signedIn();
       allow write: if isSuperAdmin();
+    }
+    // The app's Home screen (Home Page on the admin site): any staff member may change it
+    match /appConfig/home {
+      allow write: if isAdmin();
+    }
+
+    // ── Payments ──────────────────────────────────────────────────────────────
+    // The PayMongo secret key (Payments page): a Super Admin can save or replace it, nobody can read it back.
+    // Only the payment server (FitFusionServer, with its service account) reads it.
+    match /secrets/{doc} {
+      allow read: if false;
+      allow write: if isSuperAdmin();
+    }
+    // Payments in progress and the orders waiting for them: only the payment server uses these.
+    match /paymongoSources/{id} {
+      allow read, write: if false;
     }
   }
 }</pre>
@@ -1015,7 +1033,7 @@ service cloud.firestore {
     $('snap-token').value = token;
 
     if (!token && !group && !name && !lens) return 'blank';
-    if ([token, group, name, lens].some(looksLikeSecret)) { toast('That\'s a PayMongo secret key. It goes in local.properties, not here.', 'err'); return null; }
+    if ([token, group, name, lens].some(looksLikeSecret)) { toast('That\'s a PayMongo secret key. Save it on the Payments page, not here.', 'err'); return null; }
     if (!token) return bad('snap-token-hint', 'Add the API token too. It has to come from the same Camera Kit app as the Lens Group.', 'snap-token');
     if (!JWT.test(token)) return bad('snap-token-hint', 'This doesn\'t look like a Camera Kit API token. It starts with eyJ and has two dots in it.', 'snap-token');
     if (!group) return bad('snap-group-hint', 'Add the Lens Group ID too. It has to come from the same Camera Kit app as the token.', 'snap-group');
@@ -1029,7 +1047,7 @@ service cloud.firestore {
     resetHints(['cl-cloud-hint', 'cl-preset-hint']);
     const cloud = $('cl-cloud').value.trim(), preset = $('cl-preset').value.trim();
     if (!cloud && !preset) return 'blank';
-    if ([cloud, preset].some(looksLikeSecret)) { toast('That\'s a PayMongo secret key. It goes in local.properties, not here.', 'err'); return null; }
+    if ([cloud, preset].some(looksLikeSecret)) { toast('That\'s a PayMongo secret key. Save it on the Payments page, not here.', 'err'); return null; }
     if (!cloud) return bad('cl-cloud-hint', 'Add the cloud name too.', 'cl-cloud');
     if (!SLUG.test(cloud)) return bad('cl-cloud-hint', 'A cloud name only has letters, numbers, dashes and underscores.', 'cl-cloud');
     if (!preset) return bad('cl-preset-hint', 'Add the upload preset too.', 'cl-preset');
@@ -1085,7 +1103,7 @@ service cloud.firestore {
     resetHints(['maps-key-hint']);
     const key = $('maps-key').value.trim();
     if (!key) return resetSection('maps');
-    if (looksLikeSecret(key)) { toast('That\'s a PayMongo secret key. It goes in local.properties, not here.', 'err'); return; }
+    if (looksLikeSecret(key)) { toast('That\'s a PayMongo secret key. Save it on the Payments page, not here.', 'err'); return; }
     if (!/^AIza[\w-]{30,}$/.test(key)) return bad('maps-key-hint', 'A Google API key starts with AIza and is about 39 characters long.', 'maps-key');
     await save({ mapsApiKey: key }, ['maps'], 'Saved. Address search in the app uses this key the next time it opens.');
   }

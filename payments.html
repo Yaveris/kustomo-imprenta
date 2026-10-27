@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payments — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    .pay-wrap { max-width: 980px; }
+    .pay-intro { font-size: 15px; color: #c8c8c8; line-height: 1.55; margin-bottom: 16px; max-width: 700px; }
+    .pay-wrap .card { margin-bottom: 16px; }
+    .conn { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.03); }
+    .conn .dot { width: 12px; height: 12px; border-radius: 50%; background: #666; flex-shrink: 0; }
+    .conn.ok .dot { background: #00E676; box-shadow: 0 0 0 4px rgba(0,230,118,.15); }
+    .conn.bad .dot { background: #FF4444; box-shadow: 0 0 0 4px rgba(255,68,68,.15); }
+    .conn.wait .dot { background: #FFD600; }
+    .conn .t { flex: 1; min-width: 220px; }
+    .conn .t b { display: block; font-size: 15.5px; }
+    .conn .t span { font-size: 13.5px; color: var(--muted); }
+    .keyrow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .keyrow input { flex: 1; min-width: 240px; font-family: Consolas, monospace; }
+    .note { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+    .steps { margin: 8px 0 0 18px; display: grid; gap: 6px; font-size: 14px; color: #cfcfcf; }
+    .pay-tbl td .sub { display: block; font-size: 12.5px; color: var(--muted); }
+    .pay-tbl .money { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .chip { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .chip.g { background: rgba(0,230,118,.13); color: #00E676; } .chip.o { background: rgba(255,92,0,.14); color: #FF7A33; }
+    .chip.y { background: rgba(255,214,0,.13); color: #FFD600; } .chip.r { background: rgba(255,68,68,.13); color: #FF6B6B; }
+    .btn-ref { padding: 5px 11px; border-radius: 8px; border: 1px solid rgba(255,107,107,.4); background: transparent; color: #FF8A8A; font-size: 13px; }
+    .btn-ref:hover { background: rgba(255,68,68,.1); }
+    details.setup summary { cursor: pointer; font-weight: 700; padding: 4px 0; }
+    .mode-pill { padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; }
+    .mode-pill.live { background: rgba(0,230,118,.14); color: #00E676; } .mode-pill.test { background: rgba(255,214,0,.14); color: #FFD600; }
+  </style>
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar"><div class="topbar-title">Payments <span>GCash</span></div>
+    <div class="topbar-right"><button class="btn-ghost" id="reload"><i class="bi bi-arrow-clockwise"></i> Refresh</button></div></div>
+  <div class="page-content">
+  <div class="pay-wrap">
+    <p class="pay-intro">Customers pay with GCash through your PayMongo account. Here you connect that account, see every payment, and give refunds. The money goes to the PayMongo account whose key is saved below.</p>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title"><i class="bi bi-plug" style="color:var(--orange);"></i> PayMongo account</span><span id="mode"></span></div>
+      <div class="conn wait" id="conn"><span class="dot"></span><span class="t"><b id="conn-t">Checking…</b><span id="conn-s"></span></span>
+        <button class="btn-ghost" id="check"><i class="bi bi-arrow-repeat"></i> Check again</button></div>
+
+      <div style="margin-top:18px;">
+        <label for="key" style="font-weight:700;display:block;margin-bottom:4px;">Secret key</label>
+        <p class="note">From <b>dashboard.paymongo.com → Developers → API Keys</b>, copy the <b>Secret key</b> (it starts with <code>sk_live_</code>, or <code>sk_test_</code> for trying things out). Paste it here and press Save. For safety it can't be shown again after saving, only replaced.</p>
+        <div class="keyrow">
+          <input id="key" type="password" autocomplete="off" spellcheck="false" placeholder="sk_live_…">
+          <button class="btn-ghost" type="button" id="show" title="Show what you pasted"><i class="bi bi-eye"></i></button>
+          <button class="btn-grad" id="save-key"><i class="bi bi-check-lg"></i> Save key</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title"><i class="bi bi-receipt" style="color:var(--orange);"></i> Payments</span><span class="note" id="count"></span></div>
+      <div class="tbl-wrap"><table class="tbl pay-tbl">
+        <thead><tr><th>Date</th><th>Order</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+        <tbody id="rows"><tr><td colspan="5"><div class="spinner"></div></td></tr></tbody>
+      </table></div>
+    </div>
+
+    <div class="card">
+      <details class="setup" id="setup">
+        <summary><i class="bi bi-gear" style="color:var(--muted);"></i> Setup (done once by whoever installs the system)</summary>
+        <div style="margin-top:12px;">
+          <p class="note">The payment server keeps the key off customers' phones and saves each order the moment PayMongo confirms it. Paste its address here once (from Render, like <code>https://kustomo-payments.onrender.com</code>).</p>
+          <div class="keyrow"><input id="srv" placeholder="https://….onrender.com" style="font-family:inherit;"><button class="btn-ghost" id="test-srv"><i class="bi bi-broadcast"></i> Test</button><button class="btn-grad" id="save-srv"><i class="bi bi-check-lg"></i> Save address</button></div>
+          <p class="note" style="margin-top:12px;">Steps for setting up the server on Render are in the <code>FitFusionServer/README.md</code> file.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  // The key goes to Firestore secrets/paymongo, which the rules let a Super Admin write and nobody read; only the
+  // payment server (FitFusionServer) reads it. What this page shows about the key comes from the server.
+  const $ = id => document.getElementById(id);
+  let ordersBySource = {}, owner = false;
+
+  function conn(state, title, sub) {
+    $('conn').className = 'conn ' + state; $('conn-t').textContent = title; $('conn-s').textContent = sub || '';
+  }
+
+  window.onAuthReady = async (user, role) => {
+    owner = role === 'super_admin';
+    if (!owner) { $('save-key').disabled = true; $('save-srv').disabled = true; }
+    const url = await paymentServerUrl(true);
+    $('srv').value = url;
+    if (!url) { $('setup').open = true; conn('bad', 'The payment server isn\'t set up yet', 'Open Setup below and paste its address.'); $('rows').innerHTML = '<tr><td colspan="5"><div class="empty"><p>Payments show here once the payment server is set up.</p></div></td></tr>'; return; }
+    check(); loadPayments();
+  };
+
+  async function check() {
+    conn('wait', 'Checking…', 'Asking the payment server (it can take up to a minute if it was asleep)');
+    $('mode').innerHTML = '';
+    try {
+      const r = await callPaymentServer('check-key', {});
+      conn('ok', 'Connected', `PayMongo accepted the saved key, ending in ${r.last4}.` + (r.notices && !r.notices.ok ? ' Note: ' + r.notices.reason : ''));
+      $('mode').innerHTML = `<span class="mode-pill ${r.mode}">${r.mode === 'live' ? 'Live: real payments' : 'Test: no real money'}</span>`;
+    } catch (e) {
+      conn('bad', e.message === 'No PayMongo key is saved yet.' ? 'No key saved yet' : 'Not working', e.message);
+    }
+  }
+  $('check').onclick = check;
+  $('reload').onclick = () => { check(); loadPayments(); };
+  $('show').onclick = () => { const k = $('key'); k.type = k.type === 'password' ? 'text' : 'password'; };
+
+  $('save-key').onclick = async () => {
+    const key = $('key').value.trim().replace(/\s+/g, '');
+    if (!key) { toast('Paste the secret key first', 'warn'); $('key').focus(); return; }
+    if (/^pk_/.test(key)) { toast('That is the Public key. Copy the Secret key (it starts with sk_).', 'warn'); return; }
+    if (!/^sk_(live|test)_[A-Za-z0-9]{10,}$/.test(key)) { toast('That doesn\'t look like a PayMongo secret key. It starts with sk_live_ or sk_test_.', 'warn'); return; }
+    if (key.startsWith('sk_test_') && !confirm('This is a TEST key: customers won\'t be charged real money. Save it anyway?')) return;
+    const btn = $('save-key'); btn.disabled = true;
+    try {
+      await db.collection('secrets').doc('paymongo').set({ secretKey: key, savedAt: firebase.firestore.FieldValue.serverTimestamp(), savedBy: (auth.currentUser && auth.currentUser.email) || '' });
+      $('key').value = ''; $('key').type = 'password';
+      toast('Key saved. Checking it with PayMongo…', 'ok');
+      await check(); loadPayments();
+    } catch (e) {
+      toast(e.code === 'permission-denied' ? 'Not saved: publish the updated database rules first (the secrets rule).' : 'Not saved: ' + e.message, 'err');
+    } finally { btn.disabled = !owner; }
+  };
+
+  $('test-srv').onclick = async () => {
+    const url = $('srv').value.trim().replace(/\/+$/, '');
+    if (!/^https:\/\/\S+$/.test(url)) { toast('The address starts with https://', 'warn'); return; }
+    toast('Testing… it can take up to a minute if the server was asleep');
+    try { const r = await fetch(url + '/health').then(r => r.json()); toast(r.ok ? 'The payment server answered' : 'Something answered, but not the payment server', r.ok ? 'ok' : 'warn'); }
+    catch (e) { toast('No answer from that address', 'err'); }
+  };
+  $('save-srv').onclick = async () => {
+    const url = $('srv').value.trim().replace(/\/+$/, '');
+    if (url && !/^https:\/\/\S+$/.test(url)) { toast('The address starts with https://', 'warn'); return; }
+    try {
+      await db.collection('appConfig').doc('payments').set({ serverUrl: url, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: (auth.currentUser && auth.currentUser.email) || '' }, { merge: true });
+      await paymentServerUrl(true); toast('Address saved', 'ok'); check(); loadPayments();
+    } catch (e) { toast('Not saved: ' + e.message, 'err'); }
+  };
+
+  const centavos = n => peso((+n || 0) / 100);
+  const when = s => s ? new Date(s * 1000).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
+
+  async function loadPayments() {
+    $('rows').innerHTML = '<tr><td colspan="5"><div class="spinner"></div></td></tr>';
+    try {
+      const [r, orders] = await Promise.all([callPaymentServer('payments', { limit: 100 }), db.collection('orders').get()]);
+      ordersBySource = {};
+      orders.docs.forEach(d => { const o = { id: d.id, ...d.data() }; if (o.payMongoSourceId) ordersBySource[o.payMongoSourceId] = o; });
+      const list = r.payments || [];
+      $('count').textContent = list.length ? `Latest ${list.length}` : '';
+      window._payments = list;
+      $('rows').innerHTML = list.length ? list.map((p, i) => {
+        const o = ordersBySource[p.sourceId], left = (p.amount || 0) - (p.refunded || 0);
+        const status = p.refunded >= p.amount && p.amount ? '<span class="chip o">Refunded</span>'
+          : p.refunded ? `<span class="chip o">Part refunded</span><span class="sub">${centavos(p.refunded)} back</span>`
+          : p.status === 'paid' ? '<span class="chip g">Paid</span>' : p.status === 'failed' ? '<span class="chip r">Failed</span>' : `<span class="chip y">${esc(p.status)}</span>`;
+        return `<tr><td>${when(p.paidAt)}</td>
+          <td>${o ? `<a href="order-detail.html?id=${encodeURIComponent(o.id)}" style="color:var(--orange);font-weight:700;">${esc(orderNo(o.id))}</a><span class="sub">${esc(o.fullName || '')}</span>` : `<span class="sub">${esc(p.description || 'No order found')}</span>`}</td>
+          <td class="money"><b>${centavos(p.amount)}</b>${p.fee ? `<span class="sub">PayMongo fee ${centavos(p.fee)}</span>` : ''}</td>
+          <td>${status}</td>
+          <td style="text-align:right;">${owner && p.status === 'paid' && left > 0 ? `<button class="btn-ref" onclick="refund(${i})"><i class="bi bi-arrow-counterclockwise"></i> Refund</button>` : ''}</td></tr>`;
+      }).join('') : '<tr><td colspan="5"><div class="empty"><i class="bi bi-receipt"></i><p>No payments yet</p></div></td></tr>';
+    } catch (e) {
+      $('rows').innerHTML = `<tr><td colspan="5"><div class="empty"><i class="bi bi-exclamation-triangle"></i><p>${esc(e.message)}</p></div></td></tr>`;
+    }
+  }
+
+  function refund(i) {
+    const p = window._payments[i]; if (!p) return;
+    const o = ordersBySource[p.sourceId], left = ((p.amount || 0) - (p.refunded || 0)) / 100;
+    const ov = _orderBox('Refund ' + (o ? orderNo(o.id) : 'payment'), `
+      <p class="ob-q">How much goes back to the customer's GCash?</p>
+      <div style="display:flex;gap:8px;align-items:center;"><span style="font-weight:700;">₱</span><input id="rf-amt" class="inp" type="number" min="20" step="0.01" max="${left}" value="${left}" style="max-width:180px;">
+        <span class="note">Paid ${centavos(p.amount)}${p.refunded ? `, ${centavos(p.refunded)} already refunded` : ''}</span></div>
+      <p class="ob-q" style="margin-top:14px;">Why</p>
+      <select id="rf-why" class="inp"><option value="requested_by_customer">The customer asked</option><option value="others">We cancelled the order</option><option value="duplicate">They paid twice</option></select>
+      ${o ? '<label class="ob-refund" style="border-color:var(--border);background:transparent;"><input type="checkbox" id="rf-tell" checked> Tell the customer in the order chat</label>' : ''}
+      <p class="note" style="margin-top:12px;">PayMongo sends it back to the GCash account that paid. It can take a few days to show. A refund can't be undone.</p>`,
+      `<button type="button" class="btn-ghost" data-close>Back</button><button type="button" class="btn-grad" id="rf-go"><i class="bi bi-arrow-counterclockwise"></i> Refund</button>`);
+    ov.querySelector('#rf-go').onclick = async () => {
+      const amt = +ov.querySelector('#rf-amt').value;
+      if (!(amt >= 20) || amt > left + 0.001) { toast(`Enter an amount from ₱20 to ${peso(left)}`, 'warn'); return; }
+      const btn = ov.querySelector('#rf-go'); btn.disabled = true;
+      try {
+        await callPaymentServer('refund', { paymentId: p.id, amountCentavos: Math.round(amt * 100), reason: ov.querySelector('#rf-why').value });
+        const tell = ov.querySelector('#rf-tell');
+        if (o && tell && tell.checked) {
+          try { await sendOrderMessage(o, `We have sent ${peso(amt)} back to your GCash for order ${orderNo(o.id)}. It can take a few days to show.`); } catch (e) { /* the refund itself went through */ }
+        }
+        toast(`${peso(amt)} refunded`, 'ok'); ov.close(); loadPayments();
+      } catch (e) { toast('Not refunded: ' + e.message, 'err'); btn.disabled = false; }
+    };
+  }
+</script>
+</body>
+</html>

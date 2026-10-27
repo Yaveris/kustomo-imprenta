@@ -1,0 +1,11 @@
+{
+  "name": "fitfusion-payment-server",
+  "description": "FitFusion GCash payments through PayMongo, with the secret key kept off the phone. Runs on Render.",
+  "private": true,
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

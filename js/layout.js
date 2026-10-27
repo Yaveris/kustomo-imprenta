@@ -22,6 +22,7 @@
     ]],
     ['Catalog', [
       ['products.html', 'bi-box-seam', 'Products &amp; Stock'],
+      ['home-page.html', 'bi-house-heart', 'Home Page'],
       ['design.html', 'bi-palette', 'Design Studio'],
       ['design-library.html', 'bi-collection', 'Design Library'],
       ['studio-settings.html', 'bi-sliders2', 'Studio Settings'],
@@ -29,6 +30,7 @@
     ]],
     ['Super Admin', [
       ['settings.html', 'bi-sliders', 'Shop Settings', true],
+      ['payments.html', 'bi-credit-card', 'Payments', true],
       ['admins.html', 'bi-person-badge', 'Admin Accounts', true]
     ]],
     ['Advanced', [
@@ -134,11 +136,16 @@ function chatIsUnread(c) {
 // On every admin page: when a paid order arrives, a ding plays and a small card pops up in the corner with what was
 // ordered, where it goes and the price. "Seen up to" is kept per browser, so an order that came in while you were
 // on another page (or had the site closed for under an hour) still pops up once when a page opens.
+// Like a food-delivery merchant app, the ding repeats every 10 seconds until the order is dealt with: opened, accepted,
+// turned down, its card closed, or moved out of Pending on any computer. The orders still ringing are kept per browser
+// too, so changing pages doesn't silence them.
 const OrderAlert = (() => {
-  const SEEN = 'ki-orders-seen', MUTE = 'ki-orders-mute';
+  const SEEN = 'ki-orders-seen', MUTE = 'ki-orders-mute', RING = 'ki-orders-ringing', RING_EVERY = 10000;
   const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const set = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private window */ } };
-  let ctx = null, box = null, baseTitle = document.title, flash = null;
+  let ctx = null, box = null, baseTitle = document.title, flash = null, ringTimer = null, pending = {};
+  const ringing = () => { try { const a = JSON.parse(get(RING) || '[]'); return Array.isArray(a) ? a.filter(x => typeof x === 'string') : []; } catch (e) { return []; } };
+  const setRinging = ids => set(RING, JSON.stringify([...new Set(ids)].slice(-20)));
 
   // Browsers only allow sound after someone has clicked or typed on the page, so the first click switches it on.
   function audio() {
@@ -185,7 +192,9 @@ const OrderAlert = (() => {
 .oa-tot{display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,.08);padding-top:8px;font-weight:800;font-size:15px;}
 .oa-tot span:last-child{color:#FF5C00;}
 .oa-ft{display:flex;gap:8px;padding:0 12px 12px;}
-.oa-ft a{flex:1;text-align:center;padding:8px;border-radius:9px;background:linear-gradient(90deg,#FF5C00,#FF2C78);color:#fff;font-weight:700;text-decoration:none;}
+.oa-ft a,.oa-ft button{flex:1;text-align:center;padding:8px;border-radius:9px;background:linear-gradient(90deg,#FF5C00,#FF2C78);color:#fff;font-weight:700;text-decoration:none;border:0;font-size:14px;cursor:pointer;white-space:nowrap;}
+.oa-ft .oa-ok{background:#1E9E57;} .oa-ft .oa-slip{flex:0 0 auto;background:transparent;border:1px solid rgba(255,255,255,.18);color:#ddd;}
+.oa.ringing{box-shadow:0 0 0 3px rgba(255,92,0,.35),0 14px 40px rgba(0,0,0,.55);}
 .oa-note{font-size:12.5px;color:#FFD600;padding:0 12px 10px;cursor:pointer;}`;
     document.head.appendChild(s);
   }
@@ -206,7 +215,7 @@ const OrderAlert = (() => {
         <span class="p">${peso((Number(it.price) || 0) * qty)}</span></div>`;
     }).join('') + (items.length > 3 ? `<div class="oa-row" style="color:#aaa;">and ${items.length - 3} more item${items.length - 3 === 1 ? '' : 's'}</div>` : '');
     const place = [o.streetAddress, o.barangay, o.city].filter(Boolean).join(', ');
-    const el = document.createElement('div'); el.className = 'oa'; el.setAttribute('role', 'alert');
+    const el = document.createElement('div'); el.className = 'oa'; el.setAttribute('role', 'alert'); el.dataset.id = o.id;
     el.innerHTML = `<div class="oa-hd"><i class="bi bi-bell-fill"></i><span class="t">New order <small>${typeof orderNo === 'function' ? esc(orderNo(o.id)) : ''}</small></span>
         <button type="button" data-mute title="Sound on or off"><i class="bi ${get(MUTE) === '1' ? 'bi-volume-mute' : 'bi-volume-up'}"></i></button>
         <button type="button" data-x title="Close" aria-label="Close">&times;</button></div>
@@ -216,8 +225,13 @@ const OrderAlert = (() => {
         <div class="oa-tot"><span>${o.isDownpayment ? `Downpayment paid ${peso(o.downpaymentAmount)}` : 'Paid with GCash'}</span><span>${peso(o.totalAmount)}</span></div>
       </div>
       <div class="oa-note" hidden>Click anywhere on the page to turn on the order sound.</div>
-      <div class="oa-ft"><a href="order-detail.html?id=${encodeURIComponent(o.id)}">Open order <i class="bi bi-arrow-right"></i></a></div>`;
-    el.querySelector('[data-x]').onclick = () => { el.remove(); stopFlash(); };
+      <div class="oa-ft">${(o.status || 'Pending') === 'Pending' && typeof openAcceptOrder === 'function' ? '<button type="button" class="oa-ok" data-accept><i class="bi bi-check-lg"></i> Accept</button>' : ''}
+        <a href="order-detail.html?id=${encodeURIComponent(o.id)}" data-open>Open order <i class="bi bi-arrow-right"></i></a>
+        ${typeof printOrderSlip === 'function' ? '<button type="button" class="oa-slip" data-slip title="Print a slip to tape to the package"><i class="bi bi-printer"></i> Slip</button>' : ''}</div>`;
+    el.querySelector('[data-x]').onclick = () => { handled(o.id); stopFlash(); };
+    el.querySelector('[data-open]').onclick = () => handled(o.id, true);
+    const acc = el.querySelector('[data-accept]'); if (acc) acc.onclick = () => openAcceptOrder(pending[o.id] || o);
+    const slip = el.querySelector('[data-slip]'); if (slip) slip.onclick = () => printOrderSlip(pending[o.id] || o);
     el.querySelector('[data-mute]').onclick = e => {
       const m = get(MUTE) === '1' ? '0' : '1'; set(MUTE, m);
       document.querySelectorAll('.oa [data-mute] i').forEach(i => i.className = 'bi ' + (m === '1' ? 'bi-volume-mute' : 'bi-volume-up'));
@@ -246,12 +260,42 @@ const OrderAlert = (() => {
     // First visit in this browser, or nothing new for over an hour: start from about now instead of popping up old
     // orders (a minute back, in case this computer's clock is a little ahead of the server's)
     if (!seen || now - seen > 3600000) { seen = now - 60000; set(SEEN, String(seen)); }
-    const fresh = docs.map(d => ({ id: d.id, ...d.data() })).filter(o => ms(o.orderedAt) > seen).sort((a, b) => ms(a.orderedAt) - ms(b.orderedAt));
+    const list = docs.map(d => ({ id: d.id, ...d.data() }));
+    pending = {}; list.forEach(o => { pending[o.id] = o; });
+    const fresh = list.filter(o => ms(o.orderedAt) > seen).sort((a, b) => ms(a.orderedAt) - ms(b.orderedAt));
     if (fresh.length) set(SEEN, String(Math.max(seen, ...fresh.map(o => ms(o.orderedAt)))));
+    // Still ringing: orders not yet dealt with that are still Pending (another computer may have accepted them)
+    const before = ringing(), still = before.filter(id => pending[id]);
+    const ids = [...still, ...fresh.map(o => o.id).filter(id => !still.includes(id))].filter(id => id !== here);
+    setRinging(ids);
+    if (box) [...box.children].forEach(el => { if (el.dataset.id && !pending[el.dataset.id]) el.remove(); });
+    // A card for every ringing order, including ones that rang on another page
+    ids.forEach(id => { if (!box || !box.querySelector(`[data-id="${CSS.escape(id)}"]`)) card(pending[id]); });
+    if (box) [...box.children].forEach(el => el.classList.toggle('ringing', ids.includes(el.dataset.id)));
+    syncRing();
     if (!fresh.length) return;
-    fresh.forEach(card);
     ding();
     startFlash(fresh.length);
   }
-  return { check, ding };
+
+  /** Keeps the repeating ding going while any order is still ringing. */
+  function syncRing() {
+    const any = ringing().length > 0;
+    if (any && !ringTimer) ringTimer = setInterval(() => { if (ringing().length) ding(); else syncRing(); }, RING_EVERY);
+    if (!any && ringTimer) { clearInterval(ringTimer); ringTimer = null; stopFlash(); }
+  }
+  /** The order was dealt with (opened, accepted, turned down, or its card closed): stop ringing for it.
+   *  `keepCard` leaves its card on screen (when following the card's own link). */
+  function handled(id, keepCard) {
+    if (!id) return;
+    setRinging(ringing().filter(x => x !== id));
+    if (box && !keepCard) { const el = box.querySelector(`[data-id="${CSS.escape(id)}"]`); if (el) el.remove(); }
+    if (box) { const el = box.querySelector(`[data-id="${CSS.escape(id)}"]`); if (el) el.classList.remove('ringing'); }
+    syncRing();
+  }
+  // Opening an order's page counts as seeing it, so that order never rings there
+  let here = '';
+  try { if (/order-detail(\.html)?$/.test(location.pathname)) here = new URLSearchParams(location.search).get('id') || ''; } catch (e) { /* old browser */ }
+  if (here) setRinging(ringing().filter(x => x !== here));
+  return { check, ding, handled };
 })();

@@ -23,6 +23,7 @@
   <div class="topbar">
     <div class="topbar-title" id="page-title">Order <span>Detail</span></div>
     <div class="topbar-right">
+      <button class="btn-ghost" onclick="printOrderSlip(order)" title="A slip to tape to the finished package"><i class="bi bi-receipt"></i> Print slip</button>
       <button class="btn-ghost" onclick="window.print()" title="Print a job sheet for the print floor"><i class="bi bi-printer"></i> Print</button>
       <a href="orders.html" class="btn-ghost"><i class="bi bi-arrow-left"></i> Back to Orders</a>
     </div>
@@ -81,6 +82,10 @@
   }
   function renderStatusParts() {
     const o = order, st = o.status || 'Pending';
+    const slot = document.getElementById('ob-slot');
+    if (slot) slot.innerHTML = st === 'Pending' ? `<div class="ob-bar"><span class="t"><b>New order.</b> Accept it to tell the customer when it will be ready.</span>
+      <button type="button" class="btn-grad ob-ok" onclick="openAcceptOrder(order, () => refreshStatus())"><i class="bi bi-check-lg"></i> Accept</button>
+      <button type="button" class="btn-ghost ob-no" onclick="openDeclineOrder(order, () => refreshStatus())"><i class="bi bi-x-lg"></i> Can't take it</button></div>` : '';
     document.getElementById('sts-badge').innerHTML = statusBadge(st);
     document.getElementById('sts-sel').value = st;
     document.getElementById('stock-line').textContent = o.stockDeducted
@@ -299,6 +304,8 @@
             <div style="font-size:20px;font-weight:800;">Job sheet · ${orderNo(oid)}</div>
             <div style="font-size:13px;">Printed ${fmtDate(new Date())}</div>
           </div>
+
+          <div id="ob-slot" class="no-print"></div>
 
           <!-- Order Info -->
           <div class="card">

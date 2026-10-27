@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Keys — FitFusion Super Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    [hidden] { display: none !important; }
+    .k-intro { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+    .k-intro strong { color: var(--text); }
+    .k-status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .k-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .k-pill.own  { background: rgba(0,230,118,.10); color: #00E676; border-color: rgba(0,230,118,.28); }
+    .k-pill.warn { background: rgba(255,214,0,.10); color: var(--yellow); border-color: rgba(255,214,0,.28); }
+    .k-pill.bad  { background: rgba(255,68,68,.10); color: #FF6B6B; border-color: rgba(255,68,68,.28); }
+
+    .k-section { display: flex; align-items: baseline; gap: 12px; margin: 28px 0 12px; }
+    .k-section h2 { font-size: 15px; font-weight: 800; letter-spacing: .2px; }
+    .k-section p { font-size: 12.5px; color: var(--muted); }
+
+    .k-card { margin-bottom: 16px; }
+    .k-card .card-head { margin-bottom: 14px; gap: 10px; flex-wrap: wrap; }
+    .k-card .card-title i { color: var(--orange); margin-right: 6px; }
+    .k-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+    @media (max-width: 1100px) { .k-grid { grid-template-columns: minmax(0, 1fr); } }
+    /* Long code lines scroll inside their box instead of widening the page */
+    #main { min-width: 0; }
+    .k-grid > * { min-width: 0; }
+
+    .fg .k-hint { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.45; text-transform: none; letter-spacing: 0; font-weight: 400; }
+    .fg .k-hint.err  { color: #FF6B6B; }
+    .fg .k-hint.note { color: var(--yellow); }
+    .fg .k-opt { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+    .k-mono { font-family: Consolas, 'Cascadia Mono', Menlo, monospace !important; font-size: 12.5px !important; }
+    .k-secret { position: relative; }
+    .k-secret input { padding-right: 62px; }
+    .k-secret button {
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--border);
+      border-radius: 6px; font-size: 11.5px; padding: 3px 8px; cursor: pointer;
+    }
+    .k-secret button:hover { color: var(--text); }
+    .k-actions { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; margin-top: 4px; }
+    .k-saved { font-size: 12px; color: var(--muted); margin-top: 10px; }
+    .k-result { font-size: 12.5px; margin-top: 10px; line-height: 1.5; }
+    .k-result.ok  { color: #00E676; }
+    .k-result.err { color: #FF6B6B; }
+
+    .k-steps { background: rgba(255,255,255,.025); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+    .k-steps h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 10px; }
+    .k-steps ol { padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text); }
+    .k-steps li { margin-bottom: 7px; padding-left: 2px; }
+    .k-steps li::marker { color: var(--orange); font-weight: 700; }
+    .k-steps a, .k-intro a, .k-why a { color: var(--orange); }
+    .k-steps .k-sub { color: var(--muted); }
+    code, .k-code {
+      font-family: Consolas, 'Cascadia Mono', Menlo, monospace; font-size: 12px;
+      background: rgba(255,255,255,.07); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px;
+      overflow-wrap: anywhere;
+    }
+    .k-ui { font-weight: 600; color: var(--text); white-space: nowrap; }
+
+    details.k-card > summary {
+      list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    details.k-card > summary::-webkit-details-marker { display: none; }
+    details.k-card > summary .k-chev { margin-left: auto; color: var(--muted); transition: transform .18s; }
+    details.k-card[open] > summary .k-chev { transform: rotate(180deg); }
+    details.k-card > summary .k-sum { font-size: 12.5px; color: var(--muted); flex-basis: 100%; margin-top: 4px; }
+    details.k-card[open] > summary { margin-bottom: 16px; }
+    .k-why {
+      font-size: 12.5px; color: var(--muted); line-height: 1.55; margin-top: 12px;
+      border-left: 3px solid var(--yellow); padding: 4px 0 4px 12px;
+    }
+    .k-why strong { color: var(--text); }
+
+    .k-block { position: relative; margin-top: 8px; }
+    .k-block pre {
+      background: #121212; border: 1px solid var(--border); border-radius: 9px;
+      padding: 42px 16px 14px; font-family: Consolas, 'Cascadia Mono', Menlo, monospace; font-size: 12.5px;
+      line-height: 1.55; color: #E6E6E6; overflow-x: auto; white-space: pre;
+    }
+    .k-block .k-copy { position: absolute; top: 8px; right: 8px; padding: 4px 10px; font-size: 12px; }
+
+    .k-check { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .k-row {
+      display: grid; grid-template-columns: 32px minmax(170px, 1fr) minmax(0, 2.2fr) auto; gap: 14px; align-items: center;
+      padding: 11px 14px; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,.02);
+    }
+    .k-row.s-bad { border-color: rgba(255,68,68,.32); }
+    .k-ico {
+      width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 800; line-height: 1;
+    }
+    .s-ok .k-ico   { background: rgba(0,230,118,.14); color: #00E676; }
+    .s-warn .k-ico { background: rgba(255,214,0,.14); color: var(--yellow); }
+    .s-bad .k-ico  { background: rgba(255,68,68,.14); color: #FF6B6B; }
+    .s-unk .k-ico  { background: rgba(255,255,255,.07); color: var(--muted); }
+    .k-name { font-size: 13.5px; font-weight: 700; }
+    .k-where { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+    .k-label { display: block; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 2px; }
+    .s-ok .k-label { color: #00E676; } .s-warn .k-label { color: var(--yellow); }
+    .s-bad .k-label { color: #FF6B6B; } .s-unk .k-label { color: var(--muted); }
+    .k-detail { font-size: 12.5px; line-height: 1.45; }
+    .k-fix { font-size: 12.5px; color: var(--orange); white-space: nowrap; text-decoration: none; }
+    .k-fix:hover { text-decoration: underline; }
+    .k-from { font-size: 12px; color: var(--muted); }
+    @media (max-width: 760px) {
+      .k-row { grid-template-columns: 30px minmax(0, 1fr); }
+      .k-row .k-state, .k-row .k-fix { grid-column: 2; }
+    }
+    .k-preset-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+    .k-preset-row .fg { margin: 0; flex: 1; min-width: 220px; }
+    .k-filled { color: var(--yellow) !important; }
+    .k-warn-card { border-color: rgba(255,214,0,.35); background: rgba(255,214,0,.05); margin-bottom: 16px; }
+    .k-warn-card .card-title { color: var(--yellow); }
+  </style>
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">FitFusion</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title" style="display:flex;align-items:center;gap:10px;">
+      App Keys <span>The shop's own accounts</span>
+      <span style="background:rgba(255,214,0,.12);color:var(--yellow);border:1px solid rgba(255,214,0,.25);padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.5px;white-space:nowrap;">SUPER ADMIN</span>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-ghost" onclick="loadKeys()"><i class="bi bi-arrow-clockwise"></i> Reload</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- Shown when Firestore refuses this page (the one-time rule isn't in place yet) -->
+    <div class="card k-warn-card" id="k-rule-warn" hidden>
+      <div class="card-head" style="margin-bottom:8px;"><span class="card-title"><i class="bi bi-exclamation-triangle"></i> One-time setup needed</span></div>
+      <p class="k-intro" style="color:var(--text);">
+        Firestore isn't letting this page read or save keys yet, so the app keeps using its built-in keys.
+        Add the rule under <a href="#rules">One-time Firestore setup</a> at the bottom of this page, publish it, then press Reload.
+      </p>
+    </div>
+
+    <div class="card">
+      <p class="k-intro">
+        FitFusion connects to a few outside services. Each one needs a key from the <strong>shop's own account</strong>,
+        so payments, photos and the AR lens are on the shop's accounts and not the developer's.
+        <br>The keys in the first part <strong>change right away</strong>: the app reads them when a signed-in customer opens it,
+        and AR try-on and image uploads use them the next time they start. No app update is needed.
+        The keys in the second part are <strong>built into the app file</strong>, so changing them means building a new app;
+        the steps are included.
+      </p>
+      <div class="k-status" id="k-status"><span class="k-pill">Checking…</span></div>
+    </div>
+
+    <!-- ── Checklist ──────────────────────────────────────────────────── -->
+    <section class="card k-card" id="checklist" style="margin-top:16px;">
+      <div class="card-head">
+        <span class="card-title"><i class="bi bi-list-check"></i>Key checklist</span>
+        <span class="k-from" id="k-from"></span>
+      </div>
+      <ul class="k-check" id="k-check"><li class="k-row s-unk"><span class="k-ico">?</span><div class="k-name">Checking the keys…</div></li></ul>
+      <p class="k-intro" style="font-size:12.5px;margin-top:12px;">
+        Checked live where this page can (the Firestore rule, Cloudinary). For the keys built into the app, the app reports which
+        kind it has and whether each one worked the last time a customer used it. It sends labels like “test” or “missing”, never the keys.
+      </p>
+    </section>
+
+    <!-- ── Presets ────────────────────────────────────────────────────── -->
+    <section class="card k-card" id="presets" style="margin-top:16px;">
+      <div class="card-head">
+        <span class="card-title"><i class="bi bi-collection"></i>Presets</span>
+        <span class="k-pill" id="preset-state">—</span>
+      </div>
+      <div class="k-preset-row">
+        <div class="fg">
+          <label for="preset-pick">Ready-made keys</label>
+          <select id="preset-pick" onchange="showPresetNote()"></select>
+        </div>
+        <button type="button" class="btn-ghost" onclick="fillPreset()"><i class="bi bi-input-cursor-text"></i> Fill the forms</button>
+        <button type="button" class="btn-grad" onclick="applyPreset()"><i class="bi bi-check2-all"></i> Fill and save</button>
+      </div>
+      <div class="k-hint" id="preset-note" style="margin-top:10px;font-size:12.5px;color:var(--muted);line-height:1.5;"></div>
+    </section>
+
+    <div class="k-section"><h2>Change here — no new app build</h2></div>
+
+    <!-- ── Snap Camera Kit ─────────────────────────────────────────────── -->
+    <section class="card k-card" id="snap">
+      <div class="card-head">
+        <span class="card-title"><i class="bi bi-camera"></i>Snap Camera Kit · AR try-on</span>
+        <span class="k-pill" id="snap-state">—</span>
+      </div>
+      <div class="k-grid">
+        <form id="snap-form" autocomplete="off" onsubmit="saveSnap(event)">
+          <div class="fg">
+            <label for="snap-token">API token</label>
+            <div class="k-secret">
+              <input id="snap-token" class="k-mono" type="password" spellcheck="false" placeholder="Blank = the token built into the app" oninput="checkToken()">
+              <button type="button" onclick="toggleSecret('snap-token', this)">Show</button>
+            </div>
+            <div class="k-hint" id="snap-token-hint">A long code starting with <code>eyJ</code>.</div>
+          </div>
+          <div class="fg">
+            <label for="snap-group">Lens Group ID</label>
+            <input id="snap-group" class="k-mono" spellcheck="false" placeholder="Blank = the built-in group">
+            <div class="k-hint" id="snap-group-hint">Looks like <code>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code>.</div>
+          </div>
+          <div class="fg-row">
+            <div class="fg">
+              <label for="snap-name">Lens name</label>
+              <input id="snap-name" spellcheck="false" maxlength="80" placeholder="Blank = KustomoShirts">
+              <div class="k-hint">The name you published the shirt Lens under.</div>
+            </div>
+            <div class="fg">
+              <label for="snap-lens">Lens ID <span class="k-opt">(optional)</span></label>
+              <input id="snap-lens" class="k-mono" spellcheck="false" placeholder="Only to pin one exact Lens">
+              <div class="k-hint" id="snap-lens-hint">Wins over the name if both are set.</div>
+            </div>
+          </div>
+          <div class="k-actions">
+            <button type="submit" class="btn-grad"><i class="bi bi-check2"></i> Save Snap keys</button>
+            <button type="button" class="btn-ghost" onclick="resetSection('snap')"><i class="bi bi-arrow-counterclockwise"></i> Use built-in</button>
+          </div>
+          <div class="k-saved k-filled" id="snap-filled" hidden></div>
+          <div class="k-saved" id="snap-saved"></div>
+        </form>
+
+        <div class="k-steps">
+          <h4>Where to get these</h4>
+          <ol>
+            <li>Sign in at <a href="https://my-lenses.snapchat.com/" target="_blank" rel="noopener">my-lenses.snapchat.com</a> with the shop's Snapchat account. Create an <span class="k-ui">Organization</span> for the shop if it doesn't have one.</li>
+            <li>Turn on Camera Kit for that Organization at <a href="https://my-lenses.snapchat.com/camera-kit" target="_blank" rel="noopener">my-lenses.snapchat.com/camera-kit</a> and create an app there. If it asks for the Android package name, enter <code>com.ksprintexpress.fitfusion</code>.</li>
+            <li>Copy the app's <span class="k-ui">API token</span> from the Snap developer portal at <a href="https://kit.snapchat.com/manage" target="_blank" rel="noopener">kit.snapchat.com/manage</a> and paste it into <span class="k-ui">API token</span>. Use the <strong>Production</strong> token for customers. The Staging token puts a “Camera Kit Staging” watermark on the camera, which is fine for testing.</li>
+            <li>Publish the shirt Lens to the shop's Organization: open the <code>lens-studio/FitFusionShirts</code> project from the app's source folder in Lens Studio, press <span class="k-ui">Publish Lens</span>, pick the Organization, create a Lens Folder, and submit. <span class="k-sub">“Save As Draft” or Offline is quickest because it only goes through automatic checks.</span> Type the name you gave it into <span class="k-ui">Lens name</span>.</li>
+            <li>Open <span class="k-ui">Lens Scheduler</span> in My Lenses. Add your Lens Folder as a Lens Source. Then go to the <span class="k-ui">Lens Group</span> tab, choose <span class="k-ui">Add New Lens Group</span>, then <span class="k-ui">Add Lens</span>, pick the shirt Lens and press <span class="k-ui">Save Changes</span>.</li>
+            <li>Click the group and copy its <span class="k-ui">Lens Group ID</span> into this form. <span class="k-sub">The Lens ID is optional; it's listed on the All Lenses tab.</span></li>
+            <li>Press <span class="k-ui">Save Snap keys</span>, then open AR try-on in the app to check.</li>
+          </ol>
+          <p class="k-why">The token and the Lens Group must come from the <strong>same</strong> Camera Kit app, so this form saves them together.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Cloudinary ──────────────────────────────────────────────────── -->
+    <section class="card k-card" id="cloudinary">
+      <div class="card-head">
+        <span class="card-title"><i class="bi bi-images"></i>Cloudinary · design and photo uploads</span>
+        <span class="k-pill" id="cl-state">—</span>
+      </div>
+      <div class="k-grid">
+        <form id="cl-form" autocomplete="off" onsubmit="saveCloudinary(event)">
+          <div class="fg-row">
+            <div class="fg">
+              <label for="cl-cloud">Cloud name</label>
+              <input id="cl-cloud" class="k-mono" spellcheck="false" placeholder="Blank = built-in">
+              <div class="k-hint" id="cl-cloud-hint">Letters, numbers and dashes.</div>
+            </div>
+            <div class="fg">
+              <label for="cl-preset">Upload preset (Unsigned)</label>
+              <input id="cl-preset" class="k-mono" spellcheck="false" placeholder="Blank = built-in">
+              <div class="k-hint" id="cl-preset-hint">The preset's name, not an API key.</div>
+            </div>
+          </div>
+          <div class="k-actions">
+            <button type="submit" class="btn-grad"><i class="bi bi-check2"></i> Save Cloudinary keys</button>
+            <button type="button" class="btn-ghost" onclick="testCloudinary()"><i class="bi bi-cloud-arrow-up"></i> Test upload</button>
+            <button type="button" class="btn-ghost" onclick="resetSection('cloudinary')"><i class="bi bi-arrow-counterclockwise"></i> Use built-in</button>
+          </div>
+          <div class="k-result" id="cl-result" hidden></div>
+          <div class="k-saved k-filled" id="cl-filled" hidden></div>
+          <div class="k-saved" id="cl-saved"></div>
+        </form>
+
+        <div class="k-steps">
+          <h4>Where to get these</h4>
+          <ol>
+            <li>Sign in or sign up at <a href="https://console.cloudinary.com/" target="_blank" rel="noopener">console.cloudinary.com</a> with the shop's account. The free plan is enough to start.</li>
+            <li>Copy the <span class="k-ui">Cloud name</span> shown on the Console's dashboard.</li>
+            <li>Open <span class="k-ui">Settings</span> (the gear) → <span class="k-ui">Upload</span> → <span class="k-ui">Upload presets</span> → <span class="k-ui">Add upload preset</span>. Set <span class="k-ui">Signing mode</span> to <strong>Unsigned</strong>, save, and copy the preset's name.</li>
+            <li>Fill in both boxes and press <span class="k-ui">Test upload</span>. It sends a 1-pixel image to the <code>fitfusion/test</code> folder, which you can delete later.</li>
+            <li>Press <span class="k-ui">Save Cloudinary keys</span>. The app and this admin site's Design Studio upload to the new account from then on. Images uploaded before stay on the old account.</li>
+          </ol>
+          <p class="k-why">Only an <strong>unsigned upload preset</strong> goes here. Never paste Cloudinary's <strong>API secret</strong>: anyone signed in to the app can read this page's keys.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Google key (address search) ─────────────────────────────────── -->
+    <section class="card k-card" id="maps">
+      <div class="card-head">
+        <span class="card-title"><i class="bi bi-geo-alt"></i>Google key · address search</span>
+        <span class="k-pill" id="maps-state">—</span>
+      </div>
+      <div class="k-grid">
+        <form id="maps-form" autocomplete="off" onsubmit="saveMaps(event)">
+          <div class="fg">
+            <label for="maps-key">Google API key</label>
+            <div class="k-secret"><input id="maps-key" class="k-mono" spellcheck="false" placeholder="AIza… (blank = built into the app)"></div>
+            <div class="k-hint" id="maps-key-hint">Starts with <code>AIza</code>. Used for the address suggestions in checkout and the profile.</div>
+          </div>
+          <div class="k-actions">
+            <button type="submit" class="btn-grad"><i class="bi bi-check2"></i> Save Google key</button>
+            <button type="button" class="btn-ghost" onclick="resetSection('maps')"><i class="bi bi-arrow-counterclockwise"></i> Use built-in</button>
+          </div>
+          <div class="k-saved" id="maps-saved"></div>
+        </form>
+        <div class="k-steps">
+          <h4>Where to get it</h4>
+          <ol>
+            <li>Open <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a> and pick or create the shop's project. Google requires a billing account on it; the monthly free allowance covers a small shop.</li>
+            <li><span class="k-ui">APIs &amp; Services</span> → <span class="k-ui">Library</span>: turn on <strong>Places API (New)</strong> and <strong>Maps SDK for Android</strong>.</li>
+            <li><span class="k-ui">Credentials</span> → <span class="k-ui">Create credentials</span> → <span class="k-ui">API key</span>.</li>
+            <li>Restrict it: <span class="k-ui">Android apps</span> → package <code>com.ksprintexpress.fitfusion</code> with the SHA-1 of the app's <a href="#signing">signing key</a>, and allow only the two APIs above.</li>
+            <li>Paste it here and save. Then search an address in the app; this page's checklist shows whether Google accepted it.</li>
+          </ol>
+          <p class="k-why">The map picture in checkout still uses the key built into the app (see <a href="#maps-build">Google map picture</a> below). An Android-restricted key is safe to keep here: it only works from this app.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PayMongo (through the payment server on Render) ─────────────── -->
+    <section class="card k-card" id="paymongo">
+      <div class="card-head">
+        <span class="card-title"><i class="bi bi-wallet2"></i>PayMongo · GCash payments</span>
+        <span class="k-pill" id="pm-state">—</span>
+      </div>
+      <div class="k-grid">
+        <div>
+        <form id="pm-url-form" autocomplete="off" onsubmit="saveServerUrl(event)">
+          <div class="fg">
+            <label for="pm-url">Payment server address</label>
+            <div class="k-secret"><input id="pm-url" class="k-mono" spellcheck="false" inputmode="url" placeholder="https://fitfusion-payments.onrender.com"></div>
+            <div class="k-hint" id="pm-url-hint">The address Render shows at the top of the payment server's page. Blank = the app uses the PayMongo key built into it.</div>
+          </div>
+          <div class="k-actions">
+            <button type="submit" class="btn-grad"><i class="bi bi-hdd-network"></i> Save address</button>
+          </div>
+          <div class="k-saved" id="pm-url-saved"></div>
+        </form>
+        <form id="pm-form" autocomplete="off" onsubmit="savePayMongo(event)" style="margin-top:18px;">
+          <div class="fg">
+            <label for="pm-key">Secret key</label>
+            <div class="k-secret"><input id="pm-key" type="password" class="k-mono" spellcheck="false" autocomplete="new-password" placeholder="sk_live_… or sk_test_…"></div>
+            <div class="k-hint" id="pm-key-hint">Saved where only the payment server can read it. This page can't show it again, only its last 4 characters.</div>
+          </div>
+          <div class="k-actions">
+            <button type="submit" class="btn-grad"><i class="bi bi-shield-lock"></i> Save secret key</button>
+            <button type="button" class="btn-ghost" onclick="checkPayMongo()"><i class="bi bi-plug"></i> Check saved key</button>
+          </div>
+          <div class="k-result" id="pm-result" hidden></div>
+          <div class="k-saved" id="pm-saved"></div>
+        </form>
+        </div>
+        <div class="k-steps">
+          <h4>Set up once</h4>
+          <ol>
+            <li><strong>Payment server.</strong> Put the <code>FitFusionServer</code> folder in its own GitHub repository. In <a href="https://dashboard.render.com/" target="_blank" rel="noopener">Render</a> → <span class="k-ui">New</span> → <span class="k-ui">Web Service</span>, pick that repository: language <span class="k-ui">Node</span>, build command <code>npm install</code>, start command <code>npm start</code>, instance type <span class="k-ui">Free</span>.</li>
+            <li><strong>Firebase access for the server.</strong> In the <a href="#" id="fb-sa-link" target="_blank" rel="noopener">Firebase console → Service accounts</a>, press <span class="k-ui">Generate new private key</span>. In Render → the service → <span class="k-ui">Environment</span>, add <code>FIREBASE_SERVICE_ACCOUNT</code> and paste the whole downloaded file as its value. Keep that file private; don't send it to anyone or put it on GitHub.</li>
+            <li><strong>Address.</strong> When Render's log says <code>FitFusion payment server on port …</code>, copy the <code>…onrender.com</code> address at the top of the page into <span class="k-ui">Payment server address</span> here and save.</li>
+            <li><strong>Firestore rule.</strong> The rule block under <a href="#rules">One-time Firestore setup</a> includes the <code>secrets</code> rule that keeps this key unreadable.</li>
+            <li><strong>Key.</strong> At <a href="https://dashboard.paymongo.com/" target="_blank" rel="noopener">dashboard.paymongo.com</a> → <span class="k-ui">Developers</span> → <span class="k-ui">API Keys</span>, copy the <span class="k-ui">Secret key</span> (test key until a full order works, then the live key; live needs PayMongo's business verification). Paste it here, save, then press <span class="k-ui">Check saved key</span>.</li>
+            <li>Place a GCash order in the app. Once it works, empty <code>paymongo.secret.key</code> in <code>local.properties</code> so the next app build carries no secret.</li>
+          </ol>
+          <p class="k-why">Customer payments go to whichever PayMongo account this key belongs to. Until the address and a key are saved here, the app keeps using the key built into it. On Render’s free plan the server sleeps after 15 quiet minutes; the app wakes it when a customer opens the cart, but the first payment after a long quiet spell can still take up to a minute.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="k-section"><h2>Needs a new app build</h2><p>Built into the app file. Change them in the project, then build the app again.</p></div>
+
+    <!-- ── Google map picture ─────────────────────────────────────────── -->
+    <details class="card k-card" id="maps-build">
+      <summary>
+        <span class="card-title"><i class="bi bi-map"></i>Google map picture · delivery pin map</span>
+        <i class="bi bi-chevron-down k-chev"></i>
+        <span class="k-sum">The map drawn in checkout reads its key from the app file. Address search uses the key from <a href="#maps">Google key</a> above.</span>
+      </summary>
+      <div class="k-steps">
+        <ol>
+          <li>Use the same Google key as above (with <strong>Maps SDK for Android</strong> turned on for it).</li>
+          <li>Put it after <code>maps.api.key=</code> in <code>local.properties</code> and build the new app.</li>
+        </ol>
+      </div>
+      <p class="k-why">Google's map only reads its key from the app file when the app starts, so this one part can't be swapped from here. Google doesn't charge for the map inside an Android app, so the key that's built in can stay until the next app update.</p>
+    </details>
+
+    <!-- ── Firebase ───────────────────────────────────────────────────── -->
+    <details class="card k-card" id="firebase">
+      <summary>
+        <span class="card-title"><i class="bi bi-fire"></i>Firebase · accounts, database and Google sign-in</span>
+        <i class="bi bi-chevron-down k-chev"></i>
+        <span class="k-sum">The app and this admin site both run on Firebase, so it's handed over rather than typed in here.</span>
+      </summary>
+      <div class="k-grid">
+        <div class="k-steps">
+          <h4>Easiest: hand over this project</h4>
+          <ol>
+            <li>Open the <a href="#" id="fb-console-link" target="_blank" rel="noopener">Firebase console</a> for this project → <span class="k-ui">⚙ Project settings</span> → <span class="k-ui">Users and permissions</span>.</li>
+            <li><span class="k-ui">Add member</span>: the shop's Google account, role <strong>Owner</strong>.</li>
+            <li>Once the shop has signed in, remove the developer's account.</li>
+          </ol>
+          <p class="k-why">No new app build. Products, orders, customers and admins all stay. The Google Maps key can live in the same project.</p>
+        </div>
+        <div class="k-steps">
+          <h4>Or: the shop's own new project (starts empty)</h4>
+          <ol>
+            <li>Create a project at <a href="https://console.firebase.google.com/" target="_blank" rel="noopener">console.firebase.google.com</a>.</li>
+            <li>Add an <strong>Android app</strong>: package <code>com.ksprintexpress.fitfusion</code> plus the SHA-1 of the signing key. Download <code>google-services.json</code> and replace <code>app/google-services.json</code> in the project.</li>
+            <li><span class="k-ui">Authentication</span> → <span class="k-ui">Sign-in method</span>: turn on <strong>Email/Password</strong> and <strong>Google</strong>.</li>
+            <li><span class="k-ui">Firestore Database</span> → <span class="k-ui">Create database</span>. On its <span class="k-ui">Rules</span> tab, paste the rules copied from the old project, plus the rule under <a href="#rules">One-time Firestore setup</a>.</li>
+            <li>Add a <strong>Web app</strong> in Project settings and copy its <code>firebaseConfig</code> values into <code>js/firebase.js</code> of this admin site.</li>
+            <li>Register in the app, then in Firestore open <code>users</code> → that account and set <code>role</code> to <code>super_admin</code>. Sign in here and add the products again.</li>
+            <li>Build the new app.</li>
+          </ol>
+        </div>
+      </div>
+    </details>
+
+    <!-- ── Signing key ────────────────────────────────────────────────── -->
+    <details class="card k-card" id="signing">
+      <summary>
+        <span class="card-title"><i class="bi bi-patch-check"></i>Signing key · who the app belongs to</span>
+        <i class="bi bi-chevron-down k-chev"></i>
+        <span class="k-sum">Android installs updates only when they're signed with the same key, and Google sign-in and the Maps key check it too.</span>
+      </summary>
+      <div class="k-steps">
+        <ol>
+          <li>In Android Studio, choose <span class="k-ui">Build</span> → <span class="k-ui">Generate Signed App Bundle or APK</span> → <span class="k-ui">Create new…</span>. Keep the <code>.jks</code> file and both passwords somewhere safe. If they're lost, the app can never be updated on Google Play.</li>
+          <li>Find the key's SHA-1. In Android Studio's <span class="k-ui">Terminal</span>, run <code>keytool -list -v -keystore "path\to\your-key.jks"</code> and copy the <code>SHA1:</code> line.</li>
+          <li>Add that SHA-1 in Firebase (<span class="k-ui">Project settings</span> → your Android app → <span class="k-ui">Add fingerprint</span>), then download <code>google-services.json</code> again. Also add it to the Google Maps key's Android restriction.</li>
+        </ol>
+      </div>
+      <p class="k-why">Until then, the release app is signed with the developer's test key. It installs fine for testing, but it isn't the shop's.</p>
+    </details>
+
+    <!-- ── Apply ──────────────────────────────────────────────────────── -->
+    <section class="card k-card" id="apply">
+      <div class="card-head"><span class="card-title"><i class="bi bi-hammer"></i>Build the new app</span></div>
+      <div class="k-grid">
+        <div class="k-steps">
+          <ol>
+            <li>Open the <code>FitFusion</code> project folder in Android Studio.</li>
+            <li>Open <code>local.properties</code> in the project's top folder and fill in the lines shown here. Keep the <code>sdk.dir</code> line Android Studio put there.</li>
+            <li><span class="k-ui">File</span> → <span class="k-ui">Sync Project with Gradle Files</span>.</li>
+            <li><span class="k-ui">Build</span> → <span class="k-ui">Generate Signed App Bundle or APK</span> → <span class="k-ui">APK</span>. Choose the shop's signing key and <span class="k-ui">release</span>, then <span class="k-ui">Create</span>.</li>
+            <li>Share <code>app-arm64-v8a-release.apk</code> from <code>app/release</code>; it works on almost any phone from the last 8 years. <code>app-armeabi-v7a-release.apk</code> is for older 32-bit phones. For Google Play, choose <span class="k-ui">Android App Bundle</span> in step 4 instead.</li>
+          </ol>
+          <p class="k-why"><code>local.properties</code> stays on the computer that builds the app. It isn't uploaded with the code, so the keys don't end up in a shared repository.</p>
+        </div>
+        <div>
+          <div class="k-steps" style="padding-bottom:12px;">
+            <h4>Lines for local.properties</h4>
+            <div class="k-block">
+              <button class="btn-ghost k-copy" type="button" onclick="copyBlock('lp-block', this)"><i class="bi bi-clipboard"></i> Copy</button>
+<pre id="lp-block"># FitFusion keys (see the admin site's App Keys page)
+# PayMongo secret key: only until the payment server is set up (App Keys → PayMongo); then leave empty
+paymongo.secret.key=
+# Google key for the map picture (address search can be changed on App Keys)
+maps.api.key=
+# Cloudinary, used while App Keys has none saved
+cloudinary.cloud.name=
+cloudinary.upload.preset=</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Firestore rule ─────────────────────────────────────────────── -->
+    <details class="card k-card" id="rules">
+      <summary>
+        <span class="card-title"><i class="bi bi-shield-check"></i>One-time Firestore setup</span>
+        <span class="k-pill" id="rule-state">—</span>
+        <i class="bi bi-chevron-down k-chev"></i>
+        <span class="k-sum">Lets signed-in app users read these keys, the shop settings, the added models and the categories; only a Super Admin changes the keys and settings, and shop staff the models and categories.</span>
+      </summary>
+      <div class="k-grid">
+        <div class="k-steps">
+          <ol>
+            <li>Open the <a href="#" id="fb-rules-link" target="_blank" rel="noopener">Firestore rules</a> for this project.</li>
+            <li>Paste the block shown here inside <code>match /databases/{database}/documents { … }</code>, next to the other <code>match</code> blocks.</li>
+            <li>Press <span class="k-ui">Publish</span>, wait a few seconds, then press <span class="k-ui">Reload</span> at the top of this page.</li>
+          </ol>
+        </div>
+        <div class="k-block">
+          <button class="btn-ghost k-copy" type="button" onclick="copyBlock('rule-block', this)"><i class="bi bi-clipboard"></i> Copy</button>
+<pre id="rule-block">    // App Keys page: app users read, a Super Admin changes
+    match /appConfig/{doc} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &amp;&amp; get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data.role == 'super_admin';
+    }
+    // Models &amp; Try-On page: app users read, shop staff change
+    match /models/{id} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &amp;&amp; get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data.role in ['admin', 'super_admin'];
+    }
+    // Categories page: app users read, shop staff change
+    match /categories/{id} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &amp;&amp; get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data.role in ['admin', 'super_admin'];
+    }
+    // PayMongo secret key: a Super Admin saves it, nobody can read it back
+    // (only the payment server, which isn't bound by these rules)
+    match /secrets/{doc} {
+      allow read: if false;
+      allow write: if request.auth != null &amp;&amp; get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data.role == 'super_admin';
+    }</pre>
+        </div>
+      </div>
+    </details>
+
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  // The keys live in Firestore at appConfig/keys. A blank field means "use the value built into the app".
+  // The app reads them in AppKeys.kt; this site's uploads read them through cloudinaryConfig() in js/firebase.js.
+
+  /** Ready-made sets of keys. "Current app keys" is what this version of the app has built in (the Camera Kit
+   *  token in AndroidManifest.xml, the Lens group and name in ARTryOnScreen.kt, the Cloudinary account in
+   *  local.properties, which is CLOUDINARY in js/firebase.js), so it can be filled in and saved in one go.
+   *  Only keys the app already carries go here, never a secret like PayMongo's. */
+  const KEY_PRESETS = [{
+    id: 'current-app',
+    name: 'Current app keys',
+    note: 'The Snap (AR try-on) and Cloudinary (uploads) keys built into this version of the app. Saving them changes nothing for customers; it puts them on this page so they can be seen and swapped later.',
+    snapApiToken: 'eyJhbGciOiJIUzI1NiIsImtpZCI6IkNhbnZhc1MyU0hNQUNQcm9kIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjYW52YXMtY2FudmFzYXBpIiwiaXNzIjoiY2FudmFzLXMyc3Rva2VuIiwibmJmIjoxNzkwNTcwNzA5LCJzdWIiOiIzOGQ1OTNmYS0xYTY5LTQxMTEtYTMzYi0wMTc1MzQxYmMyZmF-U1RBR0lOR344NmNlZTM3Yi0xYWRjLTRiZGEtYmJkNy0zZDRlZDY1ZjU2ZmQifQ.JZgSZL74PTixg6fJpV8ir-FQDrjnQU-1AGBFlu-BSq8',
+    snapLensGroupId: 'fedfb8c9-f96b-4c7d-9ef2-54081b537363',
+    snapLensName: 'KustomoShirts',
+    snapLensId: '',
+    cloudinaryCloudName: CLOUDINARY.cloudName,
+    cloudinaryUploadPreset: CLOUDINARY.uploadPreset
+  }];
+  const SNAP_FIELDS = ['snapApiToken', 'snapLensGroupId', 'snapLensName', 'snapLensId'];
+  const CL_FIELDS = ['cloudinaryCloudName', 'cloudinaryUploadPreset'];
+  const INPUT_OF = { snapApiToken: 'snap-token', snapLensGroupId: 'snap-group', snapLensName: 'snap-name', snapLensId: 'snap-lens',
+                     cloudinaryCloudName: 'cl-cloud', cloudinaryUploadPreset: 'cl-preset' };
+
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const JWT  = /^eyJ[\w-]+\.[\w-]+\.[\w-]+$/;
+  const SLUG = /^[A-Za-z0-9_-]{2,80}$/;
+
+  const $ = id => document.getElementById(id);
+  const keysDoc = () => db.collection('appConfig').doc('keys');
+  let current = {};          // what's saved now
+  let denied = false;        // the Firestore rule isn't in place yet
+  let modelsDenied = false;  // the models/ rule isn't in place yet
+  let catsDenied = false;    // the categories/ rule isn't in place yet
+  let reports = null;        // the app's latest reports (users/*.appStatus, newest first); null when unreadable
+  let reportsError = '';
+  let cloudCheck = { state: 'unk', msg: 'Checking…' };   // this page's own Cloudinary check
+
+  $('preset-pick').innerHTML = KEY_PRESETS.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+  const selectedPreset = () => KEY_PRESETS.find(p => p.id === $('preset-pick').value) || KEY_PRESETS[0];
+  function showPresetNote() { $('preset-note').textContent = selectedPreset().note; }
+  showPresetNote();
+
+  /** The preset whose keys match `keys` for these fields, if any. */
+  function presetMatching(keys, fields) {
+    return KEY_PRESETS.find(p => fields.every(f => (p[f] || '') === (keys[f] || '')));
+  }
+
+  /** The yellow line under a form saying its boxes came from a preset and aren't saved yet. */
+  function setFilled(sec, preset, byButton) {
+    const el = $(sec + '-filled');
+    el.hidden = !preset;
+    if (!preset) return;
+    el.textContent = byButton
+      ? `Filled in from the “${preset.name}” preset. Not saved yet.`
+      : `Filled in from the “${preset.name}” preset: these are the keys the app uses now. Press Save to keep them on this page.`;
+  }
+
+  // Each hint's own text, put back when its field is fixed
+  const HINTS = {};
+  document.querySelectorAll('.k-hint[id]').forEach(h => HINTS[h.id] = h.innerHTML);
+  function resetHints(ids) {
+    ids.forEach(id => { const h = $(id); h.classList.remove('err', 'note'); h.innerHTML = HINTS[id]; });
+  }
+
+  window.onAuthReady = (user, role) => {
+    if (role !== 'super_admin') {
+      toast('Access denied — Super Admin only', 'err');
+      setTimeout(() => location.href = 'dashboard.html', 1500);
+      return;
+    }
+    const pid = firebaseConfig.projectId;
+    $('fb-console-link').href = `https://console.firebase.google.com/project/${pid}/settings/iam`;
+    $('fb-rules-link').href   = `https://console.firebase.google.com/project/${pid}/firestore/rules`;
+    $('fb-sa-link').href = `https://console.firebase.google.com/project/${pid}/settings/serviceaccounts/adminsdk`;
+    loadKeys();
+  };
+
+  async function loadKeys() {
+    try {
+      const snap = await keysDoc().get({ source: 'server' });
+      current = snap.exists ? snap.data() : {};
+      denied = false;
+    } catch (e) {
+      denied = e && e.code === 'permission-denied';
+      if (!denied) { toast('Could not load the keys: ' + e.message, 'err'); }
+      current = {};
+    }
+    fillForms();
+    renderStatus();
+    renderChecklist();
+    await Promise.all([loadReports(), checkCloudinary(), loadModels(true).then(() => { modelsDenied = modelsError() === 'permission-denied'; }),
+      loadCategories(true).then(() => { catsDenied = categoriesError() === 'permission-denied'; })]);
+    renderStatus();
+    renderChecklist();
+  }
+
+  /** The newest reports from the app (AppStatus in AppKeys.kt writes them to users/{uid}.appStatus). */
+  async function loadReports() {
+    try {
+      const qs = await db.collection('users').orderBy('appStatus.reportedAt', 'desc').limit(25).get();
+      reports = qs.docs.map(d => d.data().appStatus).filter(Boolean);
+      reportsError = '';
+    } catch (e) {
+      reports = null;
+      reportsError = (e && e.message) || String(e);
+    }
+  }
+
+  /** Asks Cloudinary about the account and preset in use, sending no file, so nothing is uploaded. */
+  async function checkCloudinary() {
+    const own = current.cloudinaryCloudName && current.cloudinaryUploadPreset;
+    const cloud = own ? current.cloudinaryCloudName : CLOUDINARY.cloudName;
+    const preset = own ? current.cloudinaryUploadPreset : CLOUDINARY.uploadPreset;
+    if (!cloud || !preset) { cloudCheck = { state: 'bad', msg: 'No cloud name or upload preset.' }; return; }
+    try {
+      const body = new FormData();
+      body.append('upload_preset', preset);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloud)}/image/upload`, { method: 'POST', body });
+      const json = await res.json().catch(() => null);
+      const msg = ((json && json.error && json.error.message) || ('HTTP ' + res.status)).replace(/[\s.]+$/, '');
+      if (/missing required parameter - file/i.test(msg)) cloudCheck = { state: 'ok', msg: 'Account and upload preset found (checked just now; nothing was uploaded).' };
+      else if (/unsigned/i.test(msg)) cloudCheck = { state: 'bad', msg: 'The upload preset is Signed. In Cloudinary, set its Signing mode to Unsigned.' };
+      else if (/preset/i.test(msg)) cloudCheck = { state: 'bad', msg: 'Cloudinary has no upload preset with this name.' };
+      else if (res.status === 401 || /unknown api key|cloud_name|invalid cloud/i.test(msg)) cloudCheck = { state: 'bad', msg: 'Cloudinary doesn\'t know this cloud name.' };
+      else cloudCheck = { state: 'warn', msg: 'Cloudinary answered: ' + msg + '.' };
+    } catch (e) {
+      cloudCheck = { state: 'unk', msg: 'Couldn\'t reach Cloudinary from this computer.' };
+    }
+  }
+
+  const tsMs = t => !t ? 0 : t.toMillis ? t.toMillis() : +new Date(t);
+  const seenOn = t => t ? fmtDate(t) : 'recently';
+  /** Among the reports that have `field`, the one where it was set most recently. */
+  function newest(field, atField) {
+    if (!reports) return null;
+    return reports.filter(r => r[field] != null).sort((a, b) => tsMs(b[atField]) - tsMs(a[atField]))[0] || null;
+  }
+
+  /** Every key, marked usable, usable with a catch, not usable, or not checked yet. */
+  function renderChecklist() {
+    const rows = [];
+    const row = (state, name, where, detail, fix) => rows.push({ state, name, where, detail, fix });
+    const builtIn = KEY_PRESETS[0];
+    const build = reports && reports[0];      // what the newest run of the app was built with
+    const noReport = reports === null && reportsError
+      ? 'Couldn\'t read the app\'s reports: ' + reportsError
+      : 'The app hasn\'t reported yet. Open it once, signed in, after installing this update.';
+
+    // Firestore rules
+    row(denied ? 'bad' : 'ok', 'Firestore rule for this page', 'Firebase console → Firestore → Rules',
+      denied ? 'Not added yet, so this page can\'t save keys and the app can\'t read them.'
+             : 'In place: the app reads these keys and only a Super Admin can change them.', 'rules');
+    row(modelsDenied ? 'bad' : 'ok', 'Firestore rule for Models', 'Firebase console → Firestore → Rules',
+      modelsDenied ? 'Not added yet, so the app shows only the five built-in shirts and the Models page can\'t save.'
+                   : 'In place: the app reads the models added on Models & Try-On.', 'rules');
+    row(catsDenied ? 'bad' : 'ok', 'Firestore rule for Categories', 'Firebase console → Firestore → Rules',
+      catsDenied ? 'Not added yet, so the Categories page can\'t save and the app keeps the filters it reads off the products.'
+                 : 'In place: the app\'s shop filters follow the Categories page.', 'rules');
+
+    // Snap: an AR try-on result only counts if it was seen with the keys in use now
+    const snapSaved = SNAP_FIELDS.some(f => current[f]);
+    const snapWhere = snapSaved ? 'Saved on this page' : 'Built into the app';
+    const token = snapSaved ? (current.snapApiToken || '') : builtIn.snapApiToken;
+    const group = snapSaved ? (current.snapLensGroupId || '') : builtIn.snapLensGroupId;
+    const lensName = (snapSaved && current.snapLensName) || builtIn.snapLensName;
+    const snapRep = newest('snapCheck', 'snapAt');
+    const snapFresh = !!snapRep && snapRep.snapGroup === group && tsMs(snapRep.snapAt) >= tsMs(current.snapUpdatedAt);
+    const seen = snapFresh ? ` (seen in the app ${seenOn(snapRep.snapAt)})` : '';
+    const kind = tokenKind(token);
+    if (snapFresh && snapRep.snapCheck === 'token-rejected') {
+      row('bad', 'Snap Camera Kit token', snapWhere, 'Snap refused this token when AR try-on opened' + seen + '.', 'snap');
+    } else if (!JWT.test(token)) {
+      row('bad', 'Snap Camera Kit token', snapWhere, token ? 'This isn\'t a Camera Kit API token.' : 'No token.', 'snap');
+    } else if (kind === 'STAGING') {
+      row('warn', 'Snap Camera Kit token', snapWhere + ' · Staging',
+        'Works, but the camera shows a “Camera Kit Staging” watermark. Customers need the Production token.', 'snap');
+    } else {
+      row('ok', 'Snap Camera Kit token', snapWhere + (kind ? ' · Production' : ''),
+        (kind === 'PRODUCTION' ? 'Production token' : 'Looks like a valid token') + (snapFresh && snapRep.snapCheck === 'active' ? ', working in the app' + seen : '') + '.', 'snap');
+    }
+
+    const lensWhere = `${snapWhere} · “${lensName}”`;
+    if (!UUID.test(group)) {
+      row('bad', 'AR shirt Lens', lensWhere, 'The Lens Group ID isn\'t valid.', 'snap');
+    } else if (!snapFresh) {
+      row('unk', 'AR shirt Lens', lensWhere, 'Open AR try-on in the app once to check that the Lens loads.', 'snap');
+    } else if (snapRep.snapCheck === 'token-rejected') {
+      row('unk', 'AR shirt Lens', lensWhere, 'Can\'t be checked until Snap accepts the token.', 'snap');
+    } else if (snapRep.snapCheck === 'active') {
+      const same = (snapRep.snapDetail || '').trim().toLowerCase() === lensName.trim().toLowerCase();
+      if (same) row('ok', 'AR shirt Lens', lensWhere, `Loaded in AR try-on${seen}.`, 'snap');
+      else row('warn', 'AR shirt Lens', lensWhere, `AR try-on used “${snapRep.snapDetail}” instead${seen}, because “${lensName}” isn't in the Lens group yet.`, 'snap');
+    } else if (snapRep.snapCheck === 'no-shirt-lens') {
+      row('bad', 'AR shirt Lens', lensWhere, `The Lens group has no shirt Lens${seen}. Publish “${lensName}” and add it to the group.`, 'snap');
+    } else {
+      row('bad', 'AR shirt Lens', lensWhere, `AR try-on failed${seen}: ${snapRep.snapDetail || 'unknown error'}`, 'snap');
+    }
+
+    // Cloudinary
+    const clWhere = CL_FIELDS.some(f => current[f]) ? 'Saved on this page' : 'Built into the app';
+    row(cloudCheck.state, 'Cloudinary uploads', clWhere, cloudCheck.msg, 'cloudinary');
+
+    // PayMongo: on the payment server when a key is saved here, else built into the app
+    const pmRep = newest('paymongoCheck', 'paymongoAt');
+    if (current.paymongoKeyHint && !serverUrl(current.paymentServerUrl)) {
+      row('warn', 'PayMongo secret key', `Saved here · ${current.paymongoKeyHint}`, 'Key saved, but not the payment server address, so the app still uses the key built into it. Add the address below.', 'paymongo');
+    } else if (current.paymongoKeyHint) {
+      const pmWhere = `Payment server · ${current.paymongoKeyHint}`;
+      const fresh = !!pmRep && pmRep.paymongoVia === 'server' && tsMs(pmRep.paymongoAt) >= tsMs(current.paymongoUpdatedAt);
+      if (fresh && pmRep.paymongoCheck === 'rejected') row('bad', 'PayMongo secret key', pmWhere, `PayMongo refused the key at checkout (${seenOn(pmRep.paymongoAt)}).`, 'paymongo');
+      else if (current.paymongoMode === 'live') row('ok', 'PayMongo secret key', pmWhere + ' · Live', 'Live key: real GCash payments' + (fresh ? `, worked at checkout ${seenOn(pmRep.paymongoAt)}` : '. Press “Check saved key” to test it') + '.', 'paymongo');
+      else row('warn', 'PayMongo secret key', pmWhere + ' · Test', 'Test key: checkout works, but no real money moves. Save the live key before taking real orders.', 'paymongo');
+    } else {
+      const pmWhere = 'Built into the app · local.properties';
+      const pmFresh = !!build && !!pmRep && pmRep.version === build.version;
+      if (!build) row('unk', 'PayMongo secret key', pmWhere, noReport, 'paymongo');
+      else if (build.paymongoKey === 'missing') row('bad', 'PayMongo secret key', pmWhere, 'No key saved here and none in this build, so GCash checkout won\'t work. Set up the payment server below.', 'paymongo');
+      else if (pmFresh && pmRep.paymongoCheck === 'rejected') row('bad', 'PayMongo secret key', pmWhere, `PayMongo refused the key at checkout (${seenOn(pmRep.paymongoAt)}).`, 'paymongo');
+      else row('warn', 'PayMongo secret key', pmWhere + (build.paymongoKey === 'live' ? ' · Live' : build.paymongoKey === 'test' ? ' · Test' : ''),
+        'Works, but the secret key sits inside the app file. Set up the payment server and save the key here to change it without a new build.', 'paymongo');
+    }
+
+    // Google: address search uses the key saved here, else the build's
+    const plRep = newest('placesCheck', 'placesAt');
+    const ownMaps = !!current.mapsApiKey;
+    const mapsWhere = ownMaps ? 'Saved on this page' : 'Built into the app · local.properties';
+    const plFresh = !!plRep && (ownMaps ? plRep.placesKey === 'admin' && tsMs(plRep.placesAt) >= tsMs(current.mapsUpdatedAt) : (!!build && plRep.version === build.version && plRep.placesKey !== 'admin'));
+    if (!ownMaps && !build) row('unk', 'Google key (address search)', mapsWhere, noReport, 'maps');
+    else if (!ownMaps && build.mapsKey === 'missing') row('bad', 'Google key (address search)', mapsWhere, 'No key saved here and none in this build, so address suggestions are turned off.', 'maps');
+    else if (plFresh && plRep.placesCheck === 'denied') row('bad', 'Google key (address search)', mapsWhere,
+      `Google refused the key when an address was searched (${seenOn(plRep.placesAt)}). Turn on Places API (New) for it and check its Android restriction.`, 'maps');
+    else if (plFresh && plRep.placesCheck === 'ok') row('ok', 'Google key (address search)', mapsWhere, `Address search worked (${seenOn(plRep.placesAt)}).`, 'maps');
+    else if (plFresh && plRep.placesCheck === 'error') row('warn', 'Google key (address search)', mapsWhere, `Address search failed (${seenOn(plRep.placesAt)}). Check the key's settings in Google Cloud.`, 'maps');
+    else row('unk', 'Google key (address search)', mapsWhere, 'Search an address in the app once to check it.', 'maps');
+    if (build) row(build.mapsKey === 'missing' ? 'bad' : 'ok', 'Google map picture', 'Built into the app · local.properties',
+      build.mapsKey === 'missing' ? 'No key in this build, so the delivery map is turned off (address search still works with the key above).' : 'A key is in this build.', 'maps-build');
+
+    const pid = firebaseConfig.projectId;
+    if (build && build.firebaseProject && build.firebaseProject !== pid) {
+      row('bad', 'Firebase project', 'js/firebase.js · app/google-services.json', `This admin site uses “${pid}”, but the app reported “${build.firebaseProject}”.`, 'firebase');
+    } else {
+      row('ok', 'Firebase project', 'js/firebase.js · app/google-services.json', `This admin site uses “${pid}”` + (build ? ', and so does the app.' : '.'), 'firebase');
+    }
+
+    if (!build) row('unk', 'Signing key', 'Android Studio · release build', noReport, 'signing');
+    else if (build.signing === 'debug') row('warn', 'Signing key', 'Android Studio · release build',
+      'Signed with the developer\'s test (debug) key. Fine for testing, but Google Play needs the shop\'s own key.', 'signing');
+    else if (build.signing === 'release') row('ok', 'Signing key', 'Android Studio · release build', 'Signed with a release key.', 'signing');
+    else row('unk', 'Signing key', 'Android Studio · release build', 'The app couldn\'t tell which key signed it.', 'signing');
+
+    const LOOK = { ok: ['✓', 'Usable'], warn: ['!', 'Usable, with a catch'], bad: ['✕', 'Not usable'], unk: ['?', 'Not checked yet'] };
+    $('k-check').innerHTML = rows.map(r => `
+      <li class="k-row s-${r.state}">
+        <span class="k-ico" aria-hidden="true">${LOOK[r.state][0]}</span>
+        <div><div class="k-name">${esc(r.name)}</div><div class="k-where">${esc(r.where)}</div></div>
+        <div class="k-state"><span class="k-label">${LOOK[r.state][1]}</span><span class="k-detail">${esc(r.detail)}</span></div>
+        <a class="k-fix" href="#${r.fix}" onclick="openSection('${r.fix}')">${r.state === 'warn' || r.state === 'bad' ? 'How to fix' : 'Details'}</a>
+      </li>`).join('');
+
+    const count = st => rows.filter(r => r.state === st).length;
+    const pill = (cls, text) => `<span class="k-pill ${cls}">${text}</span>`;
+    $('k-status').innerHTML = [
+      count('ok') && pill('own', `✓ ${count('ok')} usable`),
+      count('warn') && pill('warn', `! ${count('warn')} usable, with a catch`),
+      count('bad') && pill('bad', `✕ ${count('bad')} not usable`),
+      count('unk') && pill('', `? ${count('unk')} not checked yet`)
+    ].filter(Boolean).join('') + ' <a class="k-fix" href="#checklist" style="align-self:center;">See the checklist</a>';
+    $('k-from').textContent = build ? `Latest app report: version ${build.version}, ${seenOn(build.reportedAt)}` : '';
+  }
+
+  /** Jumps to a section, opening it if it's one of the folded ones. */
+  function openSection(id) {
+    const el = $(id);
+    if (el && el.tagName === 'DETAILS') el.open = true;
+  }
+
+  function fillForms() {
+    // While a section has nothing saved, its boxes show the keys the app has built in (the first preset)
+    const snapSaved = SNAP_FIELDS.some(f => current[f]);
+    const clSaved = CL_FIELDS.some(f => current[f]);
+    const builtIn = KEY_PRESETS[0];
+    SNAP_FIELDS.forEach(f => $(INPUT_OF[f]).value = (snapSaved ? current[f] : builtIn[f]) || '');
+    CL_FIELDS.forEach(f => $(INPUT_OF[f]).value = (clSaved ? current[f] : builtIn[f]) || '');
+    setFilled('snap', snapSaved ? null : builtIn);
+    setFilled('cl', clSaved ? null : builtIn);
+    $('snap-saved').textContent = savedLine(current.snapUpdatedAt, current.snapUpdatedBy);
+    $('cl-saved').textContent   = savedLine(current.cloudinaryUpdatedAt, current.cloudinaryUpdatedBy);
+    $('maps-key').value = current.mapsApiKey || '';
+    $('maps-saved').textContent = savedLine(current.mapsUpdatedAt, current.mapsUpdatedBy);
+    $('pm-url').value = current.paymentServerUrl || '';
+    $('pm-url-saved').textContent = current.paymentServerUrl ? savedLine(current.paymentServerUpdatedAt, current.paymentServerUpdatedBy) : '';
+    $('pm-key').value = '';
+    $('pm-saved').textContent = current.paymongoKeyHint
+      ? `Saved key: ${current.paymongoKeyHint}. ` + savedLine(current.paymongoUpdatedAt, current.paymongoUpdatedBy) : '';
+    resetHints(['maps-key-hint', 'pm-key-hint', 'pm-url-hint']);
+    resetHints(['snap-group-hint', 'snap-lens-hint', 'cl-cloud-hint', 'cl-preset-hint']);
+    checkToken();
+  }
+
+  function savedLine(ts, by) {
+    if (!ts) return '';
+    return `Last saved ${fmtDate(ts)}${by ? ' by ' + by : ''}.`;
+  }
+
+  function renderStatus() {
+    const snapOwn = !!(current.snapApiToken && current.snapLensGroupId);
+    const clOwn = !!(current.cloudinaryCloudName && current.cloudinaryUploadPreset);
+    setPill('snap-state', denied ? ['bad', 'Not readable yet'] : snapOwn ? ['own', 'Using these keys'] : ['', 'Using built-in keys']);
+    setPill('cl-state', denied ? ['bad', 'Not readable yet'] : clOwn ? ['own', 'Using these keys'] : ['', 'Using built-in keys']);
+    setPill('rule-state', (denied || modelsDenied || catsDenied) ? ['bad', 'Needed'] : ['own', 'Done']);
+    setPill('maps-state', denied ? ['bad', 'Not readable yet'] : current.mapsApiKey ? ['own', 'Using this key'] : ['', 'Using built-in key']);
+    setPill('pm-state', denied ? ['bad', 'Not readable yet'] : current.paymongoKeyHint && !serverUrl(current.paymentServerUrl) ? ['warn', 'Needs the server address']
+      : current.paymongoKeyHint ? (current.paymongoMode === 'live' ? ['own', 'Saved · Live'] : ['warn', 'Saved · Test']) : ['', 'Using the key built into the app']);
+    const anySaved = [...SNAP_FIELDS, ...CL_FIELDS].some(f => current[f]);
+    const match = presetMatching(current, [...SNAP_FIELDS, ...CL_FIELDS]);
+    setPill('preset-state', denied ? ['bad', 'Not readable yet'] : !anySaved ? ['', 'Nothing saved yet'] : match ? ['own', 'Saved: ' + match.name] : ['', 'Custom keys saved']);
+    $('k-rule-warn').hidden = !denied;
+    if (denied) $('rules').open = true;
+
+  }
+
+  function setPill(id, [cls, text]) {
+    const p = $(id);
+    p.className = 'k-pill' + (cls ? ' ' + cls : '');
+    p.textContent = text;
+  }
+
+  function toggleSecret(id, btn) {
+    const input = $(id);
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.textContent = show ? 'Hide' : 'Show';
+  }
+
+  /** Reads the Camera Kit token's own label (it's a JWT): Staging tokens put a watermark on the camera. */
+  function tokenKind(token) {
+    try {
+      const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(part + '==='.slice((part.length + 3) % 4)));
+      const m = String(payload.sub || '').match(/~(STAGING|PRODUCTION)~/i);
+      return m ? m[1].toUpperCase() : '';
+    } catch (e) { return ''; }
+  }
+
+  function checkToken() {
+    const t = $('snap-token').value.replace(/\s+/g, '');
+    const hint = $('snap-token-hint');
+    hint.classList.remove('err', 'note');
+    if (!t) { hint.innerHTML = HINTS['snap-token-hint']; return; }
+    if (!JWT.test(t)) { hint.classList.add('err'); hint.innerHTML = 'This doesn\'t look like a Camera Kit API token. It starts with <code>eyJ</code> and has two dots in it.'; return; }
+    const kind = tokenKind(t);
+    if (kind === 'STAGING') { hint.classList.add('note'); hint.textContent = 'Staging token: the camera will show a "Camera Kit Staging" watermark. Use the Production token for customers.'; }
+    else if (kind === 'PRODUCTION') { hint.textContent = 'Production token.'; }
+    else { hint.textContent = 'Looks like an API token.'; }
+  }
+
+  /** Marks a field's hint red with a message; returns false so callers can `return bad(...)`. */
+  function bad(hintId, msg, focusId) {
+    const h = $(hintId);
+    h.classList.add('err'); h.textContent = msg;
+    if (focusId) $(focusId).focus();
+    return false;
+  }
+
+  function looksLikeSecret(v) { return /^sk_(test|live)_/i.test(v); }
+
+  /** The Snap boxes, cleaned up and checked: their fields, 'blank' when all are empty, or null (with the
+   *  problem shown under the box) when something is wrong. */
+  function readSnap() {
+    resetHints(['snap-group-hint', 'snap-lens-hint']);
+    const token = $('snap-token').value.replace(/\s+/g, '');
+    const group = $('snap-group').value.trim();
+    const name  = $('snap-name').value.trim();
+    const lens  = $('snap-lens').value.trim();
+    $('snap-token').value = token;
+
+    if (!token && !group && !name && !lens) return 'blank';
+    if ([token, group, name, lens].some(looksLikeSecret)) { toast('That\'s a PayMongo secret key. It goes in the PayMongo section, not here.', 'err'); return null; }
+    if (!token) return bad('snap-token-hint', 'Add the API token too. It has to come from the same Camera Kit app as the Lens Group.', 'snap-token');
+    if (!JWT.test(token)) return bad('snap-token-hint', 'This doesn\'t look like a Camera Kit API token. It starts with eyJ and has two dots in it.', 'snap-token');
+    if (!group) return bad('snap-group-hint', 'Add the Lens Group ID too. It has to come from the same Camera Kit app as the token.', 'snap-group');
+    if (!UUID.test(group)) return bad('snap-group-hint', 'A Lens Group ID looks like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.', 'snap-group');
+    if (lens && !UUID.test(lens)) return bad('snap-lens-hint', 'A Lens ID looks like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.', 'snap-lens');
+    return { snapApiToken: token, snapLensGroupId: group, snapLensName: name, snapLensId: lens };
+  }
+
+  /** Same as readSnap, for the Cloudinary boxes. */
+  function readCloudinary() {
+    resetHints(['cl-cloud-hint', 'cl-preset-hint']);
+    const cloud = $('cl-cloud').value.trim(), preset = $('cl-preset').value.trim();
+    if (!cloud && !preset) return 'blank';
+    if ([cloud, preset].some(looksLikeSecret)) { toast('That\'s a PayMongo secret key. It goes in the PayMongo section, not here.', 'err'); return null; }
+    if (!cloud) return bad('cl-cloud-hint', 'Add the cloud name too.', 'cl-cloud');
+    if (!SLUG.test(cloud)) return bad('cl-cloud-hint', 'A cloud name only has letters, numbers, dashes and underscores.', 'cl-cloud');
+    if (!preset) return bad('cl-preset-hint', 'Add the upload preset too.', 'cl-preset');
+    if (!SLUG.test(preset)) return bad('cl-preset-hint', 'A preset name only has letters, numbers, dashes and underscores.', 'cl-preset');
+    return { cloudinaryCloudName: cloud, cloudinaryUploadPreset: preset };
+  }
+
+  async function saveSnap(ev) {
+    ev.preventDefault();
+    if (denied) { toast('Add the Firestore rule first (bottom of this page).', 'err'); return; }
+    const fields = readSnap();
+    if (fields === 'blank') return resetSection('snap');
+    if (!fields) return;
+    await save(fields, ['snap'], 'Saved. AR try-on uses these keys the next time it opens in the app.');
+  }
+
+  async function saveCloudinary(ev) {
+    ev.preventDefault();
+    if (denied) { toast('Add the Firestore rule first (bottom of this page).', 'err'); return; }
+    const fields = readCloudinary();
+    if (fields === 'blank') return resetSection('cloudinary');
+    if (!fields) return;
+    await save(fields, ['cloudinary'], 'Saved. New uploads from the app and the Design Studio go to this Cloudinary account.');
+  }
+
+  /** Puts the chosen preset's keys in both forms. */
+  function fillPreset(quiet) {
+    const p = selectedPreset();
+    [...SNAP_FIELDS, ...CL_FIELDS].forEach(f => $(INPUT_OF[f]).value = p[f] || '');
+    setFilled('snap', p, true);
+    setFilled('cl', p, true);
+    resetHints(['snap-group-hint', 'snap-lens-hint', 'cl-cloud-hint', 'cl-preset-hint']);
+    checkToken();
+    $('cl-result').hidden = true;
+    if (!quiet) toast(`Filled in from “${p.name}”. Press Save on each part to use them.`, 'ok');
+  }
+
+  /** Fills both forms from the chosen preset and saves them together. */
+  async function applyPreset() {
+    if (denied) { toast('Add the Firestore rule first (bottom of this page).', 'err'); return; }
+    const p = selectedPreset();
+    if (!confirm(`Save the “${p.name}” preset for AR try-on and image uploads? The app uses these keys the next time each one starts.`)) return;
+    fillPreset(true);
+    const snap = readSnap(), cl = readCloudinary();
+    if (!snap || !cl || snap === 'blank' || cl === 'blank') { toast('This preset is missing some keys, so it wasn\'t saved.', 'err'); return; }
+    await save(Object.assign({}, snap, cl), ['snap', 'cloudinary'], `Saved the “${p.name}” preset.`);
+  }
+
+  /** Google key for address search. */
+  async function saveMaps(ev) {
+    ev.preventDefault();
+    if (denied) { toast('Add the Firestore rule first (bottom of this page).', 'err'); return; }
+    resetHints(['maps-key-hint']);
+    const key = $('maps-key').value.trim();
+    if (!key) return resetSection('maps');
+    if (looksLikeSecret(key)) { toast('That\'s a PayMongo secret key. It goes in the PayMongo section, not here.', 'err'); return; }
+    if (!/^AIza[\w-]{30,}$/.test(key)) return bad('maps-key-hint', 'A Google API key starts with AIza and is about 39 characters long.', 'maps-key');
+    await save({ mapsApiKey: key }, ['maps'], 'Saved. Address search in the app uses this key the next time it opens.');
+  }
+
+  /** The PayMongo secret key goes to secrets/paymongo, which nobody can read back; this page keeps only a hint. */
+  async function savePayMongo(ev) {
+    ev.preventDefault();
+    resetHints(['pm-key-hint']);
+    const key = $('pm-key').value.trim();
+    if (!/^sk_(test|live)_[A-Za-z0-9]{10,}$/.test(key)) return bad('pm-key-hint', 'A PayMongo secret key starts with sk_test_ or sk_live_. (The public key, pk_…, doesn\'t go here.)', 'pm-key');
+    const mode = key.startsWith('sk_live_') ? 'live' : 'test';
+    if (!confirm(`Save this ${mode === 'live' ? 'LIVE' : 'test'} key? GCash payments from the app go to its PayMongo account from now on.`)) return;
+    const who = (auth.currentUser && auth.currentUser.email) || '';
+    try {
+      await db.collection('secrets').doc('paymongo').set({ secretKey: key, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: who });
+    } catch (e) {
+      toast(e && e.code === 'permission-denied' ? 'Firestore refused it. Add the rule block at the bottom of this page (it includes the secrets rule).' : 'Not saved: ' + e.message, 'err');
+      return;
+    }
+    $('pm-key').value = '';
+    await save({ paymongoKeyHint: key.slice(0, 8) + '…' + key.slice(-4), paymongoMode: mode }, ['paymongo'], 'Secret key saved for the payment server. Press “Check saved key” to test it.');
+  }
+
+  /** The payment server's address as the app will use it, or '' when it doesn't look like one. */
+  function serverUrl(v) {
+    const u = String(v || '').trim().replace(/\/+$/, '');
+    return /^https:\/\/[^\s\/?#]+(\/[^\s?#]*)?$/.test(u) ? u : '';
+  }
+
+  async function saveServerUrl(ev) {
+    ev.preventDefault();
+    resetHints(['pm-url-hint']);
+    const raw = $('pm-url').value.trim();
+    if (!raw) {
+      if (!current.paymentServerUrl) return;
+      if (!confirm('Clear the payment server address? The app goes back to the PayMongo key built into it (if it has one).')) return;
+      await save({ paymentServerUrl: '' }, ['paymentServer'], 'Address cleared.');
+      return;
+    }
+    const url = serverUrl(raw);
+    if (!url) return bad('pm-url-hint', 'Paste the full address, starting with https:// (like https://fitfusion-payments.onrender.com).', 'pm-url');
+    await save({ paymentServerUrl: url }, ['paymentServer'], 'Address saved. Press “Check saved key” to test the server.');
+  }
+
+  /** Asks the payment server to try the saved key with PayMongo. */
+  async function checkPayMongo() {
+    const out = $('pm-result');
+    out.hidden = false;
+    const url = serverUrl(current.paymentServerUrl);
+    if (!url) { out.className = 'k-result err'; out.textContent = 'Save the payment server address first.'; return; }
+    out.className = 'k-result'; out.textContent = 'Checking with PayMongo… (if the server was asleep this takes up to a minute)';
+    let token, res, json;
+    try { token = await auth.currentUser.getIdToken(); } catch (e) {
+      out.className = 'k-result err'; out.textContent = 'Your sign-in has expired. Reload the page and sign in again.'; return;
+    }
+    try {
+      res = await fetch(url + '/paymongo/check-key', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: '{}' });
+      json = await res.json().catch(() => null);
+    } catch (e) {
+      out.className = 'k-result err';
+      out.textContent = `Couldn't reach ${url}. If you just deployed it, wait a minute and try again; otherwise check the address and that the service is running in Render.`;
+      return;
+    }
+    if (res.ok && json && json.ok) {
+      out.className = 'k-result ok';
+      out.textContent = `PayMongo accepted the saved key (${json.mode === 'live' ? 'live: real payments' : 'test: no real money moves'}).`;
+      return;
+    }
+    const code = json && json.error, msg = json && json.message;
+    out.className = 'k-result err';
+    out.textContent = !json ? `Something answered at ${url}, but it isn't the payment server (HTTP ${res.status}). Check the address.`
+      : code === 'failed-precondition' ? 'The server is running, but no secret key is saved yet.'
+      : msg === 'paymongo-key-rejected' ? 'PayMongo refused the saved key. Copy the secret key again from the PayMongo dashboard.'
+      : msg === 'Super Admins only.' ? 'Only a Super Admin can check the key.'
+      : code === 'not-found' ? 'That address answered, but it’s an older or different server. Check the address.'
+      : res.status === 500 ? 'The server had a problem. In Render, open the service’s Logs; FIREBASE_SERVICE_ACCOUNT may be missing or wrong.'
+      : 'Couldn’t check: ' + (msg || ('HTTP ' + res.status));
+  }
+
+  async function resetSection(section) {
+    if (denied) { toast('Add the Firestore rule first (bottom of this page).', 'err'); return; }
+    if (section === 'maps') {
+      if (!confirm('Clear the saved Google key? Address search goes back to the key built into the app.')) return;
+      await save({ mapsApiKey: '' }, ['maps'], 'Google key cleared. Address search uses the built-in key again.');
+      return;
+    }
+    const label = section === 'snap' ? 'Snap' : 'Cloudinary';
+    if (!confirm(`Clear the saved ${label} keys? The app goes back to the ones built into it.`)) return;
+    const blank = section === 'snap'
+      ? { snapApiToken: '', snapLensGroupId: '', snapLensName: '', snapLensId: '' }
+      : { cloudinaryCloudName: '', cloudinaryUploadPreset: '' };
+    await save(blank, [section], `${label} keys cleared. The app uses its built-in ones again.`);
+  }
+
+  /** Saves `fields` to appConfig/keys and stamps each of `sections` ('snap', 'cloudinary') with when and who. */
+  async function save(fields, sections, okMsg) {
+    const data = Object.assign({}, fields);
+    sections.forEach(section => {
+      data[section + 'UpdatedAt'] = firebase.firestore.FieldValue.serverTimestamp();
+      data[section + 'UpdatedBy'] = (auth.currentUser && auth.currentUser.email) || '';
+    });
+    try {
+      await keysDoc().set(data, { merge: true });
+      loadAppKeys(true);    // this site's own uploads pick up the change too
+      toast(okMsg, 'ok');
+      await loadKeys();
+    } catch (e) {
+      if (e && e.code === 'permission-denied') { denied = true; renderStatus(); toast('Firestore refused the save. Add the rule at the bottom of this page.', 'err'); }
+      else toast('Not saved: ' + e.message, 'err');
+    }
+  }
+
+  /** Sends a 1-pixel PNG with the values in the form (or the built-in ones when blank). */
+  async function testCloudinary() {
+    const out = $('cl-result');
+    const formCloud = $('cl-cloud').value.trim(), formPreset = $('cl-preset').value.trim();
+    const fallback = await cloudinaryConfig();   // saved keys, else the built-in ones
+    const cloud = formCloud || fallback.cloudName, preset = formPreset || fallback.uploadPreset;
+    out.hidden = false; out.className = 'k-result'; out.textContent = 'Uploading a test image…';
+    if (!cloud || !preset) { out.className = 'k-result err'; out.textContent = 'Fill in both boxes first.'; return; }
+    try {
+      const pixel = await (await fetch('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=')).blob();
+      const body = new FormData();
+      body.append('file', pixel, 'test.png');
+      body.append('upload_preset', preset);
+      body.append('folder', 'fitfusion/test');
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloud)}/image/upload`, { method: 'POST', body });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json && json.secure_url) {
+        out.className = 'k-result ok';
+        out.textContent = `It works: Cloudinary account "${cloud}" accepted preset "${preset}".` + (formCloud ? ' Press Save to use it.' : '');
+        return;
+      }
+      const msg = ((json && json.error && json.error.message) || ('HTTP ' + res.status)).replace(/[\s.]+$/, '');
+      let help = '';
+      if (/whitelisted for unsigned|unsigned/i.test(msg)) help = ' The preset is Signed: edit it in Cloudinary and set Signing mode to Unsigned.';
+      else if (/upload preset not found|preset/i.test(msg)) help = ' Check the preset name (it\'s case-sensitive).';
+      else if (/unknown api key|cloud_name|invalid cloud|404/i.test(msg)) help = ' Check the cloud name: Cloudinary doesn\'t know this one.';
+      out.className = 'k-result err';
+      out.textContent = 'Cloudinary said: ' + msg + '.' + help;
+    } catch (e) {
+      out.className = 'k-result err';
+      out.textContent = 'Couldn\'t reach Cloudinary: ' + e.message;
+    }
+  }
+
+  async function copyBlock(id, btn) {
+    const text = $(id).textContent;
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) {
+      const r = document.createRange(); r.selectNodeContents($(id));
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      document.execCommand('copy');
+    }
+    const old = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check2"></i> Copied';
+    setTimeout(() => btn.innerHTML = old, 1600);
+  }
+</script>
+</body>
+</html>
