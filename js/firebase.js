@@ -678,6 +678,34 @@ const SHOP_DEFAULTS = {
   downpaymentMinItems: 10,    // items in the cart before it is offered
   lowStockAt: 5               // admin site: a size at or below this is "low"
 };
+/**
+ * The shirt measurements new products start with (Shop Settings → Default measurements can replace them). Measured
+ * laid flat, in inches: Chest is armpit to armpit, Length from the top of the shoulder to the hem, Shoulder seam to
+ * seam, Sleeve from the shoulder seam to the cuff. The common Philippine "Asian fit" tee sizes. Checked against
+ * Filipino body averages: the average man (chest 86.7 cm around, Del Prado-Lu 2007) and woman (84.4 cm) come out
+ * as S with Fit Scan, the 1975 national survey's woman (bust 82.2 cm) as XS.
+ */
+const DEFAULT_SIZE_CHART = {
+  unit: 'in', columns: ['Chest', 'Length', 'Shoulder', 'Sleeve'],
+  rows: [
+    { size: 'XS', values: [17, 25, 15.5, 7] },
+    { size: 'S', values: [18, 26, 16.5, 7.5] },
+    { size: 'M', values: [19, 27, 17.5, 8] },
+    { size: 'L', values: [20, 28, 18.5, 8] },
+    { size: 'XL', values: [21, 29, 19.5, 8.5] },
+    { size: 'XXL', values: [22, 30, 20.5, 9] }
+  ]
+};
+/** The shop's default measurements: the ones saved in Shop Settings, else the built-in chart. */
+function shopSizeChart(shop) {
+  const c = shop && shop.defaultSizeChart;
+  return c && Array.isArray(c.columns) && c.columns.length && Array.isArray(c.rows) && c.rows.length ? c : DEFAULT_SIZE_CHART;
+}
+/** [chart] cut down to the sizes a product offers, or null when none of them is in it. */
+function chartForSizes(chart, sizes) {
+  const rows = (chart.rows || []).filter(r => sizes.includes(r.size));
+  return rows.length ? { unit: chart.unit, columns: chart.columns.slice(), rows: rows.map(r => ({ size: r.size, values: r.values.slice() })) } : null;
+}
 let _shop = null;
 function loadShopSettings(force) {
   if (!_shop || force) {

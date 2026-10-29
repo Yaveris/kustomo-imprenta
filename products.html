@@ -1096,6 +1096,16 @@
     const id = $('p-style').value;
     return models.find(m => m.id === id) || productModel({ name: $('p-name').value, category: $('p-cat').value }, models);
   }
+  /** True while the measurements are the shop's defaults, untouched; they then follow the model (shirts only). */
+  let chartFromDefault = false;
+  const isTop = m => !m || m.kind === 'top';
+  /** A new product's measurements: the shop's defaults for a shirt, nothing for a cap or bag. */
+  function startChart() { const top = isTop(currentModel()); setChart(top ? shopSizeChart(shop) : null); chartFromDefault = top; showChartNote(); }
+  function showChartNote() {
+    let n = $('sc-note');
+    if (!n) { n = document.createElement('div'); n.id = 'sc-note'; n.className = 'fg-help'; $('sc-wrap').after(n); }
+    n.innerHTML = chartFromDefault ? '<i class="bi bi-rulers"></i> Filled in from the shop\'s default measurements (Shop Settings). Change any number for this product only.' : '';
+  }
   function setChart(chart) {
     scVals = {};
     if (chart && Array.isArray(chart.columns) && chart.columns.length) {
@@ -1121,6 +1131,7 @@
     const t = e.target;
     if (t.classList.contains('sc-col')) scCols[+t.dataset.i] = t.value;
     else if (t.classList.contains('sc-val')) (scVals[t.dataset.s] = scVals[t.dataset.s] || scCols.map(() => ''))[+t.dataset.i] = t.value.trim();
+    if (chartFromDefault) { chartFromDefault = false; showChartNote(); }
   });
   document.querySelectorAll('.sc-unit button').forEach(b => b.addEventListener('click', () => { scUnit = b.dataset.u; renderSizeChart(); }));
   /** The chart to save, or null when nothing is filled in. Throws a message for the admin when a box is wrong. */
@@ -1209,7 +1220,8 @@
     clearTimeout(modelTimer);
     modelTimer = setTimeout(() => {
       renderPresetPicker(); renderModelLine();
-      if (!chartTouched()) { const m = currentModel(); scCols = defaultCols(m && m.kind); renderSizeChart(); }
+      if (chartFromDefault) startChart();
+      else if (!chartTouched()) { const m = currentModel(); scCols = defaultCols(m && m.kind); renderSizeChart(); }
     }, 250);
   }
   /** Under the name and category: which 3D model the app will use, with a shortcut to change it (it lives under More options). */
@@ -1263,8 +1275,8 @@
     resetForm('Add Product');
     fillCatSelect(cat !== 'all' ? cat : '');
     showPreview(); updatePriceTag();
-    sizesTouched = false; setSizes([]); $('p-track').checked = true; defaultSizes(); renderFormStock();
-    setChart(null); renderPresetPicker(); renderModelLine(); renderQuickStart(true); renderDesignState(); renderMoreSummary();
+    sizesTouched = false; setSizes([]); $('p-track').checked = false; defaultSizes(); renderFormStock();
+    startChart(); renderPresetPicker(); renderModelLine(); renderQuickStart(true); renderDesignState(); renderMoreSummary();
     $('prod-overlay').classList.add('show');
     setTimeout(() => $('p-name').focus(), 60);
   }
@@ -1279,7 +1291,7 @@
     fillCatSelect(productCategory({ category: want }) || want);
     $('p-style').value = m.id;
     setSizes(m.kind === 'top' || s ? ['S', 'M', 'L', 'XL'] : ['One Size']);
-    sizesTouched = true; renderFormStock(); setChart(null); renderPresetPicker(); renderModelLine(); renderMoreSummary();
+    sizesTouched = true; renderFormStock(); startChart(); renderPresetPicker(); renderModelLine(); renderMoreSummary();
     setTimeout(() => $('p-price').focus(), 80);
   }
   /** Add form for a Shop design ("Sell as a product" on the Design Library): its name, description and design filled in. */
@@ -1317,7 +1329,9 @@
     $('p-track').checked = tracksStock(p);
     if (tracksStock(p)) { loadedStock = {}; Object.keys(p.inventory).forEach(z => { loadedStock[z] = stockOf(p, z); }); formStock = Object.assign({}, loadedStock); }
     renderFormStock();
-    setChart(p.sizeChart);
+    // A shirt saved without measurements gets the shop's defaults (saved with it when you press Save)
+    if (p.sizeChart && p.sizeChart.rows && p.sizeChart.rows.length) { setChart(p.sizeChart); chartFromDefault = false; showChartNote(); }
+    else startChart();
     renderPresetPicker(); renderModelLine(); renderQuickStart(false); renderMoreSummary();
     $('prod-overlay').classList.add('show');
   }
@@ -1524,7 +1538,9 @@
 
   const CLOSERS = { 'prod-overlay': closeModal, 'del-overlay': closeDel, 'stock-overlay': closeStock, 'cat-overlay': closeCats };
   document.addEventListener('keydown', e => { if (e.key === 'Escape') Object.keys(CLOSERS).forEach(id => { if ($(id).classList.contains('show')) CLOSERS[id](); }); });
-  Object.keys(CLOSERS).forEach(id => $(id).addEventListener('click', e => { if (e.target === e.currentTarget) CLOSERS[id](); }));
+  // A click on the dark background closes the small pop-ups. The Add / Edit Product form only closes with Cancel, ✕ or
+  // Save, so a slip of the mouse can't throw away what was typed.
+  Object.keys(CLOSERS).filter(id => id !== 'prod-overlay').forEach(id => $(id).addEventListener('click', e => { if (e.target === e.currentTarget) CLOSERS[id](); }));
   render();
 </script>
 </body>

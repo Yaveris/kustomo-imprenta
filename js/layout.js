@@ -335,3 +335,15 @@ const OrderAlert = (() => {
   function handled() { render(); }
   return { start, ding, handled };
 })();
+
+// A press that starts inside a pop-up and is let go on the dark background around it (selecting text in a box, say)
+// is not a click on the background, so it doesn't close the pop-up. Only a press that starts and ends on the
+// background does. Runs before every page's own close-on-background handlers.
+(function () {
+  let downOn = null;
+  document.addEventListener('pointerdown', e => { downOn = e.target; }, true);
+  document.addEventListener('click', e => {
+    const t = e.target;
+    if (t && t.classList && t.classList.contains('overlay') && downOn !== t) e.stopPropagation();
+  }, true);
+})();

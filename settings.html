@@ -84,6 +84,23 @@
       </div>
     </div>
 
+    <div class="card" style="margin-top:16px;" id="sz-card">
+      <div class="card-head"><span class="card-title"><i class="bi bi-rulers" style="color:var(--orange);margin-right:6px;"></i>Default measurements</span><span class="pill" id="sz-state">—</span></div>
+      <div class="set-body">
+        <p class="note" style="margin-bottom:12px;">The shirt measurements every new shirt product starts with, so they don't have to be typed each time. Fit Scan in the app uses them to suggest a size. Measure a shirt laid flat: <b>Chest</b> armpit to armpit, <b>Length</b> top of the shoulder to the hem, <b>Shoulder</b> seam to seam, <b>Sleeve</b> shoulder seam to cuff. The built-in numbers are the common Philippine "Asian fit" sizes; measure your own blank shirts and change them to match.</p>
+        <div class="fg" style="margin-bottom:10px;">
+          <div class="sc-top"><label style="margin:0;">Measurements per size</label>
+            <div class="sc-unit" role="group" aria-label="Unit"><button type="button" data-u="in" class="on">Inches</button><button type="button" data-u="cm">cm</button></div></div>
+          <div class="sc-wrap" id="sz-wrap"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <button class="btn-ghost" type="button" onclick="resetSizes()"><i class="bi bi-arrow-counterclockwise"></i> Back to the built-in sizes</button>
+          <button class="btn-ghost" type="button" id="sz-fill" onclick="fillProducts()"><i class="bi bi-magic"></i> Add them to products without measurements</button>
+          <span class="note" id="sz-fill-note"></span>
+        </div>
+      </div>
+    </div>
+
     <div class="card" style="margin-top:16px;" id="loc-card">
       <div class="card-head"><span class="card-title"><i class="bi bi-shop" style="color:var(--orange);margin-right:6px;"></i>Shop location</span><span class="pill" id="loc-state">—</span></div>
       <div class="set-body">
@@ -161,6 +178,63 @@
     }
   };
 
+  // ── Default measurements (appConfig/shop.defaultSizeChart): XS to XXL, 4 columns ──
+  const SZ = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+  let szUnit = 'in', szCols = [], szVals = {};
+  function setSizesChart(chart) {
+    szUnit = chart.unit === 'cm' ? 'cm' : 'in';
+    szCols = chart.columns.slice(0, 4).map(String); while (szCols.length < 4) szCols.push('');
+    szVals = {};
+    SZ.forEach(z => { const r = (chart.rows || []).find(x => x.size === z); szVals[z] = szCols.map((_, i) => r && typeof r.values[i] === 'number' ? String(r.values[i]) : ''); });
+    renderSizesChart();
+  }
+  function renderSizesChart() {
+    document.querySelectorAll('#sz-card .sc-unit button').forEach(b => b.classList.toggle('on', b.dataset.u === szUnit));
+    $('sz-wrap').innerHTML = `<table class="sc-table"><thead><tr><th>Size</th>${szCols.map((c, i) =>
+        `<th><input class="sc-col" data-i="${i}" value="${esc(c)}" maxlength="16" placeholder="Name" aria-label="Measurement ${i + 1} name"></th>`).join('')}</tr></thead><tbody>${
+      SZ.map(z => `<tr><th>${z}</th>${szCols.map((_, i) => `<td><input class="sc-val" type="number" inputmode="decimal" min="0" step="0.1" data-s="${z}" data-i="${i}" value="${esc(szVals[z][i])}" placeholder="—" aria-label="${z} ${esc(szCols[i] || 'measurement')}"></td>`).join('')}</tr>`).join('')
+    }</tbody></table>`;
+  }
+  $('sz-wrap').addEventListener('input', e => {
+    const t = e.target;
+    if (t.classList.contains('sc-col')) szCols[+t.dataset.i] = t.value; else if (t.classList.contains('sc-val')) szVals[t.dataset.s][+t.dataset.i] = t.value.trim();
+    changed();
+  });
+  document.querySelectorAll('#sz-card .sc-unit button').forEach(b => b.addEventListener('click', () => { szUnit = b.dataset.u; renderSizesChart(); changed(); }));
+  /** The chart to save; throws a message when a box is wrong. */
+  function readSizesChart() {
+    const num = t => { if (!t) return null; const n = Number(t); if (!isFinite(n) || n <= 0 || n > 500) throw 'Default measurements must be numbers above 0, like 20 or 27.5.'; return Math.round(n * 10) / 10; };
+    const keep = szCols.map((c, i) => i).filter(i => SZ.some(z => szVals[z][i] !== ''));
+    if (!keep.length) throw 'Fill in at least one default measurement, or press “Back to the built-in sizes”.';
+    if (keep.some(i => !szCols[i].trim())) throw 'Give each measurement column a name, like Chest or Length.';
+    const names = keep.map(i => szCols[i].trim().replace(/\s+/g, ' '));
+    if (new Set(names.map(n => n.toLowerCase())).size !== names.length) throw 'Two measurement columns have the same name.';
+    return { unit: szUnit, columns: names, rows: SZ.map(z => ({ size: z, values: keep.map(i => num(szVals[z][i])) })).filter(r => r.values.some(v => v !== null)) };
+  }
+  function resetSizes() { setSizesChart(DEFAULT_SIZE_CHART); changed(); }
+  /** Adds the default measurements to every product that sells XS to XXL sizes and has none yet. */
+  async function fillProducts() {
+    if (dirty) { toast('Save the settings first, so the products get the measurements shown here.', 'warn'); return; }
+    let chart; try { chart = readSizesChart(); } catch (m) { toast(m, 'warn'); return; }
+    const btn = $('sz-fill'); btn.disabled = true;
+    try {
+      const snap = await db.collection('products').get();
+      const todo = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .filter(p => !(p.sizeChart && Array.isArray(p.sizeChart.rows) && p.sizeChart.rows.length))
+        .map(p => ({ p, c: chartForSizes(chart, Array.isArray(p.sizes) ? p.sizes : Object.keys(p.inventory || {})) })).filter(x => x.c);
+      if (!todo.length) { $('sz-fill-note').textContent = 'Every product with sizes XS to XXL already has measurements.'; return; }
+      if (!confirm(`Add the default measurements to ${todo.length} product${todo.length === 1 ? '' : 's'} that have none? Products that already have measurements aren't changed.`)) return;
+      for (let i = 0; i < todo.length; i += 400) {
+        const batch = db.batch();
+        todo.slice(i, i + 400).forEach(x => batch.update(db.collection('products').doc(x.p.id), { sizeChart: x.c }));
+        await batch.commit();
+      }
+      $('sz-fill-note').textContent = `Added to ${todo.length} product${todo.length === 1 ? '' : 's'}.`;
+      toast('Measurements added', 'ok');
+    } catch (e) { toast('Not added: ' + e.message, 'err'); }
+    finally { btn.disabled = false; }
+  }
+
   // ── Shop location (appConfig/shop.shopLocation, saved by the picker in js/shop-map.js) ──
   async function showLocation(force) {
     const loc = await loadShopLocation(force).catch(() => null), shared = loc && !loc.mine ? loc : null;
@@ -231,6 +305,8 @@
 
   function fill(v) {
     Object.keys(FIELDS).forEach(k => $(FIELDS[k]).value = v[k]);
+    setSizesChart(shopSizeChart(v));
+    $('sz-state').textContent = v.defaultSizeChart ? 'Your own' : 'Built-in'; $('sz-state').className = 'pill ' + (v.defaultSizeChart ? 'ok' : '');
     $('s-dp-on').checked = v.downpaymentEnabled !== false;
     preview();
   }
@@ -243,6 +319,7 @@
   }
   /** The reason the values can't be saved, or ''. */
   function problem(v) {
+    try { readSizesChart(); } catch (m) { return m; }
     if (terms.some(t => !t.title.trim() || !t.body.trim())) return 'Every Terms section needs a title and some text (or remove the empty one).';
     if (!(v.shippingFee >= 0)) return 'Enter a shipping fee (0 or more).';
     if (!(v.freeShippingMin >= 0)) return 'Enter the free-shipping amount (0 for never).';
@@ -273,11 +350,13 @@
     $('save').disabled = true;
     try {
       await db.collection('appConfig').doc('shop').set(Object.assign(v, {
+        defaultSizeChart: readSizesChart(),
         terms: terms.map(t => ({ title: t.title.trim(), body: t.body.trim() })),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: (auth.currentUser && auth.currentUser.email) || '' }), { merge: true });
       dirty = false;
       $('state').textContent = 'Saved'; $('state').className = 'pill ok';
       $('saved-note').textContent = 'Saved just now. The app picks it up within a few seconds.';
+      $('sz-state').textContent = 'Your own'; $('sz-state').className = 'pill ok';
       toast('Settings saved', 'ok');
     } catch (e) {
       toast(e.code === 'permission-denied' ? "Not saved: the database rules need updating (App Keys → For your developer)." : 'Not saved: ' + e.message, 'err');
