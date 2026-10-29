@@ -406,6 +406,15 @@ function mergeModels(docs) {
   return builtIns.concat(custom).sort((a, b) => (a.order - b.order) || a.label.localeCompare(b.label));
 }
 
+/** Whether a product's photo was made from its design (so it should follow the design when that changes), not a
+ *  real photo the shop uploaded. Older products have no flag: the example products' and the ones made from a Shop
+ *  design's picture ("preset-…") count as made from the design. */
+function photoFromDesign(p) {
+  if (!p || !p.imageUrl) return false;
+  if (typeof p.photoFromDesign === 'boolean') return p.photoFromDesign;
+  return !!p.exampleId || /preset-/.test(p.imageUrl);
+}
+
 /** The catalog entry a product shows as: its own `shirtStyle` when that is a known model, else a guessed shirt cut
  *  for shirts, else null (a product with no model, like a mug). */
 function productModel(p, models) {

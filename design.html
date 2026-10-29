@@ -138,6 +138,7 @@
 
       <div id="ds-product-row" class="ds-row" style="margin-top:16px;" hidden>
         <div class="fg"><label for="ds-product">Product</label><select id="ds-product"></select></div>
+        <label class="fg-check" id="ds-photo-wrap" style="text-transform:none;letter-spacing:0;font-size:14px;color:var(--text);margin:8px 0 0;display:flex;gap:7px;align-items:center;"><input type="checkbox" id="ds-photo"> <span>Also update the product photo to show this design</span></label>
       </div>
       <p id="ds-mode-help" hidden></p>
     </div>
@@ -185,6 +186,7 @@
 <script src="js/layout.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/studio-common.js"></script>
+<script src="js/design-render.js"></script>
 <script>
   // A design is saved in the same form the app's designer uses (products/{id}.defaultCustomization,
   // designPresets/{id}.customization): { apparelColorHex, shirtStyle, views: { Front: {texts[], images[], shapes[],
@@ -666,6 +668,8 @@
   }
   function loadProduct(id) {
     product = products.find(p => p.id === id) || null;
+    // On by default when the photo was made from the design (or there is none); off for a real photo
+    $('ds-photo').checked = !!product && (!product.imageUrl || photoFromDesign(product));
     loadDesignData(product && product.defaultCustomization, product ? productModel(product, models) : null);
   }
   const toLocal = ts => { if (!ts || !ts.toDate) return ''; const d = ts.toDate(); const p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
@@ -711,7 +715,20 @@
     const btn = $('ds-save'); btn.disabled = true;
     try {
       await db.collection('products').doc(product.id).update({ defaultCustomization: data });
-      product.defaultCustomization = data; dirty = false; toast('Saved. Customers will see it in the app.', 'ok'); renderChrome(); fillProductList();
+      product.defaultCustomization = data; dirty = false; renderChrome(); fillProductList();
+      // The app's shop list and product page show the product photo, so it has to show the new design too
+      const pm = models.find(m => m.id === data.shirtStyle) || productModel(product, models);
+      if ($('ds-photo').checked && pm && pm.front) {
+        toast('Saved. Making the new product photo…');
+        try {
+          const url = await uploadToCloudinary(await canvasToPngFile(await renderDesignCanvas(pm, data, 900), 'design-' + product.id + '.png'), { folder: 'kustomoimprenta/products' });
+          await db.collection('products').doc(product.id).update({ imageUrl: url, photoFromDesign: true });
+          product.imageUrl = url; product.photoFromDesign = true;
+          toast('Saved, with a new product photo. Customers will see it in the app.', 'ok');
+        } catch (e) { toast('The design was saved, but the photo wasn\'t updated: ' + (e.message || e), 'err'); }
+      } else {
+        toast(product.imageUrl ? 'Saved. The product photo was kept as it is.' : 'Saved. Customers will see it in the app.', 'ok');
+      }
     } catch (e) { toast('Not saved: ' + e.message, 'err'); }
     finally { btn.disabled = false; }
   }
