@@ -147,11 +147,42 @@
     details.adv[open] > summary .bi-chevron-down { transform: rotate(180deg); }
     details.adv > .adv-body { padding: 4px 16px 16px; }
     .model-line { font-size: 14px; color: var(--muted); margin: -4px 0 14px; }
-    .f-lead { font-size: 14px; color: var(--muted); margin: 0 0 18px; }
+    .f-lead { font-size: 14px; color: var(--muted); margin: 0 0 18px; line-height: 1.5; }
     .f-sub { font-size: 13px; font-weight: 700; color: var(--text); margin: 18px 0 8px; }
     .adv-body > .f-sub:first-child { margin-top: 8px; }
     .fg-row.price-row.two { grid-template-columns: 1fr 1.35fr; }
     .adv-chip { display: inline-block; font-size: 12.5px; font-weight: 600; color: var(--orange); background: rgba(255,92,0,.1); border-radius: 999px; padding: 2px 9px; margin-right: 4px; }
+    /* Add / Edit Product: main column + side column */
+    .modal.pform { max-width: 1180px; }
+    .pform .modal-bd { padding: 20px 22px; background: rgba(0,0,0,.18); }
+    .pf-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+    .pf-main, .pf-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+    .pf-side { position: sticky; top: 0; }
+    .pf-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+    .pf-card > h4 { font-size: 16px; font-weight: 700; margin: 0 0 14px; }
+    .pf-card .fg:last-child, .pf-card .switch-row:last-child { margin-bottom: 0; }
+    details.adv.pf-card { margin-top: 0; padding: 0; }
+    .pf-main .f-lead { margin: 0; }
+    .pf-preview .pv-img { aspect-ratio: 1 / 1; border-radius: 10px; background: #1d1d1d; display: grid; place-items: center; overflow: hidden; color: var(--muted); text-align: center; font-size: 13.5px; padding: 0; }
+    .pf-preview .pv-img img { width: 100%; height: 100%; object-fit: contain; }
+    .pf-preview .pv-img .pv-none { padding: 18px; line-height: 1.5; }
+    .pv-name { font-size: 16px; font-weight: 700; margin-top: 12px; overflow-wrap: anywhere; }
+    .pv-name.empty { color: var(--muted); font-weight: 500; }
+    .pv-price { margin-top: 4px; font-size: 15px; }
+    .pv-price .now { color: var(--orange); font-weight: 700; font-size: 18px; margin-right: 6px; }
+    .pv-price .was { color: var(--muted); text-decoration: line-through; margin-right: 6px; }
+    .pv-price .off { background: #FF2D78; color: #fff; font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 2px 8px; }
+    .pv-meta { margin-top: 8px; font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+    .pv-meta .st-on { color: #00E676; } .pv-meta .st-off { color: var(--yellow); }
+    #lib-pick { margin-top: 14px; }
+    #lib-pick .pp-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; overflow: visible; }
+    #lib-pick .pp-card { width: auto; }
+    #lib-pick .pp-img { width: 100%; height: auto; aspect-ratio: 1 / 1; }
+    #lib-pick .pp-name { white-space: normal; }
+    @media (max-width: 900px) {
+      .pf-grid { grid-template-columns: 1fr; }
+      .pf-side { position: static; }
+    }
     .pp-card.on { border-color: var(--orange); box-shadow: 0 0 0 2px rgba(255,92,0,.35); }
     .lp-photo { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); margin-top: 10px; cursor: pointer; }
     .lp-photo input { accent-color: var(--orange); width: 16px; height: 16px; }
@@ -244,116 +275,135 @@
 
 <!-- Add / Edit -->
 <div class="overlay" id="prod-overlay">
-  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal wide pform" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-hd"><h3 id="modal-title">Add Product</h3><button class="modal-x" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-bd">
       <input type="hidden" id="edit-id">
       <div class="qs" id="quick-start" hidden></div>
 
-      <p class="f-lead">Fill in the starred fields and press Save. Sale price, description, design type and the rest are under <b>More options</b>.</p>
-
-      <div class="f-sec first">Basics</div>
-      <div class="fg-row" id="p-basics">
-        <div class="fg"><label for="p-name">Name *</label><input type="text" id="p-name" placeholder="e.g. Classic Cotton Tee" maxlength="80"></div>
-        <div class="fg"><label for="p-cat">Category *</label>
-          <select id="p-cat"></select>
-          <div id="p-newcat-row" hidden style="display:flex;gap:6px;margin-top:6px;">
-            <input type="text" id="p-newcat" maxlength="40" placeholder="New category name" style="flex:1;min-width:0;">
-            <button class="btn-ghost" type="button" onclick="addNewCat()">Add</button>
-          </div>
+      <div class="pf-grid">
+        <div class="pf-main">
+          <p class="f-lead">Fill in the starred fields and press Save. Sale price, description, design type and the rest are under <b>More options</b>.</p>
+          <section class="pf-card" aria-labelledby="h-basics">
+            <h4 id="h-basics">Basics</h4>
+            <div class="fg-row" id="p-basics">
+              <div class="fg"><label for="p-name">Name *</label><input type="text" id="p-name" placeholder="e.g. Classic Cotton Tee" maxlength="80"></div>
+              <div class="fg"><label for="p-cat">Category *</label>
+                <select id="p-cat"></select>
+                <div id="p-newcat-row" hidden style="display:flex;gap:6px;margin-top:6px;">
+                  <input type="text" id="p-newcat" maxlength="40" placeholder="New category name" style="flex:1;min-width:0;">
+                  <button class="btn-ghost" type="button" onclick="addNewCat()">Add</button>
+                </div>
+              </div>
+            </div>
+            <div class="fg-row price-row two">
+              <div class="fg"><label for="p-price">Price (₱) *</label><input type="number" id="p-price" placeholder="499" min="20" step="0.01"></div>
+              <div class="fg"><label id="p-pay-lbl">Customers pay</label><div class="price-tag empty" id="p-pay" role="status" aria-live="polite" aria-labelledby="p-pay-lbl">Enter a price</div></div>
+            </div>
+            <div class="price-note" id="p-pay-note"></div>
+          </section>
+          <section class="pf-card" aria-labelledby="h-design">
+            <h4 id="h-design">Design</h4>
+            <div class="design-mode" role="radiogroup" aria-label="Design">
+              <label class="dm-opt"><input type="radio" name="p-start" value="none" checked>
+                <div><b id="p-start-none">No design yet</b><span id="p-start-none-sub">A plain item, or make its design later in the Design Studio.</span></div></label>
+              <label class="dm-opt"><input type="radio" name="p-start" value="lib">
+                <div><b>From the Design Library</b><span>Pick one of your Shop designs. It becomes this product's design.</span></div></label>
+            </div>
+            <div id="lib-pick" class="pp-box" hidden>
+              <div class="pp-head">Pick a design <span id="pp-for"></span></div>
+              <div class="pp-list" id="pp-list"></div>
+              <label class="lp-photo"><input type="checkbox" id="p-usephoto" checked> Also use it as the product photo</label>
+            </div>
+          </section>
+          <section class="pf-card" aria-labelledby="h-sizes">
+            <h4 id="h-sizes">Sizes and stock</h4>
+            <div class="fg">
+              <label>Sizes customers can pick *</label>
+              <div class="size-pills" id="size-pills">
+                <button type="button" class="sz" data-v="XS">XS</button><button type="button" class="sz" data-v="S">S</button>
+                <button type="button" class="sz" data-v="M">M</button><button type="button" class="sz" data-v="L">L</button>
+                <button type="button" class="sz" data-v="XL">XL</button><button type="button" class="sz" data-v="XXL">XXL</button>
+                <button type="button" class="sz" data-v="One Size">One Size</button>
+              </div>
+            </div>
+            <label class="switch-row" for="p-track">
+              <span class="avail"><input type="checkbox" id="p-track"><span class="avail-sl"></span></span>
+              <span>Count how many are in storage<small id="p-track-sub">Off: made to order, every size shows as available.</small></span>
+            </label>
+            <div id="p-stock-wrap">
+              <div class="fst-rows" id="p-stock"></div>
+              <div class="fg-help" id="p-stock-help"></div>
+            </div>
+          </section>
+          <details class="adv pf-card" id="adv">
+            <summary><i class="bi bi-sliders"></i> More options <small id="adv-sum"></small><i class="bi bi-chevron-down"></i></summary>
+            <div class="adv-body">
+              <div class="f-sub">Sale</div>
+              <div class="fg" style="max-width:260px;"><label for="p-disc">Discount (%)</label><input type="number" id="p-disc" placeholder="0 = none" min="0" max="90" step="1" inputmode="numeric">
+                <div class="fg-help">Customers see the old price crossed out and a "-%" badge.</div></div>
+
+              <div class="f-sub">Description</div>
+              <div class="fg"><label for="p-desc" class="sr-only">Description</label><textarea id="p-desc" placeholder="A short line about the product…" rows="2"></textarea></div>
+
+              <div class="f-sub">Design</div>
+              <div class="design-mode" role="radiogroup" aria-label="Can customers change the design?">
+                <label class="dm-opt"><input type="radio" name="p-dmode" value="open" checked>
+                  <div><b>Customers can change it</b><span>Your design is a starting point. Customers can edit it, add their own text and pick any colour.</span></div></label>
+                <label class="dm-opt"><input type="radio" name="p-dmode" value="locked" id="p-locked">
+                  <div><b>Ready-made (can't be changed)</b><span>Sold exactly as you designed it, in its own colour. Customers only pick the size and how many.</span></div></label>
+              </div>
+              <div class="dm-state" id="p-dm-state"></div>
+
+              <div class="f-sub">3D model, tag and measurements</div>
+              <div class="fg"><label for="p-style">3D model</label>
+                <select id="p-style"><option value="">Automatic (a shirt is read from the name)</option></select>
+                <div class="fg-help">What the app shows in the 3D preview, the designer and AR try-on. New ones are added on <a href="models.html" style="color:var(--orange);">3D Models</a>.</div>
+              </div>
+              <div class="fg"><label for="p-tag">Tag on the photo</label>
+                <select id="p-tag"><option value="">None</option><option value="New">New</option><option value="Sale">Sale</option><option value="Hot">Hot</option></select>
+              </div>
+              <div class="fg" style="margin-bottom:0;">
+                <div class="sc-top">
+                  <label style="margin:0;">Measurements per size</label>
+                  <div class="sc-unit" role="group" aria-label="Unit"><button type="button" data-u="in" class="on">Inches</button><button type="button" data-u="cm">cm</button></div>
+                </div>
+                <div class="sc-wrap" id="sc-wrap"></div>
+                <div class="fg-help">Measure the item laid flat (chest is armpit to armpit). Rename a column by typing over its name; an empty column is hidden. Customers see this chart when they pick a size.</div>
+              </div>
+            </div>
+          </details>
         </div>
-      </div>
-      <div class="fg-row price-row two">
-        <div class="fg"><label for="p-price">Price (₱) *</label><input type="number" id="p-price" placeholder="499" min="20" step="0.01"></div>
-        <div class="fg"><label id="p-pay-lbl">Customers pay</label><div class="price-tag empty" id="p-pay" role="status" aria-live="polite" aria-labelledby="p-pay-lbl">Enter a price</div></div>
-      </div>
-      <div class="price-note" id="p-pay-note"></div>
-
-      <div class="f-sec">Design</div>
-      <div class="design-mode" role="radiogroup" aria-label="Design">
-        <label class="dm-opt"><input type="radio" name="p-start" value="none" checked>
-          <div><b id="p-start-none">No design yet</b><span id="p-start-none-sub">A plain item, or make its design later in the Design Studio.</span></div></label>
-        <label class="dm-opt"><input type="radio" name="p-start" value="lib">
-          <div><b>From the Design Library</b><span>Pick one of your Shop designs. It becomes this product's design.</span></div></label>
-      </div>
-      <div id="lib-pick" class="pp-box" hidden>
-        <div class="pp-head">Pick a design <span id="pp-for"></span></div>
-        <div class="pp-list" id="pp-list"></div>
-        <label class="lp-photo"><input type="checkbox" id="p-usephoto" checked> Also use it as the product photo</label>
-      </div>
-
-      <div class="f-sec">Photo</div>
-      <div class="fg">
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input type="url" id="p-img" placeholder="https://… or upload one" style="flex:1;min-width:0;" aria-label="Photo link">
-          <label class="btn-ghost" style="white-space:nowrap;cursor:pointer;margin:0;" id="p-upload-lbl"><i class="bi bi-upload"></i> Upload<input type="file" id="p-file" accept="image/png,image/jpeg,image/webp" hidden></label>
-        </div>
-        <img id="p-prev" alt="" style="display:none;margin-top:10px;max-height:130px;max-width:100%;border-radius:8px;border:1px solid var(--border);">
-        <div class="fg-help">No photo? The app shows the 3D model's picture instead.</div>
-      </div>
-
-      <div class="f-sec">Sizes &amp; stock</div>
-      <div class="fg">
-        <label>Sizes customers can pick *</label>
-        <div class="size-pills" id="size-pills">
-          <button type="button" class="sz" data-v="XS">XS</button><button type="button" class="sz" data-v="S">S</button>
-          <button type="button" class="sz" data-v="M">M</button><button type="button" class="sz" data-v="L">L</button>
-          <button type="button" class="sz" data-v="XL">XL</button><button type="button" class="sz" data-v="XXL">XXL</button>
-          <button type="button" class="sz" data-v="One Size">One Size</button>
-        </div>
-      </div>
-      <label class="switch-row" for="p-track">
-        <span class="avail"><input type="checkbox" id="p-track"><span class="avail-sl"></span></span>
-        <span>Count how many are in storage<small id="p-track-sub">Off: made to order, every size shows as available.</small></span>
-      </label>
-      <div id="p-stock-wrap">
-        <div class="fst-rows" id="p-stock"></div>
-        <div class="fg-help" id="p-stock-help"></div>
+        <aside class="pf-side">
+          <section class="pf-card pf-preview" aria-labelledby="h-prev">
+            <h4 id="h-prev">How it looks in the app</h4>
+            <div class="pv-img" id="pv-img"><img id="p-prev" alt="" style="display:none;"></div>
+            <div class="pv-name" id="pv-name"></div>
+            <div class="pv-price" id="pv-price"></div>
+            <div class="pv-meta" id="pv-meta"></div>
+          </section>
+          <section class="pf-card" aria-labelledby="h-photo">
+            <h4 id="h-photo">Photo</h4>
+            <div class="fg">
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="url" id="p-img" placeholder="https://… or upload one" style="flex:1;min-width:0;" aria-label="Photo link">
+                <label class="btn-ghost" style="white-space:nowrap;cursor:pointer;margin:0;" id="p-upload-lbl"><i class="bi bi-upload"></i> Upload<input type="file" id="p-file" accept="image/png,image/jpeg,image/webp" hidden></label>
+              </div>
+      
+              <div class="fg-help">No photo? The app shows the 3D model's picture instead.</div>
+            </div>
+          </section>
+          <section class="pf-card" aria-labelledby="h-vis">
+            <h4 id="h-vis">Visibility</h4>
+            <label class="switch-row" for="p-avail">
+              <span class="avail"><input type="checkbox" id="p-avail" checked><span class="avail-sl"></span></span>
+              <span>For sale in the app<small>Turn off to hide it from customers without deleting it.</small></span>
+            </label>
+          </section>
+        </aside>
       </div>
 
-      <label class="switch-row" for="p-avail" style="margin-top:18px;">
-        <span class="avail"><input type="checkbox" id="p-avail" checked><span class="avail-sl"></span></span>
-        <span>For sale in the app<small>Turn off to hide it from customers without deleting it.</small></span>
-      </label>
-
-      <details class="adv" id="adv">
-        <summary><i class="bi bi-sliders"></i> More options <small id="adv-sum"></small><i class="bi bi-chevron-down"></i></summary>
-        <div class="adv-body">
-          <div class="f-sub">Sale</div>
-          <div class="fg" style="max-width:260px;"><label for="p-disc">Discount (%)</label><input type="number" id="p-disc" placeholder="0 = none" min="0" max="90" step="1" inputmode="numeric">
-            <div class="fg-help">Customers see the old price crossed out and a "-%" badge.</div></div>
-
-          <div class="f-sub">Description</div>
-          <div class="fg"><label for="p-desc" class="sr-only">Description</label><textarea id="p-desc" placeholder="A short line about the product…" rows="2"></textarea></div>
-
-          <div class="f-sub">Design</div>
-          <div class="design-mode" role="radiogroup" aria-label="Can customers change the design?">
-            <label class="dm-opt"><input type="radio" name="p-dmode" value="open" checked>
-              <div><b>Customers can change it</b><span>Your design is a starting point. Customers can edit it, add their own text and pick any colour.</span></div></label>
-            <label class="dm-opt"><input type="radio" name="p-dmode" value="locked" id="p-locked">
-              <div><b>Ready-made (can't be changed)</b><span>Sold exactly as you designed it, in its own colour. Customers only pick the size and how many.</span></div></label>
-          </div>
-          <div class="dm-state" id="p-dm-state"></div>
-
-          <div class="f-sub">3D model, tag and measurements</div>
-          <div class="fg"><label for="p-style">3D model</label>
-            <select id="p-style"><option value="">Automatic (a shirt is read from the name)</option></select>
-            <div class="fg-help">What the app shows in the 3D preview, the designer and AR try-on. New ones are added on <a href="models.html" style="color:var(--orange);">3D Models</a>.</div>
-          </div>
-          <div class="fg"><label for="p-tag">Tag on the photo</label>
-            <select id="p-tag"><option value="">None</option><option value="New">New</option><option value="Sale">Sale</option><option value="Hot">Hot</option></select>
-          </div>
-          <div class="fg" style="margin-bottom:0;">
-            <div class="sc-top">
-              <label style="margin:0;">Measurements per size</label>
-              <div class="sc-unit" role="group" aria-label="Unit"><button type="button" data-u="in" class="on">Inches</button><button type="button" data-u="cm">cm</button></div>
-            </div>
-            <div class="sc-wrap" id="sc-wrap"></div>
-            <div class="fg-help">Measure the item laid flat (chest is armpit to armpit). Rename a column by typing over its name; an empty column is hidden. Customers see this chart when they pick a size.</div>
-          </div>
-        </div>
-      </details>
-    </div>
+</div>
     <div class="modal-ft">
       <button class="btn-ghost" onclick="closeModal()">Cancel</button>
       <button class="btn-grad" id="save-btn" onclick="saveProduct()"><i class="bi bi-check-lg"></i> Save</button>
@@ -1102,8 +1152,7 @@
     const list = $('pp-list'), forEl = $('pp-for'), token = ++ppToken;
     if ($('lib-pick').hidden) return;
     const m = currentModel();
-    if (!m || !m.front) { forEl.textContent = ''; list.innerHTML = '<div class="pp-empty">Designs show here once the product has a 3D model (a shirt name like "Classic Tee" is enough, or pick one under More options).</div>'; return; }
-    forEl.textContent = '· shown on ' + m.label;
+    forEl.textContent = m && m.front ? '· shown on ' + m.label : '· shown on each design\'s own shirt';
     if (!presetList) { list.innerHTML = '<div class="pp-empty">Loading…</div>'; await loadPresetList(); if (token !== ppToken) return; }
     const mine = (presetList || []).filter(usableDesign);
     if (!mine.length) { list.innerHTML = `<div class="pp-empty">No Shop designs yet. Add some on the <a href="design-library.html" target="_blank" rel="noopener">Design Library</a> page.</div>`; return; }
@@ -1112,16 +1161,25 @@
     for (const p of mine) {
       const slot = list.querySelector(`.pp-card[data-id="${CSS.escape(p.id)}"] .pp-img`); if (!slot) continue;
       try {
-        const key = p.id + '|' + m.id + '|' + ((p.updatedAt && p.updatedAt.seconds) || '');
-        if (!previewCache[key]) previewCache[key] = (await renderDesignCanvas(m, Object.assign({}, p.customization, { shirtStyle: m.id }), 180)).toDataURL('image/png');
+        const on = shirtFor(p); if (!on) { slot.innerHTML = '<i class="bi bi-image"></i>'; continue; }
+        const key = p.id + '|' + on.id + '|' + ((p.updatedAt && p.updatedAt.seconds) || '');
+        if (!previewCache[key]) previewCache[key] = (await renderDesignCanvas(on, Object.assign({}, p.customization, { shirtStyle: on.id }), 180)).toDataURL('image/png');
         if (token !== ppToken) return;
         slot.innerHTML = `<img src="${previewCache[key]}" alt="">`;
       } catch (e) { slot.innerHTML = `<i class="bi bi-exclamation-triangle" title="${esc(e.message || String(e))}"></i>`; }
     }
   }
+  /** The shirt a design is drawn on: this product's model, else the design's own, else the first shirt. */
+  function shirtFor(p) {
+    const m = currentModel(); if (m && m.front) return m;
+    return models.find(x => x.id === designModelId(p) && x.front) || models.find(x => x.front && x.enabled) || models.find(x => x.front) || null;
+  }
   /** Picks a Shop design for this product and, when ticked, makes the product photo from it. */
   async function pickPreset(id) {
-    const p = (presetList || []).find(x => x.id === id), m = currentModel(); if (!p) return;
+    const p = (presetList || []).find(x => x.id === id); if (!p) return;
+    // A product without a 3D model takes the design's shirt, so it can be designed and tried on
+    if (!(currentModel() && currentModel().front)) { const s0 = shirtFor(p); if (s0) { $('p-style').value = s0.id; renderModelLine(); } }
+    const m = currentModel();
     pickedPreset = id;
     document.querySelectorAll('.pp-card').forEach(c => { const on = c.dataset.id === id; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
     renderMoreSummary();
@@ -1292,6 +1350,7 @@
     if ($('p-tag').value) chips.push('Tag: ' + $('p-tag').value);
     let chart = null; try { chart = getSizeChart(getSizes()); } catch (e) { chart = true; }
     if (chart) chips.push('Measurements');
+    renderCardPreview();
     $('adv-sum').innerHTML = chips.length ? chips.map(c => `<span class="adv-chip">${esc(c)}</span>`).join('')
       : 'Sale, description, design type, 3D model, tag, measurements';
   }
@@ -1311,6 +1370,31 @@
   function showPreview() {
     const u = safeUrl($('p-img').value.trim()), img = $('p-prev');
     if (u) { img.src = $('p-img').value.trim(); img.style.display = ''; } else { img.removeAttribute('src'); img.style.display = 'none'; }
+    renderCardPreview();
+  }
+  /** The side card: the product as customers will see it in the app. */
+  function renderCardPreview() {
+    const box = $('pv-img'), img = $('p-prev'); if (!box) return;
+    let none = box.querySelector('.pv-none');
+    if (img.style.display === 'none') {
+      if (!none) { none = document.createElement('div'); none.className = 'pv-none'; box.appendChild(none); }
+      const m = currentModel();
+      none.innerHTML = '<i class="bi bi-image" style="font-size:26px;display:block;margin-bottom:6px;"></i>' +
+        (m ? `No photo yet. The app shows the ${esc(m.label)} model instead.` : 'No photo yet. Upload one, or pick a design and tick “Also use it as the product photo”.');
+    } else if (none) none.remove();
+    const name = $('p-name').value.trim();
+    $('pv-name').textContent = name || 'Product name'; $('pv-name').classList.toggle('empty', !name);
+    const regular = parseFloat($('p-price').value), d = discountValue();
+    if (isNaN(regular) || regular <= 0) $('pv-price').innerHTML = '<span style="color:var(--muted);">Price not set</span>';
+    else { const pay = discountOk(d) ? salePrice(regular, d) : regular;
+      $('pv-price').innerHTML = `<span class="now">${peso(pay)}</span>` + (d > 0 && discountOk(d) ? `<span class="was">${peso(regular)}</span><span class="off">-${d}%</span>` : ''); }
+    const sz = getSizes(), avail = $('p-avail').checked;
+    $('pv-meta').innerHTML = [
+      avail ? '<span class="st-on"><i class="bi bi-eye"></i> For sale in the app</span>' : '<span class="st-off"><i class="bi bi-eye-slash"></i> Hidden from customers</span>',
+      sz.length ? 'Sizes: ' + esc(sz.join(', ')) : 'No sizes picked yet',
+      $('p-cat').value && $('p-cat').value !== '__new' ? 'Category: ' + esc($('p-cat').value) : '',
+      $('p-tag').value ? 'Tag: ' + esc($('p-tag').value) : ''
+    ].filter(Boolean).join('<br>');
   }
   $('p-img').addEventListener('input', showPreview);
   $('p-prev').addEventListener('error', e => { e.target.style.display = 'none'; });
