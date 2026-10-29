@@ -152,6 +152,9 @@
     .adv-body > .f-sub:first-child { margin-top: 8px; }
     .fg-row.price-row.two { grid-template-columns: 1fr 1.35fr; }
     .adv-chip { display: inline-block; font-size: 12.5px; font-weight: 600; color: var(--orange); background: rgba(255,92,0,.1); border-radius: 999px; padding: 2px 9px; margin-right: 4px; }
+    .pp-card.on { border-color: var(--orange); box-shadow: 0 0 0 2px rgba(255,92,0,.35); }
+    .lp-photo { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); margin-top: 10px; cursor: pointer; }
+    .lp-photo input { accent-color: var(--orange); width: 16px; height: 16px; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .model-line b { color: var(--text); }
 
@@ -266,6 +269,19 @@
       </div>
       <div class="price-note" id="p-pay-note"></div>
 
+      <div class="f-sec">Design</div>
+      <div class="design-mode" role="radiogroup" aria-label="Design">
+        <label class="dm-opt"><input type="radio" name="p-start" value="none" checked>
+          <div><b id="p-start-none">No design yet</b><span id="p-start-none-sub">A plain item, or make its design later in the Design Studio.</span></div></label>
+        <label class="dm-opt"><input type="radio" name="p-start" value="lib">
+          <div><b>From the Design Library</b><span>Pick one of your Shop designs. It becomes this product's design.</span></div></label>
+      </div>
+      <div id="lib-pick" class="pp-box" hidden>
+        <div class="pp-head">Pick a design <span id="pp-for"></span></div>
+        <div class="pp-list" id="pp-list"></div>
+        <label class="lp-photo"><input type="checkbox" id="p-usephoto" checked> Also use it as the product photo</label>
+      </div>
+
       <div class="f-sec">Photo</div>
       <div class="fg">
         <div style="display:flex;gap:8px;align-items:center;">
@@ -318,12 +334,6 @@
               <div><b>Ready-made (can't be changed)</b><span>Sold exactly as you designed it, in its own colour. Customers only pick the size and how many.</span></div></label>
           </div>
           <div class="dm-state" id="p-dm-state"></div>
-
-          <div class="f-sub">Photo from a ready-made design</div>
-          <div class="pp-box" style="margin-top:0;">
-            <div class="pp-head">Click a ready-made design to use it as the photo <span id="pp-for"></span></div>
-            <div class="pp-list" id="pp-list"></div>
-          </div>
 
           <div class="f-sub">3D model, tag and measurements</div>
           <div class="fg"><label for="p-style">3D model</label>
@@ -428,6 +438,7 @@
       if (first) {
         first = false;
         const want = params.get('addModel'); if (want) openAddForStyle(want);
+        const fromDesign = params.get('design'); if (fromDesign) openAddForDesign(fromDesign);
         if (params.get('categories')) openCats();
         if (params.get('stock')) openStock(params.get('stock'));
       }
@@ -1084,39 +1095,56 @@
       .catch(() => { presetList = []; presetLoad = null; });
     return presetLoad;
   }
+  /** The Shop design picked in the form (it becomes the product's design when saved), or null. */
+  let pickedPreset = null;
+  const usableDesign = p => p.customization && p.customization.views && Object.keys(p.customization.views).length;
   async function renderPresetPicker() {
     const list = $('pp-list'), forEl = $('pp-for'), token = ++ppToken;
+    if ($('lib-pick').hidden) return;
     const m = currentModel();
-    if (!m || !m.front) { forEl.textContent = ''; list.innerHTML = '<div class="pp-empty">Ready-made designs show here once the product has a 3D model (a shirt name like "Classic Tee" is enough).</div>'; return; }
-    forEl.textContent = '· ' + m.label;
+    if (!m || !m.front) { forEl.textContent = ''; list.innerHTML = '<div class="pp-empty">Designs show here once the product has a 3D model (a shirt name like "Classic Tee" is enough, or pick one under More options).</div>'; return; }
+    forEl.textContent = '· shown on ' + m.label;
     if (!presetList) { list.innerHTML = '<div class="pp-empty">Loading…</div>'; await loadPresetList(); if (token !== ppToken) return; }
-    const mine = (presetList || []).filter(p => designModelId(p) === m.id && p.customization && p.customization.views && Object.keys(p.customization.views).length);
-    if (!mine.length) { list.innerHTML = `<div class="pp-empty">None made on ${esc(m.label)} yet. <a href="design.html?mode=preset&model=${encodeURIComponent(m.id)}" target="_blank" rel="noopener">Make one in the Design Studio</a></div>`; return; }
-    list.innerHTML = mine.map(p => `<button type="button" class="pp-card" data-id="${esc(p.id)}" title="Use “${esc(p.name || 'Preset')}” as the photo">
-      <span class="pp-img"><i class="bi bi-hourglass-split"></i></span><span class="pp-name">${esc(p.name || 'Preset')}${p.isActive === false ? ' <em>(hidden)</em>' : ''}</span></button>`).join('');
+    const mine = (presetList || []).filter(usableDesign);
+    if (!mine.length) { list.innerHTML = `<div class="pp-empty">No Shop designs yet. Add some on the <a href="design-library.html" target="_blank" rel="noopener">Design Library</a> page.</div>`; return; }
+    list.innerHTML = mine.map(p => `<button type="button" class="pp-card${p.id === pickedPreset ? ' on' : ''}" data-id="${esc(p.id)}" aria-pressed="${p.id === pickedPreset}" title="Use “${esc(p.name || 'Design')}” as this product's design">
+      <span class="pp-img"><i class="bi bi-hourglass-split"></i></span><span class="pp-name">${esc(p.name || 'Design')}${p.isActive === false ? ' <em>(hidden)</em>' : ''}</span></button>`).join('');
     for (const p of mine) {
       const slot = list.querySelector(`.pp-card[data-id="${CSS.escape(p.id)}"] .pp-img`); if (!slot) continue;
       try {
         const key = p.id + '|' + m.id + '|' + ((p.updatedAt && p.updatedAt.seconds) || '');
-        if (!previewCache[key]) previewCache[key] = (await renderDesignCanvas(m, p.customization, 180)).toDataURL('image/png');
+        if (!previewCache[key]) previewCache[key] = (await renderDesignCanvas(m, Object.assign({}, p.customization, { shirtStyle: m.id }), 180)).toDataURL('image/png');
         if (token !== ppToken) return;
         slot.innerHTML = `<img src="${previewCache[key]}" alt="">`;
       } catch (e) { slot.innerHTML = `<i class="bi bi-exclamation-triangle" title="${esc(e.message || String(e))}"></i>`; }
     }
   }
-  $('pp-list').addEventListener('click', async e => {
-    const card = e.target.closest('.pp-card'); if (!card || card.disabled) return;
-    const p = (presetList || []).find(x => x.id === card.dataset.id), m = currentModel(); if (!p || !m) return;
-    const cards = [...document.querySelectorAll('.pp-card')], save = $('save-btn');
-    cards.forEach(c => c.disabled = true); card.classList.add('busy'); save.disabled = true;
-    toast('Making the photo from “' + (p.name || 'Preset') + '”…');
+  /** Picks a Shop design for this product and, when ticked, makes the product photo from it. */
+  async function pickPreset(id) {
+    const p = (presetList || []).find(x => x.id === id), m = currentModel(); if (!p) return;
+    pickedPreset = id;
+    document.querySelectorAll('.pp-card').forEach(c => { const on = c.dataset.id === id; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
+    renderMoreSummary();
+    if (!$('p-usephoto').checked || !m || !m.front) { toast('“' + (p.name || 'Design') + '” will be this product\'s design', 'ok'); return; }
+    const cards = [...document.querySelectorAll('.pp-card')], save = $('save-btn'), card = document.querySelector(`.pp-card[data-id="${CSS.escape(id)}"]`);
+    cards.forEach(c => c.disabled = true); if (card) card.classList.add('busy'); save.disabled = true;
+    toast('Making the photo from “' + (p.name || 'Design') + '”…');
     try {
-      const file = await canvasToPngFile(await renderDesignCanvas(m, p.customization, 900), 'preset-' + p.id + '.png');
+      const file = await canvasToPngFile(await renderDesignCanvas(m, Object.assign({}, p.customization, { shirtStyle: m.id }), 900), 'preset-' + p.id + '.png');
       $('p-img').value = await uploadToCloudinary(file, { folder: 'kustomoimprenta/products' });
-      showPreview(); toast('Photo set from the design', 'ok');
-    } catch (err) { toast('Photo not made: ' + (err.message || err), 'err'); }
-    finally { cards.forEach(c => c.disabled = false); card.classList.remove('busy'); save.disabled = false; }
-  });
+      showPreview(); toast('Design picked, and the photo made from it', 'ok');
+    } catch (err) { toast('Design picked, but the photo wasn\'t made: ' + (err.message || err), 'err'); }
+    finally { cards.forEach(c => c.disabled = false); if (card) card.classList.remove('busy'); save.disabled = false; }
+  }
+  $('pp-list').addEventListener('click', e => { const card = e.target.closest('.pp-card'); if (card && !card.disabled) pickPreset(card.dataset.id); });
+  /** No design yet / From the Design Library. */
+  function setStartMode(v) {
+    document.querySelector(`input[name=p-start][value=${v}]`).checked = true;
+    $('lib-pick').hidden = v !== 'lib';
+    if (v !== 'lib') pickedPreset = null;
+    renderPresetPicker(); renderMoreSummary();
+  }
+  document.querySelectorAll('input[name=p-start]').forEach(r => r.addEventListener('change', () => setStartMode(r.value)));
   // The presets, the measurement columns and the model line follow the model: the one picked, or the shirt read off the name
   let modelTimer = null;
   function modelChanged() {
@@ -1157,6 +1185,9 @@
     document.querySelector('input[name=p-dmode][value=open]').checked = true;
     loadedPrice = null; tagTouched = false; loadedStock = null; formStock = {};
     $('adv').open = false;
+    pickedPreset = null; $('p-usephoto').checked = true;
+    $('p-start-none').textContent = 'No design yet'; $('p-start-none-sub').textContent = 'A plain item, or make its design later in the Design Studio.';
+    document.querySelector('input[name=p-start][value=none]').checked = true; $('lib-pick').hidden = true;
   }
   /** The line under the design choice: whether this product has its design yet, and where to make it. */
   function renderDesignState() {
@@ -1193,6 +1224,18 @@
     sizesTouched = true; renderFormStock(); setChart(null); renderPresetPicker(); renderModelLine(); renderMoreSummary();
     setTimeout(() => $('p-price').focus(), 80);
   }
+  /** Add form for a Shop design ("Sell as a product" on the Design Library): its name, description and design filled in. */
+  async function openAddForDesign(id) {
+    await loadPresetList();
+    const p = (presetList || []).find(x => x.id === id);
+    if (!p || !usableDesign(p)) { toast('That design wasn\'t found in the Design Library', 'warn'); return; }
+    openAdd(); renderQuickStart(false);
+    $('p-name').value = p.name || ''; $('p-desc').value = p.description || '';
+    if (models.some(m => m.id === designModelId(p))) $('p-style').value = designModelId(p);
+    renderModelLine(); setStartMode('lib');
+    await renderPresetPicker(); await pickPreset(id);
+    setTimeout(() => $('p-price').focus(), 80);
+  }
   function openEdit(id) {
     const p = all.find(x => x.id === id); if (!p) return;
     resetForm('Edit Product');
@@ -1211,6 +1254,7 @@
     $('p-avail').checked = p.isAvailable !== false;
     document.querySelector(`input[name=p-dmode][value=${p.designLocked === true ? 'locked' : 'open'}]`).checked = true;
     renderDesignState();
+    if (p.defaultCustomization) { $('p-start-none').textContent = 'Keep its design'; $('p-start-none-sub').textContent = 'Change it in the Design Studio from its card, or pick a Shop design instead.'; }
     setSizes(p.sizes || []);
     $('p-track').checked = tracksStock(p);
     if (tracksStock(p)) { loadedStock = {}; Object.keys(p.inventory).forEach(z => { loadedStock[z] = stockOf(p, z); }); formStock = Object.assign({}, loadedStock); }
@@ -1330,6 +1374,9 @@
     if (price < 20) { toast(`With ${disc}% off, customers would pay ${peso(price)}. It must be at least ₱20 (the lowest amount GCash accepts).`, 'warn'); reveal('p-disc'); return; }
     if (img && !safeUrl(img)) { toast('The photo must be an https:// link', 'warn'); return; }
     if (!sizes.length) { toast('Pick at least one size', 'warn'); return; }
+    const fromLib = document.querySelector('input[name=p-start]:checked').value === 'lib';
+    const preset = fromLib && pickedPreset ? (presetList || []).find(x => x.id === pickedPreset) : null;
+    if (fromLib && !preset) { toast('Pick a design from the list, or choose “No design yet”', 'warn'); $('lib-pick').scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
     let chart;
     try { chart = getSizeChart(sizes); } catch (msg) { $('adv').open = true; toast(String(msg), 'warn'); return; }
     if (track && sizes.every(z => !(formStock[z] > 0)) && !confirm("Every size is at 0 in storage, so customers can't buy it yet. Save anyway?")) return;
@@ -1339,6 +1386,7 @@
     const locked = $('p-locked').checked;
     const data = { name, category: cat2, price, originalPrice: disc ? regular : null, description: desc, imageUrl: img || null, tag: tag || '', shirtStyle: style || '', isAvailable: avail, sizes, designLocked: locked };
     if (disc) data.discountPercent = disc; else if (eid) data.discountPercent = FV.delete();
+    if (preset) { const m = currentModel(); data.defaultCustomization = Object.assign({}, preset.customization, m ? { shirtStyle: m.id } : {}); }
     if (chart) data.sizeChart = chart; else if (eid) data.sizeChart = FV.delete();
     // Stock: a new count is saved as is; on a product already counted only the change made here is added, so an
     // order taken off while the form was open isn't undone
@@ -1359,7 +1407,9 @@
       closeModal();
       // A new product goes on to its design; a ready-made one can't be sold without it
       const saved = all.find(x => x.id === id);
-      if (!eid && (locked || confirm('Make its starting design in the Design Studio now? (You can also do it later from its card.)'))) {
+      if (preset) {
+        toast(`“${name}” has the design “${preset.name || 'Design'}”. Change it any time in the Design Studio.`, 'ok');
+      } else if (!eid && (locked || confirm('Make its starting design in the Design Studio now? (You can also do it later from its card.)'))) {
         location.href = 'design.html?product=' + encodeURIComponent(id);
       } else if (locked && !(saved && saved.defaultCustomization)) {
         toast('Ready-made, but it has no design yet. Make it with “Make the design” on its card.', 'warn');

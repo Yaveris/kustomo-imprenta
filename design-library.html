@@ -46,6 +46,18 @@
   .grp-head { display:flex; align-items:baseline; gap:8px; margin:18px 0 10px; font-weight:700; font-size:15px; }
   .grp-head span { color:var(--muted); font-weight:500; font-size:13px; }
   .bar { height:8px; border-radius:4px; background:linear-gradient(90deg,var(--orange),#FF2D78); }
+  details.sec { border:1px solid var(--border); border-radius:12px; background:var(--card-bg); margin-bottom:18px; }
+  details.sec > summary { list-style:none; cursor:pointer; padding:14px 18px; display:flex; align-items:center; gap:10px; font-weight:700; font-size:16px; }
+  details.sec > summary::-webkit-details-marker { display:none; }
+  details.sec > summary:focus-visible { outline:2px solid var(--orange); outline-offset:-2px; border-radius:12px; }
+  details.sec > summary > .bi:first-child { color:var(--orange); }
+  .sec-count { color:var(--muted); font-weight:500; font-size:14px; }
+  .sec-chev { margin-left:auto; color:var(--muted); transition:transform .18s; }
+  details.sec[open] > summary .sec-chev { transform:rotate(180deg); }
+  .sec-body { padding:0 18px 18px; }
+  .sec-note { font-size:13.5px; color:var(--muted); margin:0 0 14px; line-height:1.5; }
+  .sell { display:inline-flex; align-items:center; gap:5px; font-size:13px; font-weight:600; color:var(--orange); text-decoration:none; margin-top:2px; }
+  .sell:hover { text-decoration:underline; }
 </style>
 
 <div id="main">
@@ -72,16 +84,24 @@
         <select id="f-model"><option value="">Any model</option></select>
         <span id="count" style="font-size:13.5px;color:var(--muted);"></span>
       </div>
-      <div id="summary" style="font-size:15px;margin-bottom:14px;"></div>
-      <div id="grid"><div class="spinner"></div></div>
-      <div class="card" id="starters" style="padding:16px 18px;margin-top:22px;" hidden>
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-          <div style="flex:1;min-width:240px;"><div style="font-weight:700;font-size:16px;"><i class="bi bi-gift" style="color:var(--orange);"></i> Starter designs <span id="st-count" style="color:var(--muted);font-weight:500;"></span></div>
-          <div style="font-size:13.5px;color:var(--muted);margin-top:3px;">Included with the system. Add them to your shop as they are, then change the words or colours in the Design Studio.</div></div>
-          <button class="btn-grad" id="st-addall" onclick="addAllStarters()"><i class="bi bi-plus-lg"></i> Add all</button>
+      <details class="sec" id="sec-shop" open>
+        <summary><i class="bi bi-stars"></i> Shop designs <span class="sec-count" id="shop-count"></span><i class="bi bi-chevron-down sec-chev"></i></summary>
+        <div class="sec-body">
+          <p class="sec-note">Designs customers can add to their shirts in the app's designer. They are not products: to sell an item that comes with one of these designs, press <b>Sell as a product</b>.</p>
+          <div id="summary" style="font-size:15px;margin-bottom:14px;"></div>
+          <div id="grid"><div class="spinner"></div></div>
         </div>
-        <div class="lib-grid" id="st-grid"></div>
-      </div>
+      </details>
+      <details class="sec" id="starters" hidden>
+        <summary><i class="bi bi-gift"></i> Starter designs <span class="sec-count" id="st-count"></span><i class="bi bi-chevron-down sec-chev"></i></summary>
+        <div class="sec-body">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+            <div style="flex:1;min-width:240px;font-size:13.5px;color:var(--muted);">Included with the system. Add one to your Shop designs as it is, then change the words or colours in the Design Studio.</div>
+            <button class="btn-grad" id="st-addall" onclick="addAllStarters()"><i class="bi bi-plus-lg"></i> Add all</button>
+          </div>
+          <div class="lib-grid" id="st-grid"></div>
+        </div>
+      </details>
     </section>
 
     <!-- Upload & import -->
@@ -175,6 +195,7 @@
           <div class="name" title="${esc(p.name || '')}">${esc(p.name || 'Design')}</div>
           <div>${stateLabel(p)}<span class="pill">${esc(p.category || 'No group')}</span></div>
           <div class="meta">${m ? esc(m.label) + ' only' : 'Every product'} · ${esc(sides)}${p.editableText === false ? ' · words locked' : ''}${p.recolorable === false ? ' · colours locked' : ''}</div>
+          <a class="sell" href="products.html?design=${encodeURIComponent(p.id)}"><i class="bi bi-bag-plus"></i> Sell as a product</a>
           <div class="acts">
             <a class="btn-ghost sm" href="design.html?preset=${encodeURIComponent(p.id)}">Edit</a>
             <button class="btn-ghost sm" onclick="togglePub('${p.id}')">${p.isActive === false ? 'Show' : 'Hide'}</button>
@@ -190,8 +211,9 @@
     const list = filtered();
     const live = presets.filter(p => stateOf(p) === 'live').length, drafts = presets.filter(p => stateOf(p) === 'draft').length, sched = presets.length - live - drafts;
     $('summary').innerHTML = presets.length
-      ? `<strong>${presets.length} design${presets.length === 1 ? '' : 's'}</strong> in your shop · <span style="color:#00E676;">${live} shown in the app</span> · ${drafts} hidden${sched ? ` · ${sched} scheduled / ended` : ''}${list.length !== presets.length ? ` <span style="color:var(--muted);">(${list.length} match the filters)</span>` : ''}`
-      : '<strong>Your shop has no designs yet.</strong> Add the starter designs below, make one in the Design Studio, or upload artwork.';
+      ? `<strong>${presets.length} shop design${presets.length === 1 ? '' : 's'}</strong> · <span style="color:#00E676;">${live} shown in the app's designer</span> · ${drafts} hidden${sched ? ` · ${sched} scheduled / ended` : ''}${list.length !== presets.length ? ` <span style="color:var(--muted);">(${list.length} match the filters)</span>` : ''}`
+      : '<strong>No shop designs yet.</strong> Add starter designs below, make one in the Design Studio, or upload artwork.';
+    $('shop-count').textContent = '· ' + presets.length;
     $('count').textContent = '';
     if (!presets.length) { $('grid').innerHTML = ''; renderStarters(); return; }
     if (!list.length) { $('grid').innerHTML = '<p style="color:var(--muted);">No designs match the filters.</p>'; renderStarters(); return; }
@@ -209,12 +231,17 @@
   }
 
   // ── Starter designs (js/starter-designs.json): shown in full, added with one click ──
-  let starters = [];
+  let starters = [], startersOpened = false;
+  /** Which sections are open is remembered in this browser. */
+  const keep = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
+  [['sec-shop', 'dl-shop'], ['starters', 'dl-starters']].forEach(([id, k]) => $(id).addEventListener('toggle', () => keep(k, $(id).open ? '1' : '0')));
+  if (keep('dl-shop') === '0') $('sec-shop').open = false;
   const starterAdded = s => presets.some(p => p.id === s.id);
   function renderStarters() {
     if (!starters.length) return;
     const left = starters.filter(s => !starterAdded(s));
     $('starters').hidden = false;
+    if (!startersOpened) { startersOpened = true; const saved = keep('dl-starters'); $('starters').open = saved === null ? !presets.length : saved === '1'; }
     $('st-count').textContent = `· ${starters.length} included, ${starters.length - left.length} added`;
     $('st-addall').hidden = !left.length;
     $('st-addall').innerHTML = `<i class="bi bi-plus-lg"></i> Add all ${left.length}`;
@@ -223,7 +250,7 @@
         <div class="body">
           <div class="name">${esc(s.name)}</div>
           <div class="meta">${esc(s.category)} · ${esc(s.description || '')}</div>
-          <div class="acts">${starterAdded(s) ? '<span class="pill live">In your shop</span>' : `<button class="btn-ghost" style="padding:5px 12px;" onclick="addStarter('${s.id}')"><i class="bi bi-plus-lg"></i> Add</button>`}</div>
+          <div class="acts">${starterAdded(s) ? `<span class="pill live">In Shop designs</span><a class="sell" href="products.html?design=${encodeURIComponent(s.id)}"><i class="bi bi-bag-plus"></i> Sell as a product</a>` : `<button class="btn-ghost" style="padding:5px 12px;" onclick="addStarter('${s.id}')"><i class="bi bi-plus-lg"></i> Add</button>`}</div>
         </div></div>`).join('');
     drawThumbs();
   }
@@ -237,7 +264,7 @@
   }
   async function addStarter(id) {
     const i = starters.findIndex(s => s.id === id); if (i < 0) return;
-    try { await db.collection('designPresets').doc(id).set(starterDoc(starters[i], i)); toast('“' + starters[i].name + '” added. Customers can pick it in the app now.', 'ok'); await load(); }
+    try { await db.collection('designPresets').doc(id).set(starterDoc(starters[i], i)); toast('“' + starters[i].name + '” added to Shop designs. Customers can add it to their shirts in the app. To sell it as an item, press Sell as a product.', 'ok'); await load(); }
     catch (e) { toast('Not added: ' + e.message, 'err'); }
   }
   async function addAllStarters() {
@@ -245,7 +272,7 @@
     if (!left.length) return;
     const batch = db.batch();
     left.forEach(([s, i]) => batch.set(db.collection('designPresets').doc(s.id), starterDoc(s, i)));
-    try { await batch.commit(); toast(left.length + ' starter designs added. Customers can pick them in the app now.', 'ok'); await load(); }
+    try { await batch.commit(); toast(left.length + ' starter designs added to Shop designs. Customers can add them to their shirts in the app.', 'ok'); await load(); }
     catch (e) { toast('Not added: ' + e.message, 'err'); }
   }
   async function drawThumbs() {
