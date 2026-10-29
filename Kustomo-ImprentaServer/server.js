@@ -1,5 +1,5 @@
 /**
- * FitFusion payment server: the GCash payment steps that need PayMongo's secret key, run on Render (render.com)
+ * Kustomo-Imprenta payment server: the GCash payment steps that need PayMongo's secret key, run on Render (render.com)
  * as a Web Service, so Firebase can stay on the free Spark plan.
  *
  * The shop pastes the key on the admin site's Payments page. It is saved in Firestore `secrets/paymongo`, a document
@@ -138,7 +138,7 @@ function centavos(v) {
 /** Where GCash returns to afterwards: the app's own link or an https page. */
 function appLink(v) {
   const s = String(v || '');
-  if (!/^(fitfusion:\/\/|kustomoimprenta:\/\/|https:\/\/)\S{1,300}$/i.test(s)) throw bad('Bad return link.');
+  if (!/^(kustomoimprenta:\/\/|https:\/\/)\S{1,300}$/i.test(s)) throw bad('Bad return link.');
   return s;
 }
 function sourceId(v) {
@@ -149,8 +149,13 @@ function sourceId(v) {
 const str = (v, n = 300) => String(v == null ? '' : v).slice(0, n);
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
-/** The order the app sent, kept to the fields an order has. The amount paid must match it. */
-function cleanOrder(o, uid, amountCentavos) {
+/** Shop Settings defaults: the same as the admin site's SHOP_DEFAULTS (js/firebase.js), used until they are saved. */
+const SHOP_DEFAULTS = { shippingFee: 99, freeShippingMin: 1500, downpaymentEnabled: true, downpaymentPercent: 50, downpaymentMinItems: 10 };
+
+/** The order the app sent, kept to the fields an order has, then priced again here from the products and the shop
+ *  settings in Firestore: a changed app can't lower a price, the shipping or the downpayment. The amount paid must
+ *  match the price worked out here. */
+async function cleanOrder(o, uid, amountCentavos) {
   if (!o || typeof o !== 'object') return null;
   const items = Array.isArray(o.items) ? o.items.slice(0, 60).filter(it => it && typeof it === 'object') : [];
   if (!items.length) throw bad('The order has no items.');
@@ -165,9 +170,47 @@ function cleanOrder(o, uid, amountCentavos) {
   };
   const lat = Number(o.addressLat), lng = Number(o.addressLng);
   if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) { order.addressLat = lat; order.addressLng = lng; }
+  await priceOrder(order, o);
   const due = Math.round((order.isDownpayment ? order.downpaymentAmount : order.totalAmount) * 100);
   if (Math.abs(due - amountCentavos) > 1) throw bad('The amount doesn\'t match the order.');
   return order;
+}
+
+/** Sets each item's price from its product and the order's subtotal, shipping, total and downpayment from Shop
+ *  Settings. Refuses an order whose prices the app showed differently (a price or setting changed meanwhile, or a
+ *  changed app), a product that is gone or not for sale, and a downpayment the shop doesn't offer for it. */
+async function priceOrder(order, sent) {
+  const changed = () => bad('Prices have changed since the cart was opened. Please open your cart again to see the new total.');
+  const ids = [...new Set(order.items.map(it => str(it.productId, 100)))];
+  if (ids.some(id => !/^[\w-]{1,100}$/.test(id))) throw bad('An item in the cart has no product. Please remove it and add it again.');
+  const [snaps, shopSnap] = await Promise.all([Promise.all(ids.map(id => db.doc('products/' + id).get())), db.doc('appConfig/shop').get()]);
+  const products = {};
+  snaps.forEach((p, i) => { products[ids[i]] = p.exists ? (p.data() || {}) : null; });
+  let subtotal = 0, count = 0;
+  for (const it of order.items) {
+    const p = products[str(it.productId, 100)];
+    if (!p || p.isAvailable === false) throw bad(`${str(it.productName || (p && p.name) || 'An item', 80)} is no longer for sale. Please remove it from your cart.`);
+    const price = num(p.price), qty = Number(it.quantity);
+    if (!(price > 0)) throw bad(`${str(p.name || 'An item', 80)} has no price yet. Please contact the shop.`);
+    if (!Number.isInteger(qty) || qty < 1 || qty > 999) throw bad('Bad quantity.');
+    if (Math.abs(num(it.price) - price) > 0.005) throw changed();
+    it.price = price; it.quantity = qty;
+    subtotal += price * qty; count += qty;
+  }
+  const shop = Object.assign({}, SHOP_DEFAULTS, shopSnap.exists ? shopSnap.data() : {});
+  const fee = num(shop.shippingFee), freeFrom = num(shop.freeShippingMin);
+  const shipping = fee <= 0 || (freeFrom > 0 && subtotal >= freeFrom) ? 0 : fee;
+  const total = subtotal + shipping;
+  if (Math.abs(num(sent.subtotal) - subtotal) > 0.5 || Math.abs(num(sent.shippingFee) - shipping) > 0.5 || Math.abs(num(sent.totalAmount) - total) > 0.5) throw changed();
+  Object.assign(order, { subtotal, shippingFee: shipping, totalAmount: total });
+  if (order.isDownpayment) {
+    if (shop.downpaymentEnabled === false || count < num(shop.downpaymentMinItems)) throw bad('A downpayment isn\'t offered for this order. Please pay the full amount.');
+    // The app rounds to whole pesos (half to even), so its figure may differ from this one by ₱1: keep the app's then
+    const exact = total * num(shop.downpaymentPercent) / 100, given = num(sent.downpaymentAmount);
+    if (Math.abs(given - exact) > 1 || given !== Math.round(given)) throw changed();
+    const down = given;
+    Object.assign(order, { downpaymentAmount: down, remainingAmount: total - down });
+  } else Object.assign(order, { downpaymentAmount: 0, remainingAmount: 0 });
 }
 
 // ── Saving the order (the same as the app's OrderService.saveOrder) ─────────────────────────────────
@@ -325,7 +368,9 @@ const routes = {
     const auth = await requireCustomer(req);
     const key = await secretKey();
     const amount = centavos(d.amountCentavos);
-    const order = d.order ? cleanOrder(d.order, auth.uid, amount) : null;
+    // Older app versions sent no order and saved it themselves, which the database no longer allows
+    if (!d.order) throw bad('Please update the app to the latest version to pay.');
+    const order = await cleanOrder(d.order, auth.uid, amount);
     ensureWebhook().catch(e => console.warn('PayMongo notices not set up: ' + e.message));
     const data = await paymongo(key, 'POST', '/sources', {
       data: { attributes: {
@@ -452,7 +497,7 @@ const server = http.createServer(async (req, res) => {
   const path = (req.url || '/').split('?')[0].replace(/\/+$/, '') || '/';
   try {
     if (req.method === 'OPTIONS') return send(res, 204);
-    if (req.method === 'GET' && (path === '/health' || path === '/')) return send(res, 200, { ok: true, service: 'fitfusion-payments' });
+    if (req.method === 'GET' && (path === '/health' || path === '/')) return send(res, 200, { ok: true, service: 'kustomoimprenta-payments' });
     if (req.method === 'POST' && path === '/paymongo/webhook') return await webhook(req, res);
     const m = /^\/paymongo\/([a-z-]+)$/.exec(path);
     const route = m && Object.prototype.hasOwnProperty.call(routes, m[1]) ? routes[m[1]] : null;
@@ -469,6 +514,6 @@ const server = http.createServer(async (req, res) => {
 
 if (require.main === module) {
   const port = Number(process.env.PORT) || 10000;
-  server.listen(port, () => console.log('FitFusion payment server on port ' + port));
+  server.listen(port, () => console.log('Kustomo-Imprenta payment server on port ' + port));
 }
 module.exports = { server, routes, ApiError, finishSource, signatureOk, cleanOrder };

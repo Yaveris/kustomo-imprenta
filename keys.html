@@ -498,10 +498,6 @@ service cloud.firestore {
     // A switched-off staff account loses access here too, not only on the website
     function isAdmin() { return signedIn() &amp;&amp; me().get('role', 'user') in ['admin', 'super_admin'] &amp;&amp; active(); }
     function isSuperAdmin() { return signedIn() &amp;&amp; me().get('role', 'user') == 'super_admin' &amp;&amp; active(); }
-    // A customer the shop switched off can't place orders (no profile yet counts as not switched off)
-    function mayOrder() {
-      return !exists(/databases/$(database)/documents/users/$(request.auth.uid)) || active();
-    }
     // A field left as it was (also true when it wasn't there before and still isn't)
     function unchanged(field) {
       return request.resource.data.get(field, null) == resource.data.get(field, null);
@@ -516,8 +512,9 @@ service cloud.firestore {
                         &amp;&amp; request.resource.data.get('role', 'user') == 'user'
                         &amp;&amp; request.resource.data.get('status', 'Active') != 'Disabled')
                     || isSuperAdmin();
+      // An Admin manages customers only; a staff account (and its status) is changed only by a Super Admin
       allow update: if (signedIn() &amp;&amp; request.auth.uid == uid &amp;&amp; unchanged('role') &amp;&amp; unchanged('status'))
-                    || (isAdmin() &amp;&amp; unchanged('role'))
+                    || (isAdmin() &amp;&amp; unchanged('role') &amp;&amp; resource.data.get('role', 'user') == 'user')
                     || isSuperAdmin();
       allow delete: if isSuperAdmin();
 
@@ -529,11 +526,11 @@ service cloud.firestore {
     }
 
     // ── Orders ────────────────────────────────────────────────────────────────
-    // A customer places orders in their own name and reads their own; staff handle everything after that.
+    // A customer reads their own orders. Orders are saved by the payment server once PayMongo confirms the payment
+    // (it uses its service account, which these rules don't limit), so the app can't save an unpaid order.
     match /orders/{orderId} {
       allow read: if (signedIn() &amp;&amp; resource.data.userId == request.auth.uid) || isAdmin();
-      allow create: if (signedIn() &amp;&amp; request.resource.data.userId == request.auth.uid &amp;&amp; mayOrder()) || isAdmin();
-      allow update, delete: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     // ── Order chats ───────────────────────────────────────────────────────────
@@ -542,13 +539,25 @@ service cloud.firestore {
         return signedIn() &amp;&amp; get(/databases/$(database)/documents/chats/$(chatId)).data.userId == request.auth.uid;
       }
       allow read: if (signedIn() &amp;&amp; resource.data.userId == request.auth.uid) || isAdmin();
-      allow create: if (signedIn() &amp;&amp; request.resource.data.userId == request.auth.uid) || isAdmin();
-      allow update: if (signedIn() &amp;&amp; resource.data.userId == request.auth.uid &amp;&amp; unchanged('userId')) || isAdmin();
+      // A customer opens a chat only for an order of their own (the payment server opens it with the order)
+      allow create: if (signedIn() &amp;&amp; request.resource.data.userId == request.auth.uid
+                        &amp;&amp; get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.userId == request.auth.uid)
+                    || isAdmin();
+      // A customer only marks that they wrote and what they asked for
+      allow update: if (signedIn() &amp;&amp; resource.data.userId == request.auth.uid
+                        &amp;&amp; request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastMessageAt', 'openRequest']))
+                    || isAdmin();
       allow delete: if isAdmin();
 
       match /messages/{msgId} {
-        allow read, create, update: if chatOwner() || isAdmin();
-        allow delete: if isAdmin();
+        allow read: if chatOwner() || isAdmin();
+        // A customer writes as themselves; only the shop answers requests or writes as the shop
+        allow create: if (chatOwner()
+                          &amp;&amp; request.resource.data.get('senderRole', '') == 'user'
+                          &amp;&amp; request.resource.data.get('senderId', '') == request.auth.uid
+                          &amp;&amp; request.resource.data.get('requestStatus', '') in ['', 'Open'])
+                      || isAdmin();
+        allow update, delete: if isAdmin();
       }
     }
 
@@ -601,7 +610,7 @@ service cloud.firestore {
 
     // ── Payments ──────────────────────────────────────────────────────────────
     // The PayMongo secret key (Payments page): a Super Admin can save or replace it, nobody can read it back.
-    // Only the payment server (FitFusionServer, with its service account) reads it.
+    // Only the payment server (Kustomo-ImprentaServer, with its service account) reads it.
     match /secrets/{doc} {
       allow read: if false;
       allow write: if isSuperAdmin();

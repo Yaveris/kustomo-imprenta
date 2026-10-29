@@ -146,7 +146,13 @@
     details.adv > summary .bi-chevron-down { margin-left: auto; color: var(--muted); transition: transform .18s; }
     details.adv[open] > summary .bi-chevron-down { transform: rotate(180deg); }
     details.adv > .adv-body { padding: 4px 16px 16px; }
-    .model-line { font-size: 14px; color: var(--muted); margin-top: 8px; }
+    .model-line { font-size: 14px; color: var(--muted); margin: -4px 0 14px; }
+    .f-lead { font-size: 14px; color: var(--muted); margin: 0 0 18px; }
+    .f-sub { font-size: 13px; font-weight: 700; color: var(--text); margin: 18px 0 8px; }
+    .adv-body > .f-sub:first-child { margin-top: 8px; }
+    .fg-row.price-row.two { grid-template-columns: 1fr 1.35fr; }
+    .adv-chip { display: inline-block; font-size: 12.5px; font-weight: 600; color: var(--orange); background: rgba(255,92,0,.1); border-radius: 999px; padding: 2px 9px; margin-right: 4px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .model-line b { color: var(--text); }
 
     /* ── Categories pop-up ── */
@@ -241,8 +247,10 @@
       <input type="hidden" id="edit-id">
       <div class="qs" id="quick-start" hidden></div>
 
+      <p class="f-lead">Fill in the starred fields and press Save. Sale price, description, design type and the rest are under <b>More options</b>.</p>
+
       <div class="f-sec first">Basics</div>
-      <div class="fg-row">
+      <div class="fg-row" id="p-basics">
         <div class="fg"><label for="p-name">Name *</label><input type="text" id="p-name" placeholder="e.g. Classic Cotton Tee" maxlength="80"></div>
         <div class="fg"><label for="p-cat">Category *</label>
           <select id="p-cat"></select>
@@ -252,26 +260,11 @@
           </div>
         </div>
       </div>
-      <div class="fg-row price-row">
+      <div class="fg-row price-row two">
         <div class="fg"><label for="p-price">Price (₱) *</label><input type="number" id="p-price" placeholder="499" min="20" step="0.01"></div>
-        <div class="fg"><label for="p-disc">Discount (%)</label><input type="number" id="p-disc" placeholder="0 = none" min="0" max="90" step="1" inputmode="numeric"></div>
         <div class="fg"><label id="p-pay-lbl">Customers pay</label><div class="price-tag empty" id="p-pay" role="status" aria-live="polite" aria-labelledby="p-pay-lbl">Enter a price</div></div>
       </div>
       <div class="price-note" id="p-pay-note"></div>
-      <div class="fg"><label for="p-desc">Description</label><textarea id="p-desc" placeholder="A short line about the product…" rows="2"></textarea></div>
-      <label class="switch-row" for="p-avail">
-        <span class="avail"><input type="checkbox" id="p-avail" checked><span class="avail-sl"></span></span>
-        <span>For sale in the app<small>Turn off to hide it from customers without deleting it.</small></span>
-      </label>
-
-      <div class="f-sec">Design</div>
-      <div class="design-mode" role="radiogroup" aria-label="Can customers change the design?">
-        <label class="dm-opt"><input type="radio" name="p-dmode" value="open" checked>
-          <div><b>Customers can change it</b><span>Your design is a starting point. Customers can edit it, add their own text and pick any colour.</span></div></label>
-        <label class="dm-opt"><input type="radio" name="p-dmode" value="locked" id="p-locked">
-          <div><b>Ready-made (can't be changed)</b><span>Sold exactly as you designed it, in its own colour. Customers only pick the size and how many.</span></div></label>
-      </div>
-      <div class="dm-state" id="p-dm-state"></div>
 
       <div class="f-sec">Photo</div>
       <div class="fg">
@@ -281,10 +274,6 @@
         </div>
         <img id="p-prev" alt="" style="display:none;margin-top:10px;max-height:130px;max-width:100%;border-radius:8px;border:1px solid var(--border);">
         <div class="fg-help">No photo? The app shows the 3D model's picture instead.</div>
-        <div class="pp-box">
-          <div class="pp-head">Or click a ready-made design to use it as the photo <span id="pp-for"></span></div>
-          <div class="pp-list" id="pp-list"></div>
-        </div>
       </div>
 
       <div class="f-sec">Sizes &amp; stock</div>
@@ -306,9 +295,37 @@
         <div class="fg-help" id="p-stock-help"></div>
       </div>
 
+      <label class="switch-row" for="p-avail" style="margin-top:18px;">
+        <span class="avail"><input type="checkbox" id="p-avail" checked><span class="avail-sl"></span></span>
+        <span>For sale in the app<small>Turn off to hide it from customers without deleting it.</small></span>
+      </label>
+
       <details class="adv" id="adv">
-        <summary><i class="bi bi-gear"></i> Advanced <small>3D model, tag, measurements</small><i class="bi bi-chevron-down"></i></summary>
+        <summary><i class="bi bi-sliders"></i> More options <small id="adv-sum"></small><i class="bi bi-chevron-down"></i></summary>
         <div class="adv-body">
+          <div class="f-sub">Sale</div>
+          <div class="fg" style="max-width:260px;"><label for="p-disc">Discount (%)</label><input type="number" id="p-disc" placeholder="0 = none" min="0" max="90" step="1" inputmode="numeric">
+            <div class="fg-help">Customers see the old price crossed out and a "-%" badge.</div></div>
+
+          <div class="f-sub">Description</div>
+          <div class="fg"><label for="p-desc" class="sr-only">Description</label><textarea id="p-desc" placeholder="A short line about the product…" rows="2"></textarea></div>
+
+          <div class="f-sub">Design</div>
+          <div class="design-mode" role="radiogroup" aria-label="Can customers change the design?">
+            <label class="dm-opt"><input type="radio" name="p-dmode" value="open" checked>
+              <div><b>Customers can change it</b><span>Your design is a starting point. Customers can edit it, add their own text and pick any colour.</span></div></label>
+            <label class="dm-opt"><input type="radio" name="p-dmode" value="locked" id="p-locked">
+              <div><b>Ready-made (can't be changed)</b><span>Sold exactly as you designed it, in its own colour. Customers only pick the size and how many.</span></div></label>
+          </div>
+          <div class="dm-state" id="p-dm-state"></div>
+
+          <div class="f-sub">Photo from a ready-made design</div>
+          <div class="pp-box" style="margin-top:0;">
+            <div class="pp-head">Click a ready-made design to use it as the photo <span id="pp-for"></span></div>
+            <div class="pp-list" id="pp-list"></div>
+          </div>
+
+          <div class="f-sub">3D model, tag and measurements</div>
           <div class="fg"><label for="p-style">3D model</label>
             <select id="p-style"><option value="">Automatic (a shirt is read from the name)</option></select>
             <div class="fg-help">What the app shows in the 3D preview, the designer and AR try-on. New ones are added on <a href="models.html" style="color:var(--orange);">3D Models</a>.</div>
@@ -974,7 +991,7 @@
   let formStock = {}, loadedStock = null;   // loadedStock: the counts shown when a product already counted was opened
   const getSizes = () => [...document.querySelectorAll('#size-pills .sz.on')].map(s => s.dataset.v);
   const setSizes = arr => document.querySelectorAll('#size-pills .sz').forEach(s => { s.classList.toggle('on', arr.includes(s.dataset.v)); s.setAttribute('aria-pressed', arr.includes(s.dataset.v)); });
-  document.querySelectorAll('#size-pills .sz').forEach(s => s.addEventListener('click', () => { s.classList.toggle('on'); s.setAttribute('aria-pressed', s.classList.contains('on')); renderFormStock(); renderSizeChart(); }));
+  document.querySelectorAll('#size-pills .sz').forEach(s => s.addEventListener('click', () => { sizesTouched = true; s.classList.toggle('on'); s.setAttribute('aria-pressed', s.classList.contains('on')); renderFormStock(); renderSizeChart(); }));
   $('p-track').addEventListener('change', renderFormStock);
   function renderFormStock() {
     const on = $('p-track').checked, sizes = getSizes();
@@ -1109,11 +1126,11 @@
       if (!chartTouched()) { const m = currentModel(); scCols = defaultCols(m && m.kind); renderSizeChart(); }
     }, 250);
   }
-  /** Under the description: which 3D model the app will use, with a shortcut to change it (it lives under Advanced). */
+  /** Under the name and category: which 3D model the app will use, with a shortcut to change it (it lives under More options). */
   function renderModelLine() {
     const m = currentModel(), picked = !!$('p-style').value;
     let line = $('model-line');
-    if (!line) { line = document.createElement('div'); line.id = 'model-line'; line.className = 'model-line'; $('p-desc').closest('.fg').appendChild(line); }
+    if (!line) { line = document.createElement('div'); line.id = 'model-line'; line.className = 'model-line'; $('p-basics').after(line); }
     line.innerHTML = m ? `<i class="bi bi-badge-3d"></i> 3D model: <b>${esc(m.label)}</b>${picked ? '' : ' (from the name)'} · <button type="button" class="linkbtn" onclick="openModelPicker()">Change</button>`
       : `<i class="bi bi-badge-3d"></i> No 3D model, so customers can't design it or try it on. <button type="button" class="linkbtn" onclick="openModelPicker()">Pick one</button>`;
   }
@@ -1157,8 +1174,8 @@
     resetForm('Add Product');
     fillCatSelect(cat !== 'all' ? cat : '');
     showPreview(); updatePriceTag();
-    setSizes([]); $('p-track').checked = true; renderFormStock();
-    setChart(null); renderPresetPicker(); renderModelLine(); renderQuickStart(true); renderDesignState();
+    sizesTouched = false; setSizes([]); $('p-track').checked = true; defaultSizes(); renderFormStock();
+    setChart(null); renderPresetPicker(); renderModelLine(); renderQuickStart(true); renderDesignState(); renderMoreSummary();
     $('prod-overlay').classList.add('show');
     setTimeout(() => $('p-name').focus(), 60);
   }
@@ -1173,7 +1190,7 @@
     fillCatSelect(productCategory({ category: want }) || want);
     $('p-style').value = m.id;
     setSizes(m.kind === 'top' || s ? ['S', 'M', 'L', 'XL'] : ['One Size']);
-    renderFormStock(); setChart(null); renderPresetPicker(); renderModelLine();
+    sizesTouched = true; renderFormStock(); setChart(null); renderPresetPicker(); renderModelLine(); renderMoreSummary();
     setTimeout(() => $('p-price').focus(), 80);
   }
   function openEdit(id) {
@@ -1199,7 +1216,7 @@
     if (tracksStock(p)) { loadedStock = {}; Object.keys(p.inventory).forEach(z => { loadedStock[z] = stockOf(p, z); }); formStock = Object.assign({}, loadedStock); }
     renderFormStock();
     setChart(p.sizeChart);
-    renderPresetPicker(); renderModelLine(); renderQuickStart(false);
+    renderPresetPicker(); renderModelLine(); renderQuickStart(false); renderMoreSummary();
     $('prod-overlay').classList.add('show');
   }
   /** Add form filled in from another product, as a new product (a new colour or cut of the same thing). Its stock starts at 0. */
@@ -1214,6 +1231,38 @@
     $('p-name').focus(); $('p-name').select();
   }
   function closeModal() { $('prod-overlay').classList.remove('show'); }
+
+  /** Opens More options when the field is in it, then puts the cursor there. */
+  function reveal(id) {
+    const el = $(id), d = el && el.closest('details');
+    if (d) d.open = true;
+    if (el) { el.focus(); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+  }
+  /** The line on the More options bar: what is set in there, so nothing is hidden by surprise. */
+  function renderMoreSummary() {
+    const chips = [];
+    const d = discountValue(); if (d > 0 && discountOk(d)) chips.push(`${d}% off`);
+    if ($('p-desc').value.trim()) chips.push('Description');
+    if ($('p-locked').checked) chips.push('Ready-made');
+    if ($('p-style').value) { const m = models.find(x => x.id === $('p-style').value); chips.push('3D: ' + (m ? m.label : $('p-style').value)); }
+    if ($('p-tag').value) chips.push('Tag: ' + $('p-tag').value);
+    let chart = null; try { chart = getSizeChart(getSizes()); } catch (e) { chart = true; }
+    if (chart) chips.push('Measurements');
+    $('adv-sum').innerHTML = chips.length ? chips.map(c => `<span class="adv-chip">${esc(c)}</span>`).join('')
+      : 'Sale, description, design type, 3D model, tag, measurements';
+  }
+  $('prod-overlay').addEventListener('input', renderMoreSummary);
+  $('prod-overlay').addEventListener('change', renderMoreSummary);
+  /** New products start with the usual sizes for their category, until the sizes are picked by hand. */
+  let sizesTouched = false;
+  const ONE_SIZE = /bag|tote|cap|hat|lanyard|mug|pin|accessor|sticker|case|towel/i;
+  function defaultSizes() {
+    if (sizesTouched || $('edit-id').value) return;
+    const c = $('p-cat').value === '__new' ? $('p-newcat').value : $('p-cat').value;
+    setSizes(ONE_SIZE.test(c || '') ? ['One Size'] : ['S', 'M', 'L', 'XL']);
+    renderFormStock(); renderSizeChart(); renderMoreSummary();
+  }
+  $('p-cat').addEventListener('change', defaultSizes);
 
   function showPreview() {
     const u = safeUrl($('p-img').value.trim()), img = $('p-prev');
@@ -1261,6 +1310,7 @@
     updatePriceTag();
     const tagSel = $('p-tag');
     if (!tagTouched && !tagSel.value && discountValue() > 0) tagSel.value = 'Sale';
+    else if (!tagTouched && tagSel.value === 'Sale' && !(discountValue() > 0)) tagSel.value = '';
   }));
   $('p-tag').addEventListener('change', () => { tagTouched = true; });
   $('p-pay').addEventListener('mousedown', e => e.preventDefault());
@@ -1275,9 +1325,9 @@
     if (!cat2) { toast('Pick a category', 'warn'); $('p-cat').focus(); return; }
     if (isNaN(regular) || regular < 20) { toast('Enter a price of at least ₱20 (the lowest amount GCash accepts)', 'warn'); $('p-price').focus(); return; }
     if (regular > 100000) { toast('That price looks too high. Check it again.', 'warn'); return; }
-    if (!discountOk(disc)) { toast('The discount must be a whole number from 0 to 90', 'warn'); $('p-disc').focus(); return; }
+    if (!discountOk(disc)) { toast('The discount must be a whole number from 0 to 90', 'warn'); reveal('p-disc'); return; }
     const price = salePrice(regular, disc);
-    if (price < 20) { toast(`With ${disc}% off, customers would pay ${peso(price)}. It must be at least ₱20 (the lowest amount GCash accepts).`, 'warn'); $('p-disc').focus(); return; }
+    if (price < 20) { toast(`With ${disc}% off, customers would pay ${peso(price)}. It must be at least ₱20 (the lowest amount GCash accepts).`, 'warn'); reveal('p-disc'); return; }
     if (img && !safeUrl(img)) { toast('The photo must be an https:// link', 'warn'); return; }
     if (!sizes.length) { toast('Pick at least one size', 'warn'); return; }
     let chart;

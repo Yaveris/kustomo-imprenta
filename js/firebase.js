@@ -1016,7 +1016,7 @@ function printOrderSlip(o) {
 }
 
 // ─────────────────────────────────────────────
-//  PAYMENT SERVER (FitFusionServer on Render): holds the PayMongo key, lists payments, gives refunds.
+//  PAYMENT SERVER (Kustomo-ImprentaServer on Render): holds the PayMongo key, lists payments, gives refunds.
 //  Its address is appConfig/payments.serverUrl, set on the Payments page.
 // ─────────────────────────────────────────────
 let _payUrl = null;

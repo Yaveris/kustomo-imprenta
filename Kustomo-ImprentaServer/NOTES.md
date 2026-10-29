@@ -9,7 +9,7 @@
 - Firebase: no functions were ever deployed. Switch the plan back to Spark if it's still on Blaze.
 
 ## What was built, ready to switch back on
-- `FitFusionServer/`: a Node payment server for Render (Free Web Service). See README.md here.
+- `Kustomo-ImprentaServer/`: a Node payment server for Render (Free Web Service). See README.md here.
   - `server.js` handles `POST /paymongo/create-source`, `/source-status`, `/create-payment` and `/check-key`, plus `GET /health`.
   - Every call needs the caller's Firebase sign-in (Bearer ID token). Disabled accounts are refused, only the
     customer who started a payment can complete it, and the charge is the amount approved in GCash.
@@ -28,7 +28,7 @@
 
 ## To switch it back on
 1. Copy the 3 .kt files into `app/src/main/java/com/ksprintexpress/fitfusion/`, and `keys.html` into the Admin folder.
-2. Deploy `FitFusionServer` on Render, following README.md.
+2. Deploy `Kustomo-ImprentaServer` on Render, following README.md.
 3. On App Keys:
    1. Paste the server address.
    2. Publish the rule block.
@@ -37,5 +37,5 @@
 4. Place a test GCash order. Then empty `paymongo.secret.key` and rebuild.
 
 ## Not used any more
-`functions/`, `firebase.json` and `.firebaserc` in the FitFusion folder came from the first try (Firebase Cloud Functions,
+`functions/`, `firebase.json` and `.firebaserc` in the main project folder came from the first try (Firebase Cloud Functions,
 which needs Blaze). They're safe to delete.

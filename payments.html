@@ -83,7 +83,7 @@
         <div style="margin-top:12px;">
           <p class="note">The payment server keeps the key off customers' phones and saves each order the moment PayMongo confirms it. Paste its address here once (from Render, like <code>https://kustomo-payments.onrender.com</code>).</p>
           <div class="keyrow"><input id="srv" placeholder="https://….onrender.com" style="font-family:inherit;"><button class="btn-ghost" id="test-srv"><i class="bi bi-broadcast"></i> Test</button><button class="btn-grad" id="save-srv"><i class="bi bi-check-lg"></i> Save address</button></div>
-          <p class="note" style="margin-top:12px;">Steps for setting up the server on Render are in the <code>FitFusionServer/README.md</code> file.</p>
+          <p class="note" style="margin-top:12px;">Steps for setting up the server on Render are in the <code>Kustomo-ImprentaServer/README.md</code> file.</p>
         </div>
       </details>
     </div>
@@ -99,7 +99,7 @@
 <script src="js/auth.js"></script>
 <script>
   // The key goes to Firestore secrets/paymongo, which the rules let a Super Admin write and nobody read; only the
-  // payment server (FitFusionServer) reads it. What this page shows about the key comes from the server.
+  // payment server (Kustomo-ImprentaServer) reads it. What this page shows about the key comes from the server.
   const $ = id => document.getElementById(id);
   let ordersBySource = {}, owner = false;
 
