@@ -146,6 +146,8 @@ const OrderAlert = (() => {
   const NEXT = { Processing: ['Printing', 'Printing ▸'], Printing: ['Ready', 'Ready ▸'], Delivering: ['Delivered', 'Delivered ✓'] };
   let ctx = null, box = null, bar = null, baseTitle = document.title, flash = null, ringTimer = null;
   let orders = [], known = null, started = false, busy = {};
+  // Phones and tablets: the cards fold into a small tab until it is tapped (a mouse slides them out on hover instead)
+  let expanded = false;
   const ms = t => (t && typeof t.toMillis === 'function') ? t.toMillis() : 0;
 
   // Browsers only allow sound after someone has clicked or typed on the page, so the first click switches it on.
@@ -181,6 +183,17 @@ const OrderAlert = (() => {
   #oa-box:hover,#oa-box:focus-within{transform:none;opacity:1;transition-delay:0s;}
 }
 @media (prefers-reduced-motion: reduce){#oa-box{transition:none;}}
+.oa-tab{display:none;}
+@media (hover: none){
+  #oa-box{right:12px;bottom:12px;width:auto;max-width:calc(100vw - 24px);max-height:calc(100vh - 90px);align-items:flex-end;}
+  #oa-box.open{width:350px;}
+  #oa-box:not(.open) > :not(.oa-tab){display:none;}
+  .oa-tab{display:inline-flex;align-items:center;gap:8px;align-self:flex-end;flex-shrink:0;padding:10px 14px;border-radius:24px;border:1px solid rgba(255,92,0,.6);background:#16161c;color:#eee;font-family:inherit;font-weight:700;font-size:14px;line-height:1.2;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.5);}
+  .oa-tab .bi-bell-fill{color:#FF5C00;}
+  .oa-tab .c{min-width:22px;padding:1px 7px;border-radius:11px;background:#FF5C00;color:#fff;font-size:12.5px;text-align:center;}
+  .oa-tab.new{animation:oa-pulse 1.4s ease-in-out infinite;}
+  #oa-box.open .oa-tab{order:-1;}
+}
 .oa{background:#16161c;border:1px solid rgba(255,92,0,.6);border-radius:14px;box-shadow:0 0 0 3px rgba(255,92,0,.3),0 14px 40px rgba(0,0,0,.55);overflow:hidden;font-size:14px;color:#eee;flex-shrink:0;animation:oa-in .28s ease-out;}
 .oa.pulse{animation:oa-pulse 1.4s ease-in-out infinite;}
 @keyframes oa-in{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
@@ -267,13 +280,23 @@ const OrderAlert = (() => {
     if (!box) { css(); box = document.createElement('div'); box.id = 'oa-box'; box.setAttribute('aria-live', 'polite'); box.setAttribute('aria-label', 'Orders to handle'); document.body.appendChild(box); }
     const list = orders.slice().sort((a, b) => rank(a) - rank(b) || ms(a.orderedAt) - ms(b.orderedAt));
     const shown = list.slice(0, MAX_CARDS), more = list.length - shown.length;
-    box.innerHTML = shown.map(o => o.status === 'Pending' ? fullCard(o) : miniCard(o)).join('') +
+    const nNew = list.filter(o => o.status === 'Pending').length;
+    // The tab only shows on touch screens (see css): the number of orders, pulsing while a new one waits
+    const tab = `<button type="button" class="oa-tab${nNew && !expanded ? ' new' : ''}" data-tab aria-expanded="${expanded}">` +
+      (expanded ? `<i class="bi bi-chevron-down"></i> Hide orders`
+        : `<i class="bi bi-bell-fill"></i> ${nNew ? `${nNew} new order${nNew === 1 ? '' : 's'}` : 'Orders'} <span class="c">${list.length}</span>`) +
+      `</button>`;
+    box.innerHTML = tab + shown.map(o => o.status === 'Pending' ? fullCard(o) : miniCard(o)).join('') +
       (more > 0 ? `<a class="oa-more" href="orders.html">+ ${more} more active order${more === 1 ? '' : 's'} · Orders <i class="bi bi-arrow-right"></i></a>` : '');
+    box.classList.toggle('open', expanded);
     box.hidden = !list.length;
   }
 
   // One handler for every card button (the cards are redrawn whenever an order changes)
   document.addEventListener('click', async e => {
+    if (e.target.closest('#oa-box [data-tab]')) { expanded = !expanded; render(); return; }
+    // A tap elsewhere on the page folds the cards away again
+    if (expanded && box && !box.contains(e.target)) { expanded = false; render(); }
     const btn = e.target.closest('#oa-box [data-act]'); if (!btn) return;
     const id = btn.closest('[data-id]').dataset.id, o = orders.find(x => x.id === id); if (!o) return;
     const act = btn.dataset.act;
