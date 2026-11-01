@@ -68,9 +68,11 @@ const OrderParts = (() => {
     const lines = [], by = {};
     items.forEach((it, i) => {
       const s = shirtOf(it), n = notesOf(it), qty = +it.quantity || 1;
-      const key = [s.name, s.hex, s.size, s.custom, n.notes, n.fit].join('|');
+      // Which shirt: a shop brand, or the customer's own (they drop it off)
+      const blank = typeof itemShirtText === 'function' ? itemShirtText(it) : '', own = it.shirtSource === 'own';
+      const key = [s.name, s.hex, s.size, s.custom, n.notes, n.fit, blank].join('|');
       let L = by[key];
-      if (!L) { L = by[key] = Object.assign({}, s, n, { qty: 0, total: 0, photo: safeUrl(it.imageUrl), idx: [] }); lines.push(L); }
+      if (!L) { L = by[key] = Object.assign({}, s, n, { qty: 0, total: 0, photo: safeUrl(it.imageUrl), idx: [], blank, own }); lines.push(L); }
       L.qty += qty; L.total += (+it.price || 0) * qty; L.idx.push(i);
     });
     return lines;
@@ -115,6 +117,7 @@ const OrderParts = (() => {
         <div class="op-cl-t">
           <div class="op-n">${esc(L.name)}${L.colour ? ` · ${esc(L.colour)}` : ''}</div>
           <div class="op-s">${L.size ? 'Size <b>' + esc(L.size) + '</b>' : 'No size'}${L.custom ? '' : ' · <span class="op-plain">No custom design</span>'}</div>
+          ${L.blank ? `<div class="op-note"><i class="bi ${L.own ? 'bi-person-check' : 'bi-tag'}"></i> ${esc(L.blank)}</div>` : ''}
           ${L.notes ? `<div class="op-note"><i class="bi bi-chat-left-text"></i> ${esc(L.notes)}</div>` : ''}
           ${L.fit ? `<div class="op-note"><i class="bi bi-rulers"></i> ${L.fitLabel}: ${esc(L.fit)}</div>` : ''}
         </div>
@@ -175,7 +178,8 @@ const OrderParts = (() => {
   function html(o, opt = {}) {
     orders[o.id] = o;
     const items = o.items || [];
-    return `<div class="op${opt.full ? ' full' : ''}">${clothesHtml(o, clothes(items))}${designsHtml(o, designs(items), opt)}</div>`;
+    const extras = typeof orderExtrasHtml === 'function' ? orderExtrasHtml(o) : '';
+    return `${extras}<div class="op${opt.full ? ' full' : ''}">${clothesHtml(o, clothes(items))}${designsHtml(o, designs(items), opt)}</div>`;
   }
 
   // ── Pictures and print files ─────────────────────────────────────────────────────────────────────

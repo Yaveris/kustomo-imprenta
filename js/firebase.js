@@ -237,6 +237,7 @@ function productShirtStyle(p) {
 //    preview      {scale}: size in the app's 3D view (1 = fills the view like the shirts)
 //    ar           {scale, x, y, z (cm), rotX, rotY, rotZ (degrees), roughness}: fit in the try-on Lens
 //    lensObjectName  optional: the model is also built into the Lens under this object name (fitted garments)
+//    garment      for tops: a GARMENT_TYPES id ('tshirt', 'sando', 'jersey'…); fitRoomCm: optional FitScan room
 //  For a built-in shirt the document id is its style id, and only label, blurb, enabled, order and ar.roughness
 //  are read; its model and pictures are built into the app.
 //  models/_tryOn {lensSupportsModels}: set on the Models page once the try-on Lens that downloads models is
@@ -281,6 +282,19 @@ function modelSide(model, side) {
   if (side === 'Back') return model.back || null;
   return null;
 }
+
+/** Garment types for tops (models with kind 'top'). FitScan measures by type and aims for `room` cm between the
+ *  body's chest and the shirt's; `shoulders` false = no shoulder seam to check (a sando). The app reads the same
+ *  ids (ModelCatalog.kt GarmentType). A model may set its own room in `fitRoomCm`. */
+const GARMENT_TYPES = [
+  { id: 'tshirt',     label: 'T-shirt',     room: 6,  shoulders: true,  help: 'Regular fit. FitScan measures the chest and shoulders.' },
+  { id: 'longSleeve', label: 'Long sleeve', room: 6,  shoulders: true,  help: 'Regular fit. FitScan measures the chest and shoulders.' },
+  { id: 'sando',      label: 'Sando (sleeveless)', room: 6, shoulders: false, help: 'No sleeves or shoulder seam: FitScan measures the chest only. Print on the front and back.' },
+  { id: 'jersey',     label: 'Jersey',      room: 10, shoulders: true,  help: 'Worn loose: FitScan aims for more room. Usually printed with a name and number on the back.' },
+  { id: 'polo',       label: 'Polo shirt',  room: 6,  shoulders: true,  help: 'Regular fit, with a collar.' },
+  { id: 'hoodie',     label: 'Hoodie / jacket', room: 10, shoulders: true, help: 'Worn over other clothes: FitScan aims for more room.' }
+];
+const garmentType = id => GARMENT_TYPES.find(g => g.id === id) || GARMENT_TYPES[0];
 
 const MODEL_KINDS = [
   { id: 'top',       label: 'Top (shirt, jacket)', category: 'Tees' },
@@ -361,6 +375,7 @@ function normalizeModel(id, d) {
     front: side(d.front), back: side(d.back), tintable: d.tintable !== false,
     preview: { scale: +(d.preview && d.preview.scale) || 1 },
     ar: Object.assign({}, AR_DEFAULT, d.ar || {}), lensObjectName: d.lensObjectName || '', hasSleeves: false,
+    garment: d.garment || 'tshirt', fitRoomCm: typeof d.fitRoomCm === 'number' ? d.fitRoomCm : null,
     updatedAt: d.updatedAt || null, updatedBy: d.updatedBy || ''
   };
 }
@@ -596,12 +611,45 @@ async function cloudinaryConfig() {
 }
 
 /** Uploads an image file and resolves to its public https URL. Also adds it to this month's usage counts. */
+// ── Upload limits: shown on the forms and checked before anything is uploaded ──
+// Cloudinary's free plan takes files up to 10 MB. Pictures under 1000 px on their longest side look soft in print
+// and on large screens, so they are allowed with a warning.
+const UPLOAD_LIMITS = {
+  pictureMB: 10, pictureMinPx: 1000, pictureTypes: /^image\/(png|jpeg|webp)$/,
+  modelMB: 10, modelSuggestMB: 8, modelTriangles: 60000, textureMaxPx: 2048
+};
+const PICTURE_LIMITS_TEXT = `PNG, JPG or WebP · up to ${UPLOAD_LIMITS.pictureMB} MB · at least ${UPLOAD_LIMITS.pictureMinPx} px on the longest side. A PNG with a see-through background gives the cleanest edge.`;
+const MODEL_LIMITS_TEXT = `.glb (glTF 2.0) only · up to ${UPLOAD_LIMITS.modelMB} MB (${UPLOAD_LIMITS.modelSuggestMB} MB or less loads faster) · up to ${UPLOAD_LIMITS.modelTriangles.toLocaleString('en-PH')} triangles · textures up to ${UPLOAD_LIMITS.textureMaxPx} px.`;
+
+/** Checks a picture before it is used or uploaded. Resolves to { error } when it can't be used, else
+ *  { warning ('' when fine), width, height }. */
+async function checkPicture(file, { minPx = UPLOAD_LIMITS.pictureMinPx, maxMB = UPLOAD_LIMITS.pictureMB } = {}) {
+  if (!file) return { error: 'No picture was chosen.' };
+  if (!UPLOAD_LIMITS.pictureTypes.test(file.type)) return { error: `${file.name || 'This file'} isn't a PNG, JPG or WebP picture.` };
+  const mb = file.size / 1048576;
+  if (mb > maxMB) return { error: `This picture is ${mb.toFixed(1)} MB. Pictures can be up to ${maxMB} MB; save a smaller copy and try again.` };
+  const dim = await new Promise(res => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { res({ w: img.naturalWidth, h: img.naturalHeight }); URL.revokeObjectURL(url); };
+    img.onerror = () => { res(null); URL.revokeObjectURL(url); };
+    img.src = url;
+  });
+  if (!dim) return { error: "That picture couldn't be opened." };
+  const warning = Math.max(dim.w, dim.h) < minPx
+    ? `This picture is only ${dim.w} × ${dim.h} px. At least ${minPx} px on the longest side is recommended, or it may look blurry.` : '';
+  return { warning, width: dim.w, height: dim.h };
+}
+
 async function uploadDesignImage(file) {
   return uploadToCloudinary(file, {});
 }
 
 /** Uploads any file (image, or a .glb model with resourceType 'auto') to `folder` and resolves to its https URL. */
 async function uploadToCloudinary(file, { folder, resourceType = 'image', name } = {}) {
+  // Cloudinary refuses anything over 10 MB; say so plainly instead of showing its error
+  if (file && file.size > UPLOAD_LIMITS.pictureMB * 1048576) {
+    throw new Error(`the file is ${(file.size / 1048576).toFixed(1)} MB and the limit is ${UPLOAD_LIMITS.pictureMB} MB`);
+  }
   const cfg = await cloudinaryConfig();
   const body = new FormData();
   body.append('file', file, name || file.name || 'upload');
@@ -685,7 +733,17 @@ const SHOP_DEFAULTS = {
   downpaymentEnabled: true,   // offer paying part now, the rest on delivery
   downpaymentPercent: 50,     // % paid now
   downpaymentMinItems: 10,    // items in the cart before it is offered
-  lowStockAt: 5               // admin site: a size at or below this is "low"
+  lowStockAt: 5,              // admin site: a size at or below this is "low"
+  ownShirtFee: 0,             // ₱ per piece when the customer brings their own shirt (app's ShopSettings.ownShirtFee)
+  // Extra work the shop may ask a customer to approve when accepting a difficult order (paid in cash after approval).
+  // Starting suggestions only: the owner sets the real names and prices on Shop Settings.
+  extraWorkTypes: [
+    { label: 'Extra colour', amount: 30 },
+    { label: 'Extra print location', amount: 50 },
+    { label: 'Artwork clean-up', amount: 100 },
+    { label: 'Oversized print', amount: 40 },
+    { label: 'Rush (within 24 hours)', amount: 150 }
+  ]
 };
 /**
  * The shirt measurements new products start with (Shop Settings → Default measurements can replace them). Measured
@@ -877,6 +935,49 @@ async function sendOrderMessage(o, text) {
   await chat.update({ lastMessageAt: ts, adminReadAt: ts }).catch(() => {});
 }
 
+/** An order item's shirt, as staff read it: "Premium Cotton Tee (+₱150.00)", "Customer's own shirt", or ''. */
+function itemShirtText(it) {
+  if (!it) return '';
+  if (it.shirtSource === 'own') return "Customer's own shirt" + (Number(it.shirtPrice) > 0 ? ` (+${peso(it.shirtPrice)} fee)` : '');
+  if (it.shirtSource === 'shop') return (it.brandName || "Shop's shirt") + (it.fabric ? ' · ' + it.fabric : '') + (Number(it.shirtPrice) > 0 ? ` (+${peso(it.shirtPrice)})` : '');
+  return '';
+}
+/** Whether an order has items printed on the customer's own shirt. */
+const orderNeedsOwnShirt = o => !!o && (o.items || []).some(it => it && it.shirtSource === 'own');
+
+/** Marks the customer's own shirt as received (or not), with a chat message when received. */
+async function setOwnShirtReceived(o, received) {
+  await db.collection('orders').doc(o.id).update({ ownShirtReceivedAt: received ? firebase.firestore.FieldValue.serverTimestamp() : null });
+  if (received) { try { await sendOrderMessage(o, `👕 We received your shirt for order ${orderNo(o.id)}.`); } catch (e) { } }
+}
+/** Marks an approved extra work fee as collected in cash (or not). */
+async function setExtraWorkPaid(o, paid) {
+  await db.collection('orders').doc(o.id).update({ 'extraWork.paidAt': paid ? firebase.firestore.FieldValue.serverTimestamp() : null });
+}
+/** Orders shown by orderExtrasHtml, so its buttons find theirs on any page. */
+const _xoMap = {};
+const _xo = id => _xoMap[id];
+/** HTML for an order's bring-your-own and extra work state, with the staff's buttons. */
+function orderExtrasHtml(o) {
+  if (!o) return '';
+  _xoMap[o.id] = o;
+  const parts = [], id = esc(o.id);
+  if (orderNeedsOwnShirt(o)) {
+    parts.push(o.ownShirtReceivedAt
+      ? `<div class="ox ok"><i class="bi bi-check-circle"></i><span>Customer's shirt received ${esc(fmtDate(o.ownShirtReceivedAt))}.</span><button type="button" class="btn-ghost" onclick="event.stopPropagation();setOwnShirtReceived(_xo('${id}'),false)">Undo</button></div>`
+      : `<div class="ox warn"><i class="bi bi-person-check"></i><span><b>Waiting for the customer's shirt.</b> Prepare the design; print once it is dropped off.</span><button type="button" class="btn-grad" onclick="event.stopPropagation();setOwnShirtReceived(_xo('${id}'),true).then(()=>toast('Marked as received','ok'))">Shirt received</button></div>`);
+  }
+  const x = o.extraWork;
+  if (x && Array.isArray(x.items) && x.items.length) {
+    const list = x.items.map(i => `${esc(i.label)} ${esc(peso(i.amount))}`).join(' · ');
+    if (x.status === 'pending') parts.push(`<div class="ox warn"><i class="bi bi-hourglass-split"></i><span><b>Waiting for the customer to approve ${esc(peso(x.total))} extra.</b> ${list}. Don't print yet.</span></div>`);
+    else if (x.status === 'approved') parts.push(`<div class="ox ok"><i class="bi bi-cash-coin"></i><span><b>Extra ${esc(peso(x.total))} approved</b>, to collect in cash: ${list}.${x.paidAt ? ' Collected ' + esc(fmtDate(x.paidAt)) + '.' : ''}</span>` +
+      (x.paidAt ? `<button type="button" class="btn-ghost" onclick="event.stopPropagation();setExtraWorkPaid(_xo('${id}'),false)">Undo</button>` : `<button type="button" class="btn-grad" onclick="event.stopPropagation();setExtraWorkPaid(_xo('${id}'),true).then(()=>toast('Marked as collected','ok'))">Collected</button>`) + `</div>`);
+    else if (x.status === 'declined') parts.push(`<div class="ox bad"><i class="bi bi-x-octagon"></i><span><b>The customer declined the ${esc(peso(x.total))} extra.</b> Cancel the order and refund it (Can't take it), or go ahead without the extra work and tell them in the chat.</span></div>`);
+  }
+  return parts.length ? `<div class="ox-wrap">${parts.join('')}</div>` : '';
+}
+
 const READY_CHOICES = [['Today', 0], ['Tomorrow', 1], ['In 2 days', 2], ['In 3 days', 3]];
 const DECLINE_REASONS = ['Out of stock', 'Too many orders right now', "We can't print this design"];
 const _fmtDay = d => d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -912,14 +1013,50 @@ function openAcceptOrder(o, onDone) {
       <div class="ob-chips" role="group" aria-label="Ready date">${chips}</div>
       <label class="ob-q" for="ob-note">Note for the customer <span class="note">(optional)</span></label>
       <input id="ob-note" class="inp" maxlength="200" placeholder="e.g. Ready for pickup after 2 PM">
+      <p class="ob-q" style="margin-top:14px;">Extra work fee <span class="note">(optional, for difficult jobs)</span></p>
+      <div class="ob-chips" id="ob-xw-types" role="group" aria-label="Add an extra work fee"><span class="note">Loading…</span></div>
+      <div class="ob-xw" id="ob-xw"></div>
       <p class="ob-q" style="margin-top:14px;">The customer gets this in the chat:</p>
       <div class="ob-preview" id="ob-preview"></div>`,
     `<button type="button" class="btn-ghost" data-close>Back</button>
      <button type="button" class="btn-grad ob-ok" id="ob-go"><i class="bi bi-check-lg"></i> Accept and send</button>`);
   let day = new Date(); day.setDate(day.getDate() + 1);
+  // Extra work rows: {label, amount, reason}. The customer approves or declines them in the app before printing.
+  let extra = [];
+  const ownShirt = (o.items || []).some(it => it && it.shirtSource === 'own');
+  const xwTotal = () => Math.round(extra.reduce((t, x) => t + (Number(x.amount) || 0), 0) * 100) / 100;
+  const renderXw = () => {
+    const box = ov.querySelector('#ob-xw');
+    box.innerHTML = extra.map((x, i) => `<div class="ob-xw-row">
+        <input class="inp" maxlength="60" value="${esc(x.label)}" data-i="${i}" data-k="label" aria-label="Fee name" placeholder="Fee name">
+        <input class="inp" type="number" min="0" step="0.01" value="${esc(String(x.amount))}" data-i="${i}" data-k="amount" aria-label="Amount">
+        <input class="inp ob-xw-why" maxlength="120" value="${esc(x.reason)}" data-i="${i}" data-k="reason" aria-label="Reason the customer reads" placeholder="Why, e.g. 6 colours in the logo">
+        <button type="button" class="btn-icon del" data-x="${i}" aria-label="Remove"><i class="bi bi-x-lg"></i></button></div>`).join('') +
+      (extra.length ? `<div class="note">Extra total: <b>${peso(xwTotal())}</b>, paid in cash after the customer approves. Printing should wait for their answer.</div>` : '');
+    box.querySelectorAll('input').forEach(inp => inp.oninput = () => { const x = extra[+inp.dataset.i]; x[inp.dataset.k] = inp.dataset.k === 'amount' ? parseFloat(inp.value) || 0 : inp.value; show(); });
+    box.querySelectorAll('[data-x]').forEach(b => b.onclick = () => { extra.splice(+b.dataset.x, 1); renderXw(); show(); });
+  };
+  loadShopSettings().then(shop => {
+    const types = Array.isArray(shop.extraWorkTypes) ? shop.extraWorkTypes : [];
+    const holder = ov.querySelector('#ob-xw-types'); if (!holder) return;
+    holder.innerHTML = types.map((t, i) => `<button type="button" class="ob-chip" data-t="${i}">+ ${esc(t.label)} · ${esc(peso(t.amount))}</button>`).join('') +
+      '<button type="button" class="ob-chip" data-t="other">+ Other</button>';
+    holder.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
+      const t = b.dataset.t === 'other' ? { label: '', amount: 0 } : types[+b.dataset.t];
+      extra.push({ label: t.label, amount: Number(t.amount) || 0, reason: '' }); renderXw(); show();
+    });
+  });
   const text = () => {
     const note = ov.querySelector('#ob-note').value.trim();
-    return `✅ We accepted your order ${no}. It should be ready by ${_fmtDay(day)}.` + (note ? ' ' + note : '');
+    let t = `✅ We accepted your order ${no}. It should be ready by ${_fmtDay(day)}.` + (note ? ' ' + note : '');
+    if (ownShirt) t += ' Please drop off your shirt at the shop; we are preparing your design while we wait for it.';
+    const xs = extra.filter(x => x.label.trim());
+    if (xs.length) {
+      t += `\n\nBefore we print, this order needs extra work: ` +
+        xs.map(x => `${x.label.trim()} ${peso(x.amount)}${x.reason.trim() ? ' (' + x.reason.trim() + ')' : ''}`).join('; ') +
+        `. Extra total ${peso(xwTotal())}, paid in cash at drop-off or on delivery. Please approve or decline it in the app under My Orders.`;
+    }
+    return t;
   };
   const show = () => { ov.querySelector('#ob-preview').textContent = text(); };
   ov.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
@@ -936,9 +1073,21 @@ function openAcceptOrder(o, onDone) {
   ov.querySelector('#ob-note').oninput = show;
   show();
   ov.querySelector('#ob-go').onclick = async () => {
+    const xs = extra.filter(x => x.label.trim() || x.amount);
+    if (xs.some(x => !x.label.trim())) { toast('Give every extra work fee a name', 'warn'); return; }
+    if (xs.some(x => !(Number(x.amount) > 0))) { toast('Extra work fees need an amount above ₱0.00', 'warn'); return; }
     const btn = ov.querySelector('#ob-go'); btn.disabled = true;
     try {
       await setOrderStatus(o.id, 'Processing');
+      if (xs.length) {
+        await db.collection('orders').doc(o.id).update({
+          extraWork: {
+            items: xs.map(x => ({ label: x.label.trim(), amount: Math.round(Number(x.amount) * 100) / 100, reason: x.reason.trim() })),
+            total: xwTotal(), status: 'pending',
+            askedAt: firebase.firestore.FieldValue.serverTimestamp(), askedBy: (auth.currentUser && auth.currentUser.email) || ''
+          }
+        });
+      }
       if (typeof OrderAlert !== 'undefined') OrderAlert.handled(o.id);
       try { await sendOrderMessage(o, text()); toast(`${no} accepted and the customer was told`, 'ok'); }
       catch (e) { toast(`${no} accepted, but the chat message wasn't sent: ${e.message}`, 'warn'); }

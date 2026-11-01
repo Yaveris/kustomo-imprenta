@@ -932,3 +932,16 @@ html.owner-check #main { visibility: hidden; }
   .op-art { background:#9a9a9a !important; border:1px solid #ccc; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   #oa-box, #oa-sound { display:none !important; }
 }
+
+/* ── Order: bring-your-own shirt and extra work fee (js/firebase.js orderExtrasHtml) ── */
+.ox-wrap { display:grid; gap:8px; margin-bottom:12px; }
+.ox { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 12px; border-radius:10px; font-size:14px; border:1px solid var(--border); }
+.ox > span { flex:1; min-width:200px; }
+.ox > i { font-size:16px; }
+.ox.warn { background:rgba(255,214,0,.07); border-color:rgba(255,214,0,.35); } .ox.warn > i { color:var(--yellow); }
+.ox.ok { background:rgba(0,230,118,.06); border-color:rgba(0,230,118,.3); } .ox.ok > i { color:#00E676; }
+.ox.bad { background:rgba(255,68,68,.08); border-color:rgba(255,107,107,.4); } .ox.bad > i { color:#FF6B6B; }
+/* Accept dialog: extra work rows */
+.ob-xw { display:grid; gap:8px; margin-bottom:6px; }
+.ob-xw-row { display:grid; grid-template-columns:minmax(0,1fr) 110px minmax(0,1.4fr) auto; gap:6px; align-items:center; }
+@media (max-width:640px) { .ob-xw-row { grid-template-columns:minmax(0,1fr) 100px auto; } .ob-xw-row .ob-xw-why { grid-column:1 / -1; grid-row:2; } }

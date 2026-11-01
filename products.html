@@ -225,6 +225,11 @@
       .scc, .fst { width: calc(50% - 5px); }
       .cat-edit { grid-template-columns: minmax(0, 1fr); }
     }
+    .sh-brands { display:grid; gap:6px; }
+    .sh-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--border); border-radius:9px; background:rgba(255,255,255,.02); flex-wrap:wrap; }
+    .sh-row.off { opacity:.6; }
+    .sh-price { font-weight:700; color:var(--orange); white-space:nowrap; }
+    .sh-def { display:flex; gap:5px; align-items:center; font-size:13px; color:var(--muted); white-space:nowrap; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -286,93 +291,180 @@
           <p class="f-lead">Fill in the starred fields and press Save. Sale price, description, design type and the rest are under <b>More options</b>.</p>
           <section class="pf-card" aria-labelledby="h-basics">
             <h4 id="h-basics">Basics</h4>
-            <div class="fg-row" id="p-basics">
-              <div class="fg"><label for="p-name">Name *</label><input type="text" id="p-name" placeholder="e.g. Classic Cotton Tee" maxlength="80"></div>
-              <div class="fg"><label for="p-cat">Category *</label>
-                <select id="p-cat"></select>
-                <div id="p-newcat-row" hidden style="display:flex;gap:6px;margin-top:6px;">
-                  <input type="text" id="p-newcat" maxlength="40" placeholder="New category name" style="flex:1;min-width:0;">
-                  <button class="btn-ghost" type="button" onclick="addNewCat()">Add</button>
-                </div>
-              </div>
-            </div>
-            <div class="fg-row price-row two">
-              <div class="fg"><label for="p-price">Price (₱) *</label><input type="number" id="p-price" placeholder="499" min="20" step="0.01"></div>
-              <div class="fg"><label id="p-pay-lbl">Customers pay</label><div class="price-tag empty" id="p-pay" role="status" aria-live="polite" aria-labelledby="p-pay-lbl">Enter a price</div></div>
-            </div>
-            <div class="price-note" id="p-pay-note"></div>
+            <div class="fg-row" id="p-basics">
+
+              <div class="fg"><label for="p-name">Name *</label><input type="text" id="p-name" placeholder="e.g. Classic Cotton Tee" maxlength="80"></div>
+
+              <div class="fg"><label for="p-cat">Category *</label>
+
+                <select id="p-cat"></select>
+
+                <div id="p-newcat-row" hidden style="display:flex;gap:6px;margin-top:6px;">
+
+                  <input type="text" id="p-newcat" maxlength="40" placeholder="New category name" style="flex:1;min-width:0;">
+
+                  <button class="btn-ghost" type="button" onclick="addNewCat()">Add</button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <div class="fg-row price-row two">
+
+              <div class="fg"><label for="p-price">Price (₱) *</label><input type="number" id="p-price" placeholder="499.00" min="20" step="0.01"></div>
+
+              <div class="fg"><label id="p-pay-lbl">Customers pay</label><div class="price-tag empty" id="p-pay" role="status" aria-live="polite" aria-labelledby="p-pay-lbl">Enter a price</div></div>
+
+            </div>
+
+            <div class="price-note" id="p-pay-note"></div>
+
           </section>
           <section class="pf-card" aria-labelledby="h-design">
             <h4 id="h-design">Design</h4>
-            <div class="design-mode" role="radiogroup" aria-label="Design">
-              <label class="dm-opt"><input type="radio" name="p-start" value="none" checked>
-                <div><b id="p-start-none">No design yet</b><span id="p-start-none-sub">A plain item, or make its design later in the Design Studio.</span></div></label>
-              <label class="dm-opt"><input type="radio" name="p-start" value="lib">
-                <div><b>From the Design Library</b><span>Pick one of your Shop designs. It becomes this product's design.</span></div></label>
-            </div>
-            <div id="lib-pick" class="pp-box" hidden>
-              <div class="pp-head">Pick a design <span id="pp-for"></span></div>
-              <div class="pp-list" id="pp-list"></div>
-              <label class="lp-photo"><input type="checkbox" id="p-usephoto" checked> Also use it as the product photo</label>
-            </div>
+            <div class="design-mode" role="radiogroup" aria-label="Design">
+
+              <label class="dm-opt"><input type="radio" name="p-start" value="none" checked>
+
+                <div><b id="p-start-none">No design yet</b><span id="p-start-none-sub">A plain item, or make its design later in the Design Studio.</span></div></label>
+
+              <label class="dm-opt"><input type="radio" name="p-start" value="lib">
+
+                <div><b>From the Design Library</b><span>Pick one of your Shop designs. It becomes this product's design.</span></div></label>
+
+            </div>
+
+            <div id="lib-pick" class="pp-box" hidden>
+
+              <div class="pp-head">Pick a design <span id="pp-for"></span></div>
+
+              <div class="pp-list" id="pp-list"></div>
+
+              <label class="lp-photo"><input type="checkbox" id="p-usephoto" checked> Also use it as the product photo</label>
+
+            </div>
+
           </section>
           <section class="pf-card" aria-labelledby="h-sizes">
             <h4 id="h-sizes">Sizes and stock</h4>
-            <div class="fg">
-              <label>Sizes customers can pick *</label>
-              <div class="size-pills" id="size-pills">
-                <button type="button" class="sz" data-v="XS">XS</button><button type="button" class="sz" data-v="S">S</button>
-                <button type="button" class="sz" data-v="M">M</button><button type="button" class="sz" data-v="L">L</button>
-                <button type="button" class="sz" data-v="XL">XL</button><button type="button" class="sz" data-v="XXL">XXL</button>
-                <button type="button" class="sz" data-v="One Size">One Size</button>
-              </div>
-            </div>
-            <label class="switch-row" for="p-track">
-              <span class="avail"><input type="checkbox" id="p-track"><span class="avail-sl"></span></span>
-              <span>Count how many are in storage<small id="p-track-sub">Off: made to order, every size shows as available.</small></span>
-            </label>
-            <div id="p-stock-wrap">
-              <div class="fst-rows" id="p-stock"></div>
-              <div class="fg-help" id="p-stock-help"></div>
-            </div>
+            <div class="fg">
+
+              <label>Sizes customers can pick *</label>
+
+              <div class="size-pills" id="size-pills">
+
+                <button type="button" class="sz" data-v="XS">XS</button><button type="button" class="sz" data-v="S">S</button>
+
+                <button type="button" class="sz" data-v="M">M</button><button type="button" class="sz" data-v="L">L</button>
+
+                <button type="button" class="sz" data-v="XL">XL</button><button type="button" class="sz" data-v="XXL">XXL</button>
+
+                <button type="button" class="sz" data-v="One Size">One Size</button>
+
+              </div>
+
+            </div>
+
+            <label class="switch-row" for="p-track">
+
+              <span class="avail"><input type="checkbox" id="p-track"><span class="avail-sl"></span></span>
+
+              <span>Count how many are in storage<small id="p-track-sub">Off: made to order, every size shows as available.</small></span>
+
+            </label>
+
+            <div id="p-stock-wrap">
+
+              <div class="fst-rows" id="p-stock"></div>
+
+              <div class="fg-help" id="p-stock-help"></div>
+
+            </div>
+
           </section>
-          <details class="adv pf-card" id="adv">
-            <summary><i class="bi bi-sliders"></i> More options <small id="adv-sum"></small><i class="bi bi-chevron-down"></i></summary>
-            <div class="adv-body">
-              <div class="f-sub">Sale</div>
-              <div class="fg" style="max-width:260px;"><label for="p-disc">Discount (%)</label><input type="number" id="p-disc" placeholder="0 = none" min="0" max="90" step="1" inputmode="numeric">
-                <div class="fg-help">Customers see the old price crossed out and a "-%" badge.</div></div>
-
-              <div class="f-sub">Description</div>
-              <div class="fg"><label for="p-desc" class="sr-only">Description</label><textarea id="p-desc" placeholder="A short line about the product…" rows="2"></textarea></div>
-
-              <div class="f-sub">Design</div>
-              <div class="design-mode" role="radiogroup" aria-label="Can customers change the design?">
-                <label class="dm-opt"><input type="radio" name="p-dmode" value="open" checked>
-                  <div><b>Customers can change it</b><span>Your design is a starting point. Customers can edit it, add their own text and pick any colour.</span></div></label>
-                <label class="dm-opt"><input type="radio" name="p-dmode" value="locked" id="p-locked">
-                  <div><b>Ready-made (can't be changed)</b><span>Sold exactly as you designed it, in its own colour. Customers only pick the size and how many.</span></div></label>
-              </div>
-              <div class="dm-state" id="p-dm-state"></div>
-
-              <div class="f-sub">3D model, tag and measurements</div>
-              <div class="fg"><label for="p-style">3D model</label>
-                <select id="p-style"><option value="">Automatic (a shirt is read from the name)</option></select>
-                <div class="fg-help">What the app shows in the 3D preview, the designer and AR try-on. New ones are added on <a href="models.html" style="color:var(--orange);">3D Models</a>.</div>
-              </div>
-              <div class="fg"><label for="p-tag">Tag on the photo</label>
-                <select id="p-tag"><option value="">None</option><option value="New">New</option><option value="Sale">Sale</option><option value="Hot">Hot</option></select>
-              </div>
-              <div class="fg" style="margin-bottom:0;">
-                <div class="sc-top">
-                  <label style="margin:0;">Measurements per size</label>
-                  <div class="sc-unit" role="group" aria-label="Unit"><button type="button" data-u="in" class="on">Inches</button><button type="button" data-u="cm">cm</button></div>
-                </div>
-                <div class="sc-wrap" id="sc-wrap"></div>
-                <div class="fg-help">Measure the item laid flat (chest is armpit to armpit). Rename a column by typing over its name; an empty column is hidden. Customers see this chart when they pick a size.</div>
-              </div>
-            </div>
-          </details>
+          <details class="adv pf-card" id="adv">
+
+            <summary><i class="bi bi-sliders"></i> More options <small id="adv-sum"></small><i class="bi bi-chevron-down"></i></summary>
+
+            <div class="adv-body">
+
+              <div class="f-sub">Sale</div>
+
+              <div class="fg" style="max-width:260px;"><label for="p-disc">Discount (%)</label><input type="number" id="p-disc" placeholder="0 = none" min="0" max="90" step="1" inputmode="numeric">
+
+                <div class="fg-help">Customers see the old price crossed out and a "-%" badge.</div></div>
+
+
+
+              <div class="f-sub">Description</div>
+
+              <div class="fg"><label for="p-desc" class="sr-only">Description</label><textarea id="p-desc" placeholder="A short line about the product…" rows="2"></textarea></div>
+
+
+
+              <div class="f-sub">Design</div>
+
+              <div class="design-mode" role="radiogroup" aria-label="Can customers change the design?">
+
+                <label class="dm-opt"><input type="radio" name="p-dmode" value="open" checked>
+
+                  <div><b>Customers can change it</b><span>Your design is a starting point. Customers can edit it, add their own text and pick any colour.</span></div></label>
+
+                <label class="dm-opt"><input type="radio" name="p-dmode" value="locked" id="p-locked">
+
+                  <div><b>Ready-made (can't be changed)</b><span>Sold exactly as you designed it, in its own colour. Customers only pick the size and how many.</span></div></label>
+
+              </div>
+
+              <div class="dm-state" id="p-dm-state"></div>
+
+
+
+              <div class="f-sub">3D model, tag and measurements</div>
+
+              <div class="fg"><label for="p-style">3D model</label>
+
+                <select id="p-style"><option value="">Automatic (a shirt is read from the name)</option></select>
+
+                <div class="fg-help">What the app shows in the 3D preview, the designer and AR try-on. New ones are added on <a href="models.html" style="color:var(--orange);">3D Models</a>.</div>
+
+              </div>
+
+              <div class="fg"><label for="p-tag">Tag on the photo</label>
+
+                <select id="p-tag"><option value="">None</option><option value="New">New</option><option value="Sale">Sale</option><option value="Hot">Hot</option></select>
+
+              </div>
+
+              <div class="fg" style="margin-bottom:0;">
+
+                <div class="sc-top">
+
+                  <label style="margin:0;">Measurements per size</label>
+
+                  <div class="sc-unit" role="group" aria-label="Unit"><button type="button" data-u="in" class="on">Inches</button><button type="button" data-u="cm">cm</button></div>
+
+                </div>
+
+                <div class="sc-wrap" id="sc-wrap"></div>
+
+                <div class="fg-help">Measure the item laid flat (chest is armpit to armpit). Rename a column by typing over its name; an empty column is hidden. Customers see this chart when they pick a size.</div>
+
+              </div>
+
+            </div>
+
+          </details>
+
+          <section class="pf-card" aria-labelledby="h-shirts">
+            <h4 id="h-shirts">Shirts</h4>
+            <div class="fg-help" style="margin-bottom:10px;">The shirts customers can choose for this product, from the <a href="shirts.html">Shirts &amp; Fabrics</a> page. The chosen brand's price is added to the price above, so the price above is the printing price. Leave all unticked for a product sold without a choice of shirt.</div>
+            <div id="sh-brands" class="sh-brands"><span class="note">Loading the brands…</span></div>
+            <label class="fg-check" style="margin-top:10px;"><input type="checkbox" id="p-own"> Customers may bring their own shirt <span class="note" id="p-own-fee"></span></label>
+          </section>
+
         </div>
         <aside class="pf-side">
           <section class="pf-card pf-preview" aria-labelledby="h-prev">
@@ -384,21 +476,34 @@
           </section>
           <section class="pf-card" aria-labelledby="h-photo">
             <h4 id="h-photo">Photo</h4>
-            <div class="fg">
-              <div style="display:flex;gap:8px;align-items:center;">
-                <input type="url" id="p-img" placeholder="https://… or upload one" style="flex:1;min-width:0;" aria-label="Photo link">
-                <label class="btn-ghost" style="white-space:nowrap;cursor:pointer;margin:0;" id="p-upload-lbl"><i class="bi bi-upload"></i> Upload<input type="file" id="p-file" accept="image/png,image/jpeg,image/webp" hidden></label>
-              </div>
-      
-              <div class="fg-help">No photo? The app shows the 3D model's picture instead.</div>
-            </div>
+            <div class="fg">
+
+              <div style="display:flex;gap:8px;align-items:center;">
+
+                <input type="url" id="p-img" placeholder="https://… or upload one" style="flex:1;min-width:0;" aria-label="Photo link">
+
+                <label class="btn-ghost" style="white-space:nowrap;cursor:pointer;margin:0;" id="p-upload-lbl"><i class="bi bi-upload"></i> Upload<input type="file" id="p-file" accept="image/png,image/jpeg,image/webp" hidden></label>
+
+              </div>
+
+      
+
+              <div class="fg-help">No photo? The app shows the 3D model's picture instead.</div>
+              <div class="fg-help" id="p-limits"><i class="bi bi-file-earmark-image" style="color:var(--orange);"></i> <script>document.currentScript.parentNode.append(PICTURE_LIMITS_TEXT)</script></div>
+
+            </div>
+
           </section>
           <section class="pf-card" aria-labelledby="h-vis">
             <h4 id="h-vis">Visibility</h4>
-            <label class="switch-row" for="p-avail">
-              <span class="avail"><input type="checkbox" id="p-avail" checked><span class="avail-sl"></span></span>
-              <span>For sale in the app<small>Turn off to hide it from customers without deleting it.</small></span>
-            </label>
+            <label class="switch-row" for="p-avail">
+
+              <span class="avail"><input type="checkbox" id="p-avail" checked><span class="avail-sl"></span></span>
+
+              <span>For sale in the app<small>Turn off to hide it from customers without deleting it.</small></span>
+
+            </label>
+
           </section>
         </aside>
       </div>
@@ -467,6 +572,12 @@
   auth.onAuthStateChanged(async u => {
     if (!u) return;
     models = await loadModels();
+    // Shirt brands and fabrics for the product form's Shirts part (Shirts & Fabrics page)
+    Promise.all([db.collection('shirtBrands').get(), db.collection('fabrics').get()]).then(([b, f]) => {
+      shirtFabrics = Object.fromEntries(f.docs.map(d => [d.id, d.data()]));
+      shirtBrands = b.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((x, y) => ((x.order ?? 100) - (y.order ?? 100)) || String(x.name).localeCompare(String(y.name)));
+      renderShirtOpts();
+    }).catch(e => { $('sh-brands').innerHTML = `<span class="note">Couldn't load the shirt brands${e.code === 'permission-denied' ? ': publish the updated database rules (firestore.rules)' : ''}.</span>`; });
     $('p-style').insertAdjacentHTML('beforeend', models.map(m => `<option value="${esc(m.id)}">${esc(m.label)}${m.enabled ? '' : ' (hidden)'}</option>`).join(''));
     loadShopSettings().then(s => { shop = s; render(); });
     // Categories, live: the filter tabs, the Category picker and the Categories pop-up all follow them
@@ -560,7 +671,7 @@
     bar.innerHTML = n
       ? `<i class="bi bi-mortarboard" style="color:var(--orange);font-size:18px;"></i><div class="grow"><b>${n} example product${n === 1 ? '' : 's'}</b> are in the shop, marked “Example”. Practise on them, then remove them before real customers come.</div>
          <a class="btn-ghost" href="training.html">Open Training</a><button class="btn-ghost" onclick="removeExamples()"><i class="bi bi-trash3"></i> Remove the examples</button>`
-      : `<i class="bi bi-mortarboard" style="color:var(--orange);font-size:18px;"></i><div class="grow"><b>New here?</b> Add 10 example products, two for each shirt style: ready-made ones customers can't change, and ones that start with a design customers can make their own. Prices from ₱299 to ₱899, some on sale, some counted in storage.</div>
+      : `<i class="bi bi-mortarboard" style="color:var(--orange);font-size:18px;"></i><div class="grow"><b>New here?</b> Add 10 example products, two for each shirt style: ready-made ones customers can't change, and ones that start with a design customers can make their own. Prices from ₱299.00 to ₱899.00, some on sale, some counted in storage.</div>
          <button class="btn-grad" id="ex-add" onclick="addExamples()"><i class="bi bi-magic"></i> Add example products</button>`;
   }
 
@@ -584,7 +695,7 @@
         });
         const custom = { apparelColorHex: e.color, shirtStyle: e.style, views };
         const disc = e.discount || 0;
-        const price = disc ? Math.floor(Math.round(e.price * 100) * (100 - disc) / 10000) : e.price;
+        const price = disc ? Math.floor(Math.round(e.price * 100) * (100 - disc) / 100) / 100 : e.price;
         // A photo of the design on its shirt, so the shop list and the product page show it
         let imageUrl = null;
         const m = models.find(x => x.id === e.style);
@@ -1247,7 +1358,34 @@
   }
   $('quick-start').addEventListener('click', e => { const b = e.target.closest('[data-qs]'); if (b) openAddForStyle(b.dataset.qs); });
 
+  // ── Shirts this product offers (products/{id}.shirtOptions: {brandIds, defaultBrandId, allowOwn}) ──
+  let shirtBrands = null, shirtFabrics = {}, formShirts = { brandIds: [], defaultBrandId: '', allowOwn: false };
+  function renderShirtOpts() {
+    const box = $('sh-brands'); if (!box) return;
+    if (shop) $('p-own-fee').textContent = Number(shop.ownShirtFee) > 0 ? `(handling fee ${peso(shop.ownShirtFee)} a piece, set on Shop Settings)` : '(no handling fee, set on Shop Settings)';
+    $('p-own').checked = !!formShirts.allowOwn;
+    if (!shirtBrands) return;
+    if (!shirtBrands.length) { box.innerHTML = '<span class="note">No shirt brands yet. Add them on the <a href="shirts.html">Shirts &amp; Fabrics</a> page.</span>'; return; }
+    const on = formShirts.brandIds;
+    if (on.length && !on.includes(formShirts.defaultBrandId)) formShirts.defaultBrandId = on[0];
+    box.innerHTML = shirtBrands.map(b => {
+      const fab = shirtFabrics[b.fabricId], checked = on.includes(b.id);
+      return `<div class="sh-row${b.enabled === false ? ' off' : ''}">
+        <label class="fg-check" style="margin:0;flex:1;min-width:0;"><input type="checkbox" data-b="${esc(b.id)}" ${checked ? 'checked' : ''}>
+          <span><b>${esc(b.name)}</b> <span class="note">${esc([fab && fab.name, b.gsm ? b.gsm + ' gsm' : ''].filter(Boolean).join(' · '))}${b.enabled === false ? ' · switched off' : ''}</span></span></label>
+        <span class="sh-price">+${esc(peso(b.price))}</span>
+        <label class="sh-def" title="Selected first in the app"><input type="radio" name="sh-def" data-d="${esc(b.id)}" ${checked && formShirts.defaultBrandId === b.id ? 'checked' : ''} ${checked ? '' : 'disabled'}> Default</label>
+      </div>`;
+    }).join('');
+    box.querySelectorAll('[data-b]').forEach(c => c.onchange = () => {
+      const id = c.dataset.b;
+      formShirts.brandIds = c.checked ? [...new Set([...formShirts.brandIds, id])] : formShirts.brandIds.filter(x => x !== id);
+      renderShirtOpts();
+    });
+    box.querySelectorAll('[data-d]').forEach(r => r.onchange = () => { formShirts.defaultBrandId = r.dataset.d; });
+  }
   function resetForm(title) {
+    formShirts = { brandIds: [], defaultBrandId: '', allowOwn: false }; renderShirtOpts();
     $('modal-title').textContent = title;
     $('edit-id').value = '';
     ['p-name', 'p-desc', 'p-img', 'p-price', 'p-disc'].forEach(i => $(i).value = '');
@@ -1325,6 +1463,9 @@
     $('p-tag').value = p.tag || '';
     $('p-style').value = models.some(m => m.id === p.shirtStyle) ? p.shirtStyle : '';
     $('p-avail').checked = p.isAvailable !== false;
+    const so = p.shirtOptions || {};
+    formShirts = { brandIds: Array.isArray(so.brandIds) ? so.brandIds.slice() : [], defaultBrandId: so.defaultBrandId || '', allowOwn: so.allowOwn === true };
+    renderShirtOpts();
     document.querySelector(`input[name=p-dmode][value=${p.designLocked === true ? 'locked' : 'open'}]`).checked = true;
     renderDesignState();
     if (p.defaultCustomization) { $('p-start-none').textContent = 'Keep its design'; $('p-start-none-sub').textContent = 'Change it in the Design Studio from its card, or pick a Shop design instead.'; }
@@ -1417,7 +1558,9 @@
   $('p-prev').addEventListener('error', e => { e.target.style.display = 'none'; });
   $('p-file').addEventListener('change', async e => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-    if (f.size > 8 * 1048576) { toast('Photos can be up to 8 MB', 'warn'); return; }
+    const chk = await checkPicture(f);
+    if (chk.error) { toast(chk.error, 'warn'); return; }
+    if (chk.warning) toast(chk.warning, 'warn');
     const lbl = $('p-upload-lbl'), save = $('save-btn');
     lbl.style.opacity = '.5'; save.disabled = true; toast('Uploading the photo…');
     try { $('p-img').value = await uploadToCloudinary(f, { folder: 'kustomoimprenta/products' }); showPreview(); toast('Photo uploaded', 'ok'); }
@@ -1436,7 +1579,7 @@
   function salePrice(regular, d) {
     if (loadedPrice && regular === loadedPrice.regular && d === loadedPrice.disc) return loadedPrice.price;
     if (!d) return regular;
-    return Math.floor(Math.round(regular * 100) * (100 - d) / 10000);
+    return Math.floor(Math.round(regular * 100) * (100 - d) / 100) / 100;
   }
   function updatePriceTag() {
     const box = $('p-pay'), note = $('p-pay-note');
@@ -1448,7 +1591,7 @@
     box.className = 'price-tag';
     box.innerHTML = d ? `<span class="now">${peso(pay)}</span><span class="was">${peso(regular)}</span><span class="off">${d}% OFF</span>`
       : `<span class="now">${peso(pay)}</span><span class="off none">No discount</span>`;
-    if (pay < 20) { note.className = 'price-note bad'; note.textContent = 'Below ₱20, the lowest amount GCash accepts. Lower the discount or raise the price.'; }
+    if (pay < 20) { note.className = 'price-note bad'; note.textContent = 'Below ₱20.00, the lowest amount GCash accepts. Lower the discount or raise the price.'; }
     else note.textContent = d ? `Customers save ${peso(regular - pay)}. The app shows ${peso(regular)} crossed out with a "-${d}%" badge.` : '';
   }
   ['p-price', 'p-disc'].forEach(id => $(id).addEventListener('input', () => {
@@ -1468,7 +1611,7 @@
     const avail = $('p-avail').checked, sizes = getSizes(), track = $('p-track').checked;
     if (!name) { toast('Name is required', 'warn'); $('p-name').focus(); return; }
     if (!cat2) { toast('Pick a category', 'warn'); $('p-cat').focus(); return; }
-    if (isNaN(regular) || regular < 20) { toast('Enter a price of at least ₱20 (the lowest amount GCash accepts)', 'warn'); $('p-price').focus(); return; }
+    if (isNaN(regular) || regular < 20) { toast('Enter a price of at least ₱20.00 (the lowest amount GCash accepts)', 'warn'); $('p-price').focus(); return; }
     if (regular > 100000) { toast('That price looks too high. Check it again.', 'warn'); return; }
     if (!discountOk(disc)) { toast('The discount must be a whole number from 0 to 90', 'warn'); reveal('p-disc'); return; }
     const price = salePrice(regular, disc);
@@ -1490,6 +1633,11 @@
     data.photoFromDesign = !!img && img === ($('p-img').dataset.auto || '');
     if (preset) { const m = currentModel(); data.defaultCustomization = Object.assign({}, preset.customization, m ? { shirtStyle: m.id } : {}); }
     if (chart) data.sizeChart = chart; else if (eid) data.sizeChart = FV.delete();
+    // Shirts customers can choose (the payment server prices them from the same field)
+    formShirts.allowOwn = $('p-own').checked;
+    if (formShirts.brandIds.length || formShirts.allowOwn) {
+      data.shirtOptions = { brandIds: formShirts.brandIds.slice(), defaultBrandId: formShirts.brandIds.includes(formShirts.defaultBrandId) ? formShirts.defaultBrandId : (formShirts.brandIds[0] || ''), allowOwn: formShirts.allowOwn };
+    } else if (eid) data.shirtOptions = FV.delete();
     // Stock: a new count is saved as is; on a product already counted only the change made here is added, so an
     // order taken off while the form was open isn't undone
     const p = eid ? all.find(x => x.id === eid) : null;

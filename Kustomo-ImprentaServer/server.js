@@ -150,7 +150,7 @@ const str = (v, n = 300) => String(v == null ? '' : v).slice(0, n);
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
 /** Shop Settings defaults: the same as the admin site's SHOP_DEFAULTS (js/firebase.js), used until they are saved. */
-const SHOP_DEFAULTS = { shippingFee: 99, freeShippingMin: 1500, downpaymentEnabled: true, downpaymentPercent: 50, downpaymentMinItems: 10 };
+const SHOP_DEFAULTS = { shippingFee: 99, freeShippingMin: 1500, downpaymentEnabled: true, downpaymentPercent: 50, downpaymentMinItems: 10, ownShirtFee: 0 };
 
 /** The order the app sent, kept to the fields an order has, then priced again here from the products and the shop
  *  settings in Firestore: a changed app can't lower a price, the shipping or the downpayment. The amount paid must
@@ -183,21 +183,31 @@ async function priceOrder(order, sent) {
   const changed = () => bad('Prices have changed since the cart was opened. Please open your cart again to see the new total.');
   const ids = [...new Set(order.items.map(it => str(it.productId, 100)))];
   if (ids.some(id => !/^[\w-]{1,100}$/.test(id))) throw bad('An item in the cart has no product. Please remove it and add it again.');
-  const [snaps, shopSnap] = await Promise.all([Promise.all(ids.map(id => db.doc('products/' + id).get())), db.doc('appConfig/shop').get()]);
-  const products = {};
+  const brandIds = [...new Set(order.items.map(it => str(it.brandId, 100)).filter(Boolean))];
+  if (brandIds.some(id => !/^[\w-]{1,100}$/.test(id))) throw bad('A shirt in the cart is not offered. Please choose another.');
+  const [snaps, shopSnap, brandSnaps] = await Promise.all([
+    Promise.all(ids.map(id => db.doc('products/' + id).get())), db.doc('appConfig/shop').get(),
+    Promise.all(brandIds.map(id => db.doc('shirtBrands/' + id).get()))
+  ]);
+  const products = {}, brands = {};
   snaps.forEach((p, i) => { products[ids[i]] = p.exists ? (p.data() || {}) : null; });
+  brandSnaps.forEach((b, i) => { brands[brandIds[i]] = b.exists ? (b.data() || {}) : null; });
+  const shop = Object.assign({}, SHOP_DEFAULTS, shopSnap.exists ? shopSnap.data() : {});
   let subtotal = 0, count = 0;
   for (const it of order.items) {
     const p = products[str(it.productId, 100)];
     if (!p || p.isAvailable === false) throw bad(`${str(it.productName || (p && p.name) || 'An item', 80)} is no longer for sale. Please remove it from your cart.`);
-    const price = num(p.price), qty = Number(it.quantity);
-    if (!(price > 0)) throw bad(`${str(p.name || 'An item', 80)} has no price yet. Please contact the shop.`);
+    const print = num(p.price), qty = Number(it.quantity);
+    if (!(print > 0)) throw bad(`${str(p.name || 'An item', 80)} has no price yet. Please contact the shop.`);
     if (!Number.isInteger(qty) || qty < 1 || qty > 999) throw bad('Bad quantity.');
+    // The shirt (app's ShirtCatalog.kt): one of the shop's brands this product offers, or the customer's own
+    const shirt = shirtPrice(it, p, brands, shop);
+    const price = Math.round((print + shirt.price) * 100) / 100;
     if (Math.abs(num(it.price) - price) > 0.005) throw changed();
-    it.price = price; it.quantity = qty;
+    Object.assign(it, { price, quantity: qty, printPrice: print }, shirt.fields);
     subtotal += price * qty; count += qty;
   }
-  const shop = Object.assign({}, SHOP_DEFAULTS, shopSnap.exists ? shopSnap.data() : {});
+  subtotal = Math.round(subtotal * 100) / 100;
   const fee = num(shop.shippingFee), freeFrom = num(shop.freeShippingMin);
   const shipping = fee <= 0 || (freeFrom > 0 && subtotal >= freeFrom) ? 0 : fee;
   const total = subtotal + shipping;
@@ -211,6 +221,30 @@ async function priceOrder(order, sent) {
     const down = given;
     Object.assign(order, { downpaymentAmount: down, remainingAmount: total - down });
   } else Object.assign(order, { downpaymentAmount: 0, remainingAmount: 0 });
+}
+
+/** What an item's shirt adds per piece, checked against the product's shirt options, the brand's price in Firestore
+ *  and the shop's bring-your-own fee. Returns { price, fields } (fields are saved on the order's item). */
+function shirtPrice(it, p, brands, shop) {
+  const opts = (p.shirtOptions && typeof p.shirtOptions === 'object') ? p.shirtOptions : null;
+  const offered = opts && Array.isArray(opts.brandIds) ? opts.brandIds.filter(id => typeof id === 'string') : [];
+  const notOffered = () => bad(`The shirt chosen for ${str(p.name || 'an item', 80)} is no longer offered. Please choose another in your cart.`);
+  const source = it.shirtSource === 'own' ? 'own' : it.shirtSource === 'shop' ? 'shop' : '';
+  if (source === 'own') {
+    if (!opts || opts.allowOwn !== true) throw notOffered();
+    const fee = Math.max(0, num(shop.ownShirtFee));
+    return { price: fee, fields: { shirtSource: 'own', shirtPrice: fee, brandId: '', brandName: '', fabric: '' } };
+  }
+  // No choice sent: only for products that offer none (an older app on such a product is charged the same as before)
+  const id = source === 'shop' ? str(it.brandId, 100) : '';
+  if (!id) {
+    if (offered.length || (opts && opts.allowOwn === true)) throw bad('Please update the app to choose the shirt for your order.');
+    return { price: 0, fields: {} };
+  }
+  const b = brands[id];
+  if (!offered.includes(id) || !b || b.enabled === false || !(num(b.price) >= 0)) throw notOffered();
+  const price = num(b.price);
+  return { price, fields: { shirtSource: 'shop', shirtPrice: price, brandId: id, brandName: str(b.name, 80), fabric: str(it.fabric, 80) } };
 }
 
 // ── Saving the order (the same as the app's OrderService.saveOrder) ─────────────────────────────────
@@ -238,7 +272,10 @@ async function saveOrder(order, srcId) {
       const sides = Object.keys(views).filter(k => sideHasContent(views[k]));
       const qty = Math.round(num(item.quantity)) || 1, price = num(item.price);
       const image = String(item.previewUrl || '').trim() || String(item.imageUrl || '');
-      let text = (item.productName || 'Item') + ' · Size ' + (item.size || '—') + ' · ×' + qty + ' · ₱' + Math.trunc(price * qty);
+      const pesos = (price * qty).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      let text = (item.productName || 'Item') + ' · Size ' + (item.size || '—') + ' · ×' + qty + ' · ₱' + pesos;
+      if (item.shirtSource === 'own') text += '\nShirt: brought by the customer';
+      else if (item.brandName) text += '\nShirt: ' + item.brandName;
       if (sides.length) text += '\nYour design on the ' + sides.join(', ');
       batch.set(chatRef.collection('messages').doc(), {
         senderId: order.userId, senderRole: 'user', kind: 'item', itemIndex: i, messageText: text, imageUrl: image,

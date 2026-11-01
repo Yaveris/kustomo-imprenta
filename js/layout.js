@@ -22,6 +22,7 @@
     ]],
     ['Catalog', [
       ['products.html', 'bi-box-seam', 'Products &amp; Stock'],
+      ['shirts.html', 'bi-layers', 'Shirts &amp; Fabrics'],
       ['home-page.html', 'bi-house-heart', 'Home Page'],
       ['design.html', 'bi-palette', 'Design Studio'],
       ['design-library.html', 'bi-collection', 'Design Library'],
@@ -193,6 +194,7 @@ const OrderAlert = (() => {
   .oa-tab .c{min-width:22px;padding:1px 7px;border-radius:11px;background:#FF5C00;color:#fff;font-size:12.5px;text-align:center;}
   .oa-tab.new{animation:oa-pulse 1.4s ease-in-out infinite;}
   #oa-box.open .oa-tab{order:-1;}
+  #oa-box.open > :not(.oa-tab){align-self:stretch;}
 }
 .oa{background:#16161c;border:1px solid rgba(255,92,0,.6);border-radius:14px;box-shadow:0 0 0 3px rgba(255,92,0,.3),0 14px 40px rgba(0,0,0,.55);overflow:hidden;font-size:14px;color:#eee;flex-shrink:0;animation:oa-in .28s ease-out;}
 .oa.pulse{animation:oa-pulse 1.4s ease-in-out infinite;}

@@ -21,6 +21,10 @@
     .terms-row .tr-head input { flex: 1; min-width: 0; font-weight: 700; }
     .terms-row textarea { width: 100%; min-height: 90px; }
     .save-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+    .xw-list { display:grid; gap:8px; max-width:560px; }
+    .xw-row { display:grid; grid-template-columns:minmax(0,1fr) 150px auto; gap:8px; align-items:center; }
+    .xw-row input[type=text] { min-width:0; }
+    @media (max-width:560px) { .xw-row { grid-template-columns:minmax(0,1fr) 120px auto; } }
   </style>
 </head>
 <body>
@@ -54,10 +58,10 @@
         <div class="card-head"><span class="card-title"><i class="bi bi-truck" style="color:var(--orange);margin-right:6px;"></i>Shipping</span></div>
         <div class="set-body">
           <div class="fg"><label for="s-fee">Shipping fee</label>
-            <div class="money"><span>₱</span><input type="number" id="s-fee" min="0" step="1"></div>
+            <div class="money"><span>₱</span><input type="number" id="s-fee" min="0" step="0.01"></div>
             <small>Charged once per order.</small></div>
           <div class="fg"><label for="s-free">Free shipping from</label>
-            <div class="money"><span>₱</span><input type="number" id="s-free" min="0" step="1"></div>
+            <div class="money"><span>₱</span><input type="number" id="s-free" min="0" step="0.01"></div>
             <small>Orders with at least this subtotal ship free. 0 = shipping is never free.</small></div>
         </div>
       </div>
@@ -75,12 +79,30 @@
       </div>
 
       <div class="card">
+        <div class="card-head"><span class="card-title"><i class="bi bi-person-check" style="color:var(--orange);margin-right:6px;"></i>Bring your own shirt</span></div>
+        <div class="set-body">
+          <div class="fg"><label for="s-own">Handling fee per piece</label>
+            <div class="money"><span>₱</span><input type="number" id="s-own" min="0" step="0.01"></div>
+            <small>Added to the printing price when a customer brings their own shirt. 0 = no fee. Which products allow it is set on each product.</small></div>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="card-head"><span class="card-title"><i class="bi bi-box-seam" style="color:var(--orange);margin-right:6px;"></i>Stock alerts</span></div>
         <div class="set-body">
           <div class="fg"><label for="s-low">Low stock at</label>
             <div class="money"><input type="number" id="s-low" min="0" step="1"><span>pieces or fewer</span></div>
             <small>A size with stock at or below this is flagged on the Dashboard and the Products page. Only for this site; customers don't see it.</small></div>
         </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;" id="xw-card">
+      <div class="card-head"><span class="card-title"><i class="bi bi-tools" style="color:var(--orange);margin-right:6px;"></i>Extra work fees</span></div>
+      <div class="set-body">
+        <p class="note" style="margin-bottom:12px;">Charges for difficult jobs, picked when you accept an order (you can change the amount and give a reason each time). The customer approves or declines them in the app <b>before printing</b>; an approved fee is paid in cash at drop-off or on delivery. The list starts with suggestions; set your own names and prices.</p>
+        <div id="xw-list" class="xw-list"></div>
+        <button class="btn-ghost" type="button" onclick="addExtraType()" style="margin-top:8px;"><i class="bi bi-plus-lg"></i> Add a fee</button>
       </div>
     </div>
 
@@ -152,7 +174,22 @@
 <script src="js/auth.js"></script>
 <script>
   const $ = id => document.getElementById(id);
-  const FIELDS = { shippingFee: 's-fee', freeShippingMin: 's-free', downpaymentPercent: 's-dp-pct', downpaymentMinItems: 's-dp-min', lowStockAt: 's-low' };
+  const FIELDS = { shippingFee: 's-fee', freeShippingMin: 's-free', downpaymentPercent: 's-dp-pct', downpaymentMinItems: 's-dp-min', lowStockAt: 's-low', ownShirtFee: 's-own' };
+  // Extra work fees (appConfig/shop.extraWorkTypes): [{label, amount}]
+  let extraTypes = SHOP_DEFAULTS.extraWorkTypes.map(t => Object.assign({}, t));
+  function renderExtra() {
+    $('xw-list').innerHTML = extraTypes.length ? extraTypes.map((t, i) => `<div class="xw-row">
+        <input type="text" maxlength="60" value="${esc(t.label)}" aria-label="Name of fee ${i + 1}" data-i="${i}" data-k="label" placeholder="e.g. Extra colour">
+        <div class="money"><span>₱</span><input type="number" min="0" step="0.01" value="${esc(String(t.amount))}" aria-label="Amount of fee ${i + 1}" data-i="${i}" data-k="amount"></div>
+        <button class="btn-icon del" type="button" title="Remove" aria-label="Remove ${esc(t.label || 'this fee')}" onclick="removeExtraType(${i})"><i class="bi bi-trash3"></i></button>
+      </div>`).join('') : '<p class="note">No extra work fees. Add one to offer it when accepting orders.</p>';
+    $('xw-list').querySelectorAll('input').forEach(inp => inp.addEventListener('input', () => {
+      const t = extraTypes[+inp.dataset.i]; if (!t) return;
+      t[inp.dataset.k] = inp.dataset.k === 'amount' ? parseFloat(inp.value) : inp.value; changed();
+    }));
+  }
+  function addExtraType() { extraTypes.push({ label: '', amount: 0 }); renderExtra(); changed(); const ins = $('xw-list').querySelectorAll('input[data-k="label"]'); ins[ins.length - 1].focus(); }
+  function removeExtraType(i) { extraTypes.splice(i, 1); renderExtra(); changed(); }
   let dirty = false;
 
   window.onAuthReady = async (user, role) => {
@@ -166,13 +203,15 @@
       const snap = await db.collection('appConfig').doc('shop').get();
       const d = snap.exists ? snap.data() : {};
       fill(Object.assign({}, SHOP_DEFAULTS, d));
+      if (Array.isArray(d.extraWorkTypes)) extraTypes = d.extraWorkTypes.map(t => ({ label: String(t.label || ''), amount: Number(t.amount) || 0 }));
+      renderExtra();
       terms = Array.isArray(d.terms) ? d.terms.map(t => ({ title: String(t.title || ''), body: String(t.body || '') })) : [];
       renderTerms();
       $('state').textContent = snap.exists ? 'Saved' : 'Defaults';
       $('state').className = 'pill ' + (snap.exists ? 'ok' : '');
       if (d.updatedAt) $('saved-note').textContent = `Last saved ${fmtDate(d.updatedAt)}${d.updatedBy ? ' by ' + d.updatedBy : ''}.`;
     } catch (e) {
-      fill(SHOP_DEFAULTS); renderTerms();
+      fill(SHOP_DEFAULTS); renderTerms(); renderExtra();
       $('state').textContent = 'Not readable'; $('state').className = 'pill bad';
       toast(e.code === 'permission-denied' ? "Couldn't read the settings: the database rules need updating (App Keys → For your developer)." : "Couldn't load: " + e.message, 'err');
     }
@@ -251,7 +290,7 @@
   let terms = [];
   /** The app's built-in starting text (TermsScreen.kt, same wording), with this page's current amounts filled in. */
   function starterTerms() {
-    const v = read(), pesos = n => '₱' + Number(n).toLocaleString('en-PH', { maximumFractionDigits: 2 });
+    const v = read(), pesos = n => '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const dpLine = v.downpaymentEnabled ? `\n• Orders of ${v.downpaymentMinItems} or more items may be paid with a ${v.downpaymentPercent}% downpayment through GCash, with the balance paid on delivery or pickup.` : '';
     const shipLine = v.shippingFee <= 0 ? 'Shipping is free.'
       : v.freeShippingMin > 0 ? `Shipping is free for orders of ${pesos(v.freeShippingMin)} and above. Otherwise, a ${pesos(v.shippingFee)} shipping fee applies.`
@@ -260,7 +299,7 @@
       ['1. About These Terms', 'These Terms and Conditions are an agreement between you and K\'s Print Express ("we", "us"), the shop behind the KustomoImprenta app. They cover your use of the app and every order you place through it.\n\nBy creating an account or placing an order, you confirm that you have read and agree to these Terms and to the Privacy Policy below. If you do not agree, please do not use the app.'],
       ['2. Your Account', '• You must be at least 18 years old, or have the permission of a parent or guardian who agrees to these Terms for you.\n• Give true and complete details, and keep them up to date in your Profile.\n• Keep your password private. You are responsible for what happens in your account.\n• We may suspend or close an account that breaks these Terms, places fake orders, or abuses our staff.'],
       ['3. Custom Orders', '• Every item is printed to order from the design you make or upload. Check the colors, text, spelling, size and placement before you check out.\n• Colors on your screen can look slightly different from the printed item.\n• The 3D preview, AR Try-On and Fit Scan size suggestions are guides only. They help you choose, but they do not guarantee an exact look or fit.\n• We may contact you through the order chat before printing if your design needs changes, and we may decline a design that breaks Section 7.'],
-      ['4. Prices and Payment', '• Prices are in Philippine Pesos (₱). The total, including shipping, is shown before you pay.\n• Payments are made with GCash through PayMongo, a licensed payment provider. We never see or store your GCash PIN or one-time codes.' + dpLine + '\n• An order is confirmed once its payment goes through.'],
+      ['4. Prices and Payment', '• Prices are in Philippine Pesos (₱). The total, including shipping, is shown before you pay.\n• Payments are made with GCash through PayMongo, a licensed payment provider. We never see or store your GCash PIN or one-time codes.' + dpLine + '\n• An order is confirmed once its payment goes through.\n• An item\'s price is the printing price plus the shirt you choose: one of the shop\'s brands, or your own shirt (with any handling fee shown). If you bring your own shirt, you drop it off at the shop; the shop isn\'t liable for damage to a shirt you provide, and a misprint on it is refunded for the printing only.\n• For difficult work, the shop may ask for an extra fee after accepting your order. You approve or decline it in the app before printing; an approved fee is paid in cash at drop-off or on delivery, and a declined one cancels the order with a full refund.'],
       ['5. Shipping and Delivery', '• ' + shipLine + '\n• Delivery times are estimates and depend on the size of your order and your location. You can follow your order in My Orders.\n• Please make sure your address and map pin are correct. We are not responsible for delays caused by a wrong address.'],
       ['6. Cancellations, Returns and Reprints', '• You can ask to cancel an order through the order chat before printing starts. Paid amounts for cancelled orders are refunded to your original payment method.\n• Because each item is made just for you, an order cannot be cancelled once printing has started, and we cannot accept returns for a change of mind or a wrong size you chose.\n• If your item arrives damaged, misprinted, or different from the design you approved, message us in the order chat within 7 days of delivery with a photo. We will reprint it or refund you.\n• Nothing in these Terms takes away your rights under the Consumer Act of the Philippines (Republic Act No. 7394).'],
       ['7. Your Designs', '• You keep ownership of the designs, images and text you upload.\n• You allow us to use them only to show your preview, print and deliver your order, and talk with you about it. We will not use your design for anything else without asking you.\n• You confirm that you own or have permission to use everything you upload. Do not upload designs that copy someone else\'s logo, character or artwork without permission, or that are offensive, hateful or illegal. We may refuse to print such designs.'],
@@ -314,7 +353,9 @@
     const n = id => parseFloat($(id).value);
     return {
       shippingFee: n('s-fee'), freeShippingMin: n('s-free'), downpaymentEnabled: $('s-dp-on').checked,
-      downpaymentPercent: n('s-dp-pct'), downpaymentMinItems: Math.round(n('s-dp-min')), lowStockAt: Math.round(n('s-low'))
+      downpaymentPercent: n('s-dp-pct'), downpaymentMinItems: Math.round(n('s-dp-min')), lowStockAt: Math.round(n('s-low')),
+      ownShirtFee: n('s-own'),
+      extraWorkTypes: extraTypes.map(t => ({ label: String(t.label || '').trim(), amount: Math.round((Number(t.amount) || 0) * 100) / 100 }))
     };
   }
   /** The reason the values can't be saved, or ''. */
@@ -326,6 +367,9 @@
     if (!(v.downpaymentPercent >= 10 && v.downpaymentPercent <= 90)) return 'The downpayment must be between 10% and 90%.';
     if (!(v.downpaymentMinItems >= 1)) return 'Downpayment needs at least 1 item.';
     if (!(v.lowStockAt >= 0)) return 'Enter the low-stock number (0 or more).';
+    if (!(v.ownShirtFee >= 0)) return 'Enter the bring-your-own handling fee (0 for none).';
+    if (v.extraWorkTypes.some(t => !t.label)) return 'Every extra work fee needs a name (or remove the empty one).';
+    if (v.extraWorkTypes.some(t => !(t.amount >= 0))) return 'Extra work fees need an amount of 0 or more.';
     return '';
   }
   function preview() {

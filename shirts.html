@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shirts &amp; Fabrics — KustomoImprenta Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    .sf-wrap { max-width: 980px; }
+    .sf-intro { font-size: 15px; color: #c8c8c8; line-height: 1.55; margin-bottom: 14px; max-width: 720px; }
+    .sf-ro { display: none; margin-bottom: 14px; }
+    .sf-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; padding: 0 18px 16px; }
+    .sf-form .wide { grid-column: 1 / -1; }
+    .sf-form .fg { margin: 0; }
+    .sf-form textarea { min-height: 64px; resize: vertical; }
+    .sf-actions { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    @media (max-width: 640px) { .sf-form { grid-template-columns: minmax(0, 1fr); } }
+    .sf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; padding: 0 18px 18px; }
+    .sf-card { border: 1px solid var(--border); border-radius: 12px; background: rgba(255,255,255,.02); overflow: hidden; display: flex; flex-direction: column; }
+    .sf-card.off { opacity: .55; }
+    .sf-sw { height: 70px; background: repeating-linear-gradient(45deg, #2a2a30 0 6px, #24242a 6px 12px); display: grid; place-items: center; color: #555; font-size: 22px; }
+    .sf-sw img { width: 100%; height: 100%; object-fit: cover; }
+    .sf-b { padding: 10px 12px; display: grid; gap: 4px; flex: 1; }
+    .sf-b .nm { font-weight: 700; font-size: 15px; }
+    .sf-b .ds { font-size: 13.5px; color: #bdbdbd; line-height: 1.45; }
+    .sf-b .sub { font-size: 12.5px; color: var(--muted); }
+    .sf-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+    .sf-tags span { font-size: 11.5px; padding: 1px 8px; border-radius: 10px; background: rgba(255,255,255,.07); color: #ccc; }
+    .sf-ft { display: flex; gap: 6px; justify-content: flex-end; padding: 8px 10px; border-top: 1px solid var(--border); }
+    .tbl .price { font-weight: 700; color: var(--orange); white-space: nowrap; text-align: right; }
+    .money { display: flex; align-items: stretch; }
+    .money span { display: flex; align-items: center; padding: 0 10px; border: 1px solid var(--border); border-right: 0; border-radius: 8px 0 0 8px; background: rgba(255,255,255,.05); font-weight: 700; }
+    .money input { border-radius: 0 8px 8px 0 !important; min-width: 0; flex: 1; }
+    .sw-row { display: flex; gap: 10px; align-items: center; }
+    .sw-prev { width: 64px; height: 44px; border-radius: 8px; border: 1px solid var(--border); background: #1c1c22 center / cover no-repeat; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div id="toast-box"></div>
+
+<nav id="sidebar">
+  <div class="sidebar-logo"><div class="logo-brand">KustomoImprenta</div><span class="logo-sub">Admin Panel</span></div>
+  <ul class="sidebar-nav"></ul>
+  <div class="sidebar-footer">
+    <div class="admin-info"><div class="admin-avatar" id="admin-avatar">A</div><div><div class="admin-name" id="admin-name">—</div><div class="admin-role" id="admin-role">Admin</div></div></div>
+    <button class="btn-logout" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar"><div class="topbar-title">Shirts <span>&amp; Fabrics</span></div></div>
+  <div class="page-content">
+  <div class="sf-wrap">
+    <p class="sf-intro">The shirts your shop prints on. <b>Fabrics</b> explain each material to customers (how it feels, what it suits, how to care for it). <b>Brands</b> are the shirts you stock, each made of a fabric and with its own price per piece. A product chooses which brands customers can pick on its page (Products → Shirts), and the brand's price is added to the product's printing price at checkout.</p>
+    <div class="card sf-ro" id="ro-note"><div class="card-head"><span class="card-title"><i class="bi bi-eye" style="color:var(--orange);"></i> View only</span></div><div style="padding:0 18px 14px;" class="note">Only the shop owner (Super Admin) adds or changes fabrics, brands and prices.</div></div>
+
+    <div class="filter-bar" role="tablist" style="margin-bottom:14px;">
+      <button class="f-tab active" data-tab="brands" role="tab">Brands <span class="cnt" id="n-brands"></span></button>
+      <button class="f-tab" data-tab="fabrics" role="tab">Fabrics <span class="cnt" id="n-fabrics"></span></button>
+    </div>
+
+    <!-- ── Brands ── -->
+    <div id="tab-brands">
+      <div class="card edit-only" style="margin-bottom:16px;">
+        <div class="card-head"><span class="card-title" id="b-title"><i class="bi bi-plus-lg" style="color:var(--orange);"></i> Add a brand</span></div>
+        <form class="sf-form" id="b-form" autocomplete="off">
+          <div class="fg"><label for="b-name">Brand name *</label><input id="b-name" maxlength="60" placeholder="e.g. Premium Cotton Tee" required></div>
+          <div class="fg"><label for="b-fabric">Fabric *</label><select id="b-fabric"></select></div>
+          <div class="fg"><label for="b-price">Price per piece *</label><div class="money"><span>₱</span><input id="b-price" type="number" min="0" step="0.01" placeholder="150.00" required></div></div>
+          <div class="fg"><label for="b-gsm">Weight (gsm)</label><input id="b-gsm" type="number" min="0" max="600" step="1" placeholder="e.g. 180"></div>
+          <div class="fg wide"><label for="b-colors">Colours you stock</label><input id="b-colors" maxlength="200" placeholder="e.g. White, Black, Navy, Red"></div>
+          <div class="fg wide"><label for="b-desc">Short description</label><input id="b-desc" maxlength="160" placeholder="e.g. Thick and soft, keeps its shape after washing"></div>
+          <div class="fg"><label for="b-order">Order in the app</label><input id="b-order" type="number" min="0" step="1" value="10"></div>
+          <label class="fg-check" style="align-self:end;"><input type="checkbox" id="b-on" checked> Offered to customers</label>
+          <div class="sf-actions">
+            <button class="btn-grad" type="submit" id="b-save"><i class="bi bi-check-lg"></i> Add brand</button>
+            <button class="btn-ghost" type="button" id="b-cancel" hidden>Cancel</button>
+            <span class="note">Changing a price changes it for new orders; orders already placed keep what they paid.</span>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">Brands</span></div>
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>Brand</th><th>Fabric</th><th>Colours</th><th>Used by</th><th style="text-align:right;">Price</th><th></th></tr></thead>
+          <tbody id="b-list"><tr><td colspan="6"><div class="spinner"></div></td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ── Fabrics ── -->
+    <div id="tab-fabrics" hidden>
+      <div class="card edit-only" style="margin-bottom:16px;">
+        <div class="card-head"><span class="card-title" id="f-title"><i class="bi bi-plus-lg" style="color:var(--orange);"></i> Add a fabric</span></div>
+        <form class="sf-form" id="f-form" autocomplete="off">
+          <div class="fg"><label for="f-name">Fabric name *</label><input id="f-name" maxlength="60" placeholder="e.g. 100% Cotton" required></div>
+          <div class="fg"><label for="f-uses">Good for</label><input id="f-uses" maxlength="160" placeholder="e.g. Tees, DTF, Silkscreen (comma-separated)"></div>
+          <div class="fg wide"><label for="f-desc">What customers read *</label><textarea id="f-desc" maxlength="400" placeholder="How it feels and wears, in plain words" required></textarea></div>
+          <div class="fg wide"><label for="f-care">Care</label><input id="f-care" maxlength="200" placeholder="e.g. Wash cold, inside out. Don't iron the print."></div>
+          <div class="fg wide"><label>Texture picture <span class="note">(a close-up of the cloth)</span></label>
+            <div class="sw-row"><div class="sw-prev" id="f-sw-prev"></div>
+              <label class="btn-ghost" style="cursor:pointer;margin:0;"><i class="bi bi-upload"></i> Choose picture<input type="file" id="f-sw-file" accept="image/png,image/jpeg,image/webp" hidden></label>
+              <button class="btn-ghost" type="button" id="f-sw-clear">Remove</button></div>
+            <div class="fg-help">PNG, JPG or WebP, up to 2 MB.</div></div>
+          <div class="fg"><label for="f-order">Order</label><input id="f-order" type="number" min="0" step="1" value="10"></div>
+          <label class="fg-check" style="align-self:end;"><input type="checkbox" id="f-on" checked> Shown to customers</label>
+          <div class="sf-actions">
+            <button class="btn-grad" type="submit" id="f-save"><i class="bi bi-check-lg"></i> Add fabric</button>
+            <button class="btn-ghost" type="button" id="f-cancel" hidden>Cancel</button>
+            <button class="btn-ghost" type="button" id="f-seed" hidden><i class="bi bi-magic"></i> Start with the common fabrics</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">Fabrics</span></div>
+        <div class="sf-grid" id="f-list"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  const FV = firebase.firestore.FieldValue;
+  let fabrics = null, brands = null, products = [], canEdit = false, editB = null, editF = null, swatch = { file: null, url: '' };
+
+  // Common fabrics to start from (general descriptions; the owner edits them to match the shop's stock)
+  const STARTER_FABRICS = [
+    { name: '100% Cotton', uses: ['Tees', 'DTF', 'Silkscreen'], order: 10,
+      description: 'Soft, breathable and comfortable in hot weather. Takes ink well, so prints look sharp. Can shrink a little and wrinkle.',
+      care: 'Wash cold, inside out. Dry in the shade. Don\'t iron over the print.' },
+    { name: 'Polyester (Dri-Fit)', uses: ['Jerseys', 'Sportswear', 'Sublimation'], order: 20,
+      description: 'Light and smooth, dries fast and keeps its shape. Made for sports and full-colour sublimation prints.',
+      care: 'Wash cold. No fabric softener. Hang to dry.' },
+    { name: 'CVC (cotton-poly blend)', uses: ['Tees', 'Uniforms'], order: 30,
+      description: 'Mostly cotton with some polyester: soft like cotton, shrinks and wrinkles less, and costs less.',
+      care: 'Wash cold, inside out. Low heat if machine-dried.' },
+    { name: 'Silk', uses: ['Special orders'], order: 40,
+      description: 'Smooth with a soft sheen. Delicate, so only some print methods suit it. Ask the shop first.',
+      care: 'Hand wash cold or dry clean. Don\'t wring.' }
+  ];
+
+  // ── Tabs ──
+  document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => {
+    document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('active', x === b));
+    $('tab-brands').hidden = b.dataset.tab !== 'brands'; $('tab-fabrics').hidden = b.dataset.tab !== 'fabrics';
+  });
+
+  window.onAuthReady = (user, role) => {
+    canEdit = role === 'super_admin';
+    document.querySelectorAll('.edit-only').forEach(el => el.hidden = !canEdit);
+    $('ro-note').style.display = canEdit ? 'none' : 'block';
+    const denied = e => `Couldn't load${e && e.code === 'permission-denied' ? ': the database rules don\'t allow it yet. Publish the updated rules (firestore.rules) in the Firebase console.' : ': ' + esc(e && e.message)}`;
+    db.collection('fabrics').onSnapshot(s => {
+      fabrics = s.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => ((a.order ?? 100) - (b.order ?? 100)) || String(a.name).localeCompare(String(b.name)));
+      renderFabrics(); renderBrands(); fillFabricSelect();
+    }, e => { $('f-list').innerHTML = `<div class="empty"><i class="bi bi-lock"></i><p>${denied(e)}</p></div>`; });
+    db.collection('shirtBrands').onSnapshot(s => {
+      brands = s.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => ((a.order ?? 100) - (b.order ?? 100)) || String(a.name).localeCompare(String(b.name)));
+      renderBrands();
+    }, e => { $('b-list').innerHTML = `<tr><td colspan="6"><div class="empty"><i class="bi bi-lock"></i><p>${denied(e)}</p></div></td></tr>`; });
+    db.collection('products').onSnapshot(s => { products = s.docs.map(d => Object.assign({ id: d.id }, d.data())); renderBrands(); }, () => {});
+  };
+
+  const fabricName = id => { const f = (fabrics || []).find(x => x.id === id); return f ? f.name : ''; };
+  const usedBy = id => products.filter(p => p.shirtOptions && Array.isArray(p.shirtOptions.brandIds) && p.shirtOptions.brandIds.includes(id));
+
+  // ── Brands ──
+  function fillFabricSelect() {
+    const cur = $('b-fabric').value;
+    $('b-fabric').innerHTML = (fabrics || []).length
+      ? (fabrics || []).map(f => `<option value="${esc(f.id)}">${esc(f.name)}</option>`).join('')
+      : '<option value="">Add a fabric first (Fabrics tab)</option>';
+    if (cur && (fabrics || []).some(f => f.id === cur)) $('b-fabric').value = cur;
+  }
+  function renderBrands() {
+    if (!brands) return;
+    $('n-brands').textContent = brands.length;
+    if (!brands.length) { $('b-list').innerHTML = `<tr><td colspan="6"><div class="empty"><i class="bi bi-tags"></i><p>No brands yet.${canEdit ? ' Add the shirts you stock above.' : ''}</p></div></td></tr>`; return; }
+    $('b-list').innerHTML = brands.map(b => {
+      const n = usedBy(b.id).length;
+      return `<tr${b.enabled === false ? ' style="opacity:.55;"' : ''}>
+        <td><b>${esc(b.name)}</b>${b.enabled === false ? ' <span class="pill">Off</span>' : ''}<div class="o-sub">${esc([b.gsm ? b.gsm + ' gsm' : '', b.description || ''].filter(Boolean).join(' · '))}</div></td>
+        <td>${esc(fabricName(b.fabricId) || '—')}</td>
+        <td style="font-size:13.5px;color:var(--muted);">${esc(b.colors || '—')}</td>
+        <td>${n ? `<span class="pill ok">${n} product${n === 1 ? '' : 's'}</span>` : '<span class="note">None yet</span>'}</td>
+        <td class="price">${esc(peso(b.price))}</td>
+        <td style="white-space:nowrap;">${canEdit ? `<button class="btn-icon" title="Edit" aria-label="Edit ${esc(b.name)}" onclick="editBrand('${esc(b.id)}')"><i class="bi bi-pencil"></i></button>
+          <button class="btn-icon del" title="Remove" aria-label="Remove ${esc(b.name)}" onclick="removeBrand('${esc(b.id)}')"><i class="bi bi-trash3"></i></button>` : ''}</td>
+      </tr>`;
+    }).join('');
+  }
+  function clearBrandForm() {
+    editB = null; $('b-form').reset(); $('b-order').value = (brands || []).length ? Math.max(...brands.map(b => b.order ?? 0)) + 10 : 10; $('b-on').checked = true;
+    $('b-title').innerHTML = '<i class="bi bi-plus-lg" style="color:var(--orange);"></i> Add a brand';
+    $('b-save').innerHTML = '<i class="bi bi-check-lg"></i> Add brand'; $('b-cancel').hidden = true; fillFabricSelect();
+  }
+  window.editBrand = id => {
+    const b = brands.find(x => x.id === id); if (!b) return;
+    editB = id;
+    $('b-name').value = b.name || ''; $('b-fabric').value = b.fabricId || ''; $('b-price').value = b.price ?? '';
+    $('b-gsm').value = b.gsm || ''; $('b-colors').value = b.colors || ''; $('b-desc').value = b.description || '';
+    $('b-order').value = b.order ?? 10; $('b-on').checked = b.enabled !== false;
+    $('b-title').innerHTML = `<i class="bi bi-pencil" style="color:var(--orange);"></i> Edit ${esc(b.name)}`;
+    $('b-save').innerHTML = '<i class="bi bi-check-lg"></i> Save'; $('b-cancel').hidden = false;
+    $('b-name').scrollIntoView({ block: 'center', behavior: 'smooth' }); $('b-name').focus();
+  };
+  $('b-cancel').onclick = clearBrandForm;
+  $('b-form').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const name = $('b-name').value.trim().replace(/\s+/g, ' '), price = parseFloat($('b-price').value), fabricId = $('b-fabric').value;
+    if (!name) { toast('Type the brand name', 'warn'); return; }
+    if (!fabricId) { toast('Add a fabric first (Fabrics tab), then choose it here', 'warn'); return; }
+    if (!(price >= 0)) { toast('Enter the price per piece (0 or more)', 'warn'); $('b-price').focus(); return; }
+    if ((brands || []).some(b => b.id !== editB && String(b.name).toLowerCase() === name.toLowerCase())) { toast(`${name} is already on the list`, 'warn'); return; }
+    const gsm = parseInt($('b-gsm').value, 10);
+    const data = {
+      name, fabricId, price: Math.round(price * 100) / 100, gsm: gsm > 0 ? gsm : null,
+      colors: $('b-colors').value.trim(), description: $('b-desc').value.trim(),
+      order: parseInt($('b-order').value, 10) || 0, enabled: $('b-on').checked,
+      updatedAt: FV.serverTimestamp(), updatedBy: (auth.currentUser && auth.currentUser.email) || ''
+    };
+    $('b-save').disabled = true;
+    try {
+      if (editB) await db.collection('shirtBrands').doc(editB).update(data);
+      else await db.collection('shirtBrands').add(Object.assign(data, { createdAt: FV.serverTimestamp() }));
+      toast(editB ? 'Brand saved' : `${name} added`, 'ok'); clearBrandForm();
+    } catch (e) { toast((editB ? 'Not saved: ' : 'Not added: ') + e.message, 'err'); }
+    finally { $('b-save').disabled = false; }
+  });
+  window.removeBrand = async id => {
+    const b = brands.find(x => x.id === id); if (!b) return;
+    const n = usedBy(id).length;
+    if (!confirm(`Remove ${b.name}?` + (n ? `\n\n${n} product${n === 1 ? '' : 's'} offer it; customers won't see it there any more. To hide it for a while instead, edit it and untick "Offered to customers".` : ''))) return;
+    try { await db.collection('shirtBrands').doc(id).delete(); toast(`${b.name} removed`, 'ok'); if (editB === id) clearBrandForm(); }
+    catch (e) { toast('Not removed: ' + e.message, 'err'); }
+  };
+
+  // ── Fabrics ──
+  function renderFabrics() {
+    $('n-fabrics').textContent = fabrics.length;
+    $('f-seed').hidden = !canEdit || fabrics.length > 0;
+    if (!fabrics.length) { $('f-list').innerHTML = `<div class="empty" style="grid-column:1/-1;"><i class="bi bi-layers"></i><p>No fabrics yet.${canEdit ? ' Add one above, or start with the common fabrics.' : ''}</p></div>`; return; }
+    $('f-list').innerHTML = fabrics.map(f => {
+      const u = safeUrl(f.swatchUrl), nb = (brands || []).filter(b => b.fabricId === f.id).length;
+      return `<div class="sf-card${f.enabled === false ? ' off' : ''}">
+        <div class="sf-sw">${u ? `<img src="${u}" alt="${esc(f.name)} texture">` : '<i class="bi bi-image"></i>'}</div>
+        <div class="sf-b"><div class="nm">${esc(f.name)}${f.enabled === false ? ' <span class="pill">Hidden</span>' : ''}</div>
+          <div class="ds">${esc(f.description || '')}</div>
+          ${f.care ? `<div class="sub"><i class="bi bi-droplet"></i> ${esc(f.care)}</div>` : ''}
+          <div class="sf-tags">${(f.uses || []).map(x => `<span>${esc(x)}</span>`).join('')}</div>
+          <div class="sub">${nb ? `${nb} brand${nb === 1 ? '' : 's'}` : 'No brands yet'}</div></div>
+        ${canEdit ? `<div class="sf-ft"><button class="btn-icon" title="Edit" aria-label="Edit ${esc(f.name)}" onclick="editFabric('${esc(f.id)}')"><i class="bi bi-pencil"></i></button>
+          <button class="btn-icon del" title="Remove" aria-label="Remove ${esc(f.name)}" onclick="removeFabric('${esc(f.id)}')"><i class="bi bi-trash3"></i></button></div>` : ''}
+      </div>`;
+    }).join('');
+  }
+  function showSwatch() { $('f-sw-prev').style.backgroundImage = swatch.file ? `url(${URL.createObjectURL(swatch.file)})` : (swatch.url ? `url(${swatch.url})` : 'none'); }
+  function clearFabricForm() {
+    editF = null; $('f-form').reset(); swatch = { file: null, url: '' }; showSwatch(); $('f-on').checked = true;
+    $('f-order').value = (fabrics || []).length ? Math.max(...fabrics.map(f => f.order ?? 0)) + 10 : 10;
+    $('f-title').innerHTML = '<i class="bi bi-plus-lg" style="color:var(--orange);"></i> Add a fabric';
+    $('f-save').innerHTML = '<i class="bi bi-check-lg"></i> Add fabric'; $('f-cancel').hidden = true;
+  }
+  window.editFabric = id => {
+    const f = fabrics.find(x => x.id === id); if (!f) return;
+    editF = id;
+    $('f-name').value = f.name || ''; $('f-uses').value = (f.uses || []).join(', '); $('f-desc').value = f.description || '';
+    $('f-care').value = f.care || ''; $('f-order').value = f.order ?? 10; $('f-on').checked = f.enabled !== false;
+    swatch = { file: null, url: safeUrl(f.swatchUrl) || '' }; showSwatch();
+    $('f-title').innerHTML = `<i class="bi bi-pencil" style="color:var(--orange);"></i> Edit ${esc(f.name)}`;
+    $('f-save').innerHTML = '<i class="bi bi-check-lg"></i> Save'; $('f-cancel').hidden = false;
+    $('f-name').scrollIntoView({ block: 'center', behavior: 'smooth' }); $('f-name').focus();
+  };
+  $('f-cancel').onclick = clearFabricForm;
+  $('f-sw-file').addEventListener('change', async e => {
+    const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+    const chk = await checkPicture(file, { maxMB: 2, minPx: 0 });
+    if (chk.error) { toast(chk.error, 'warn'); return; }
+    swatch = { file, url: '' }; showSwatch();
+  });
+  $('f-sw-clear').onclick = () => { swatch = { file: null, url: '' }; showSwatch(); };
+  $('f-form').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const name = $('f-name').value.trim().replace(/\s+/g, ' '), description = $('f-desc').value.trim();
+    if (!name || !description) { toast('Give the fabric a name and the text customers read', 'warn'); return; }
+    if ((fabrics || []).some(f => f.id !== editF && String(f.name).toLowerCase() === name.toLowerCase())) { toast(`${name} is already on the list`, 'warn'); return; }
+    $('f-save').disabled = true;
+    try {
+      let swatchUrl = swatch.url || '';
+      if (swatch.file) { toast('Uploading the texture picture…'); swatchUrl = await uploadToCloudinary(swatch.file, { folder: 'kustomoimprenta/fabrics' }); }
+      const data = {
+        name, description, care: $('f-care').value.trim(),
+        uses: $('f-uses').value.split(',').map(x => x.trim()).filter(Boolean).slice(0, 8),
+        swatchUrl, order: parseInt($('f-order').value, 10) || 0, enabled: $('f-on').checked,
+        updatedAt: FV.serverTimestamp(), updatedBy: (auth.currentUser && auth.currentUser.email) || ''
+      };
+      if (editF) await db.collection('fabrics').doc(editF).update(data);
+      else await db.collection('fabrics').add(Object.assign(data, { createdAt: FV.serverTimestamp() }));
+      toast(editF ? 'Fabric saved' : `${name} added`, 'ok'); clearFabricForm();
+    } catch (e) { toast((editF ? 'Not saved: ' : 'Not added: ') + e.message, 'err'); }
+    finally { $('f-save').disabled = false; }
+  });
+  window.removeFabric = async id => {
+    const f = fabrics.find(x => x.id === id); if (!f) return;
+    const nb = (brands || []).filter(b => b.fabricId === id);
+    if (nb.length) { toast(`${f.name} is used by ${nb.map(b => b.name).join(', ')}. Change or remove those brands first.`, 'warn'); return; }
+    if (!confirm(`Remove ${f.name}?`)) return;
+    try { await db.collection('fabrics').doc(id).delete(); toast(`${f.name} removed`, 'ok'); if (editF === id) clearFabricForm(); }
+    catch (e) { toast('Not removed: ' + e.message, 'err'); }
+  };
+  $('f-seed').onclick = async () => {
+    $('f-seed').disabled = true;
+    try {
+      const batch = db.batch();
+      STARTER_FABRICS.forEach(f => batch.set(db.collection('fabrics').doc(), Object.assign({}, f, {
+        swatchUrl: '', enabled: true, createdAt: FV.serverTimestamp(), updatedAt: FV.serverTimestamp(), updatedBy: (auth.currentUser && auth.currentUser.email) || ''
+      })));
+      await batch.commit(); toast('Added Cotton, Polyester, CVC and Silk. Edit them to match your stock.', 'ok');
+    } catch (e) { toast('Not added: ' + e.message, 'err'); }
+    finally { $('f-seed').disabled = false; }
+  };
+  clearBrandForm(); clearFabricForm();
+</script>
+</body>
+</html>

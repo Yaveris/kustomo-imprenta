@@ -130,6 +130,8 @@
     .ed-ft { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--border); }
     .ed-ft .status { flex: 1; font-size: 13.5px; color: var(--muted); min-width: 0; }
     .ed .readonly-note { font-size: 13.5px; color: var(--muted); background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; line-height: 1.5; }
+    .limits-note { display:flex; gap:8px; align-items:flex-start; margin-top:10px; padding:8px 11px; border-radius:9px; border:1px solid rgba(255,178,122,.35); background:rgba(255,92,0,.07); font-size:13px; color:var(--muted); }
+    .limits-note i { color:var(--orange); margin-top:1px; }
   </style>
 </head>
 <body>
@@ -208,7 +210,7 @@
           <h4>Send this to your 3D artist</h4>
           <p class="mo-plain">"Please make a 3D model of our [item] that we can upload to our shop's app. It needs to be:"</p>
           <ul>
-            <li>a <strong>.glb</strong> file (glTF Binary), under <strong>8 MB</strong> and under 60,000 triangles, textures up to 2048 px;</li>
+            <li>a <strong>.glb</strong> file (glTF Binary), <strong>8 MB or less</strong> (10 MB at most) and under 60,000 triangles, textures up to 2048 px;</li>
             <li>real size in <strong>metres</strong>, <strong>Y up</strong>, front facing <strong>+Z</strong>;</li>
             <li>with its origin where it touches the body (the middle of a cap's band, the bridge of glasses, the middle of a strap);</li>
             <li>with the printable surface as its own part named <code>PrintFront</code> (and <code>PrintBack</code> if the back can be printed), about 1 mm off the surface and UV-mapped to fill the whole 0–1 square;</li>
@@ -275,6 +277,12 @@
             <div class="fg"><label for="f-kind">Type</label><select id="f-kind"></select></div>
             <div class="fg"><label for="f-order">Order in the shop</label><input type="number" id="f-order" min="0" step="1"></div>
           </div>
+          <!-- Tops only: the kind of garment, which FitScan and the print sides follow -->
+          <div class="fg-row" id="garment-row" hidden>
+            <div class="fg"><label for="f-garment">Garment type</label><select id="f-garment"></select></div>
+            <div class="fg"><label for="f-room">FitScan room (cm)</label><input type="number" id="f-room" min="0" max="30" step="0.5" placeholder="6"></div>
+          </div>
+          <div class="fg-help" id="garment-help" hidden></div>
           <label class="fg-check"><input type="checkbox" id="f-enabled" checked> Show in the app's “Shop by Style”</label>
         </div>
 
@@ -300,6 +308,7 @@
               <label class="fg-check" style="margin:0;"><input type="checkbox" id="flat-cut" checked> Remove a plain background</label>
             </div>
             <div class="hint" style="font-size:13px;color:var(--muted);margin-top:8px;">Tip: a PNG with a see-through background gives the cleanest edge. For colours customers can change, use a photo of a white or light item.</div>
+            <div class="limits-note"><i class="bi bi-file-earmark-image"></i> <span data-limits="picture"></span></div>
           </div>
 
           <div class="src-pane" id="src-shape" hidden>
@@ -309,6 +318,7 @@
 
           <div class="src-pane" id="src-glb" hidden>
             <p>A .glb file. It's checked here and only uploaded when you press Save.</p>
+            <div class="limits-note"><i class="bi bi-file-earmark-binary"></i> <span data-limits="model"></span></div>
             <div class="drop" id="glb-drop" tabindex="0" role="button" aria-label="Choose a .glb file">
               <i class="bi bi-cloud-arrow-up"></i><span id="glb-drop-text">Drop a .glb here or click to choose</span>
             </div>
@@ -335,6 +345,7 @@
             <button class="btn-ghost" type="button" id="btn-zone-auto" onclick="autoZone()"><i class="bi bi-magic"></i> Find print area</button>
           </div>
           <input type="file" id="art-file" accept="image/png,image/webp,image/jpeg" hidden>
+          <div class="limits-note"><i class="bi bi-file-earmark-image"></i> <span data-limits="picture"></span></div>
           <div class="hint" style="font-size:13px;color:var(--muted);margin-top:8px;" id="art-hint"></div>
           <label id="cm-row" style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13.5px;">Real width of this print area
             <input type="number" id="f-cm" min="1" max="200" step="0.1" placeholder="cm" style="width:90px;padding:6px 8px;border-radius:7px;background:var(--dark);color:var(--text);border:1px solid var(--border);"> cm
@@ -455,7 +466,8 @@
     const card = m => {
       const used = usedBy(m.id).length;
       const chips = [];
-      chips.push(m.builtIn ? '<span class="chip">Built in</span>' : `<span class="chip">${esc(kindLabel(m.kind).split(' (')[0])}</span>`);
+      chips.push(m.builtIn ? '<span class="chip">Built in</span>'
+        : `<span class="chip">${esc(m.kind === 'top' ? garmentType(m.garment).label.split(' (')[0] : kindLabel(m.kind).split(' (')[0])}</span>`);
       if (!m.builtIn) {
         chips.push(m.madeFrom === 'picture' ? '<span class="chip ok">From a picture</span>'
           : m.modelFile && (m.modelFile.printFront) ? '<span class="chip ok">3D print</span>' : '<span class="chip warn">2D print only</span>');
@@ -814,8 +826,9 @@
   }
   async function takeFlatPicture(file) {
     if (!file || !ed) return;
-    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { toast('Choose a PNG, JPG or WEBP picture.', 'warn'); return; }
-    if (file.size > 15 * 1048576) { toast('Pictures can be up to 15 MB.', 'warn'); return; }
+    const chk = await checkPicture(file);
+    if (chk.error) { toast(chk.error, 'warn'); return; }
+    if (chk.warning) toast(chk.warning, 'warn');
     if (flatPicking === 'back' && !(ed.flat && ed.flat.front)) { toast('Add the front picture first.', 'warn'); return; }
     status('Reading the picture…');
     try {
@@ -1071,7 +1084,9 @@
   });
   $('art-file').addEventListener('change', async e => {
     const file = e.target.files[0]; e.target.value = ''; if (!file) return;
-    if (file.size > 8 * 1048576) { toast('Pictures can be up to 8 MB.', 'warn'); return; }
+    const chk = await checkPicture(file);
+    if (chk.error) { toast(chk.error, 'warn'); return; }
+    if (chk.warning) toast(chk.warning, 'warn');
     const url = URL.createObjectURL(file);
     const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; }).catch(() => null);
     if (!img) { toast("That picture couldn't be opened.", 'err'); return; }
@@ -1115,6 +1130,7 @@
       hasBack: !!(m && m.back), tintable: m ? m.tintable : true, previewScale: m ? m.preview.scale : 1,
       ar: m ? Object.assign({}, m.ar) : startFit(wornOn, kind), lensObjectName: m ? m.lensObjectName : '', dirty: false,
       follow: m ? (m.follow || "") : "",
+      garment: m && m.garment ? m.garment : 'tshirt', fitRoomCm: m && typeof m.fitRoomCm === 'number' ? m.fitRoomCm : null,
       // Made from a picture: its pictures are read back only when something changes (loadFlatPictures)
       flat: m && m.madeFrom === 'picture' ? { cm: +m.flatCm || 30, front: null, back: null } : null, flatDirty: false,
       shape: m && m.madeFrom && m.madeFrom.startsWith('shape:') ? m.madeFrom.slice(6) : null
@@ -1126,6 +1142,10 @@
     $('finish-num').textContent = ed.builtIn ? '2' : '5';
     $('f-label').value = ed.label; $('f-blurb').value = ed.blurb; $('f-order').value = ed.order; $('f-enabled').checked = ed.enabled;
     $('f-kind').innerHTML = MODEL_KINDS.map(k => `<option value="${k.id}">${esc(k.label)}</option>`).join(''); $('f-kind').value = ed.kind; $('f-kind').disabled = ed.builtIn;
+    $('f-garment').innerHTML = GARMENT_TYPES.map(g => `<option value="${g.id}">${esc(g.label)}</option>`).join('');
+    $('f-garment').value = garmentType(ed.garment).id;
+    $('f-room').value = ed.fitRoomCm === null ? '' : ed.fitRoomCm;
+    renderGarment();
     $('f-wornon').innerHTML = [...new Set(WORN_ON.map(w => w.group))].map(g => `<optgroup label="${esc(g)}">` +
       WORN_ON.filter(w => w.group === g).map(w => `<option value="${w.id}">${esc(w.label)}</option>`).join('') + '</optgroup>').join('');
     $('f-wornon').value = ed.wornOn === 'body' ? 'chest' : ed.wornOn;
@@ -1169,8 +1189,20 @@
   $('f-blurb').addEventListener('input', e => { ed.blurb = e.target.value; setDirty(); });
   $('f-order').addEventListener('input', e => { ed.order = parseInt(e.target.value, 10) || 0; setDirty(); });
   $('f-enabled').addEventListener('change', e => { ed.enabled = e.target.checked; setDirty(); });
+  /** Garment type and FitScan room: shown for tops added on this page (built-in shirts keep theirs). */
+  function renderGarment() {
+    const show = ed.kind === 'top' && !ed.builtIn, g = garmentType(ed.garment);
+    $('garment-row').hidden = !show; $('garment-help').hidden = !show;
+    $('f-room').placeholder = String(g.room);
+    $('garment-help').textContent = g.help + ` FitScan aims for ${ed.fitRoomCm === null ? g.room : ed.fitRoomCm} cm of room around the chest` + (ed.fitRoomCm === null ? ' (the usual for this type; type another to change it).' : '.');
+  }
+  $('f-garment').addEventListener('change', e => { ed.garment = e.target.value; setDirty(); renderGarment(); });
+  $('f-room').addEventListener('input', e => {
+    const v = e.target.value.trim() === '' ? null : Number(e.target.value);
+    ed.fitRoomCm = v === null || !isFinite(v) ? null : Math.min(30, Math.max(0, v)); setDirty(); renderGarment();
+  });
   $('f-kind').addEventListener('change', e => {
-    ed.kind = e.target.value; setDirty();
+    ed.kind = e.target.value; setDirty(); renderGarment();
     // A sensible place to wear it, unless one was chosen already
     const guess = { headwear: 'head', eyewear: 'head', neckwear: 'neck', top: 'chest', accessory: 'rightHand' }[ed.kind];
     if (guess && ed.isNew && !ed.wornTouched) { ed.wornOn = guess; $('f-wornon').value = guess; ed.follow = ''; renderFollow(); window.resetFit(); }
@@ -1258,7 +1290,8 @@
           builtIn: false, label, blurb: ed.blurb.trim(), kind: ed.kind, wornOn: ed.wornOn, follow: ed.follow || '', enabled: ed.enabled, order: ed.order,
           modelUrl, modelFile: mf, thumbUrl: front ? front.img : '', front, back, tintable: ed.tintable,
           preview: { scale: ed.previewScale }, ar: Object.assign({}, ed.ar), lensObjectName: ed.lensObjectName || '',
-          madeFrom: ed.flat ? 'picture' : ed.shape ? 'shape:' + ed.shape : 'glb', flatCm: ed.flat ? ed.flat.cm : 0
+          madeFrom: ed.flat ? 'picture' : ed.shape ? 'shape:' + ed.shape : 'glb', flatCm: ed.flat ? ed.flat.cm : 0,
+          garment: ed.kind === 'top' ? garmentType(ed.garment).id : '', fitRoomCm: ed.kind === 'top' ? ed.fitRoomCm : null
         }, meta);
         status('Saving…');
         await db.collection('models').doc(id).set(doc);
@@ -1300,6 +1333,12 @@
   window.addEventListener('beforeunload', e => { if (ed && ed.dirty) { e.preventDefault(); e.returnValue = ''; } });
 
   if (window.ADMIN_ROLE) init(); else window.onAuthReady = () => init();
+</script>
+<script>
+  // The upload limits (js/firebase.js UPLOAD_LIMITS), written next to every file picker on this page
+  document.querySelectorAll('[data-limits]').forEach(el => {
+    el.textContent = el.dataset.limits === 'model' ? MODEL_LIMITS_TEXT : PICTURE_LIMITS_TEXT;
+  });
 </script>
 </body>
 </html>
