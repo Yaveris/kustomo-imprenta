@@ -226,6 +226,7 @@
       .cat-edit { grid-template-columns: minmax(0, 1fr); }
     }
     .sh-brands { display:grid; gap:6px; }
+    .shirts-frame { display:block; width:100%; min-height:400px; border:0; background:transparent; }
     .sh-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--border); border-radius:9px; background:rgba(255,255,255,.02); flex-wrap:wrap; }
     .sh-row.off { opacity:.6; }
     .sh-price { font-weight:700; color:var(--orange); white-space:nowrap; }
@@ -258,6 +259,7 @@
     <div class="view-tabs" role="tablist" aria-label="Show">
       <button type="button" role="tab" data-v="list"><i class="bi bi-grid-3x2-gap"></i> Products <span class="cnt" id="n-prod"></span></button>
       <button type="button" role="tab" data-v="stock"><i class="bi bi-boxes"></i> In storage <span class="cnt warn" id="n-alert" hidden></span></button>
+      <button type="button" role="tab" data-v="shirts"><i class="bi bi-layers"></i> Shirts &amp; Fabrics <span class="cnt" id="n-shirts"></span></button>
     </div>
     <div class="filter-bar" id="cat-tabs"></div>
 
@@ -274,6 +276,11 @@
       </div>
       <div class="st-list" id="st-list"></div>
       <div class="card st-mto" id="st-mto" hidden></div>
+    </section>
+
+    <!-- Shirts & Fabrics: the shirt brands, their prices and fabrics (shirts.html, shown here) -->
+    <section id="view-shirts" hidden>
+      <iframe id="shirts-frame" title="Shirts and Fabrics" class="shirts-frame"></iframe>
     </section>
   </div>
 </div>
@@ -460,7 +467,7 @@
 
           <section class="pf-card" aria-labelledby="h-shirts">
             <h4 id="h-shirts">Shirts</h4>
-            <div class="fg-help" style="margin-bottom:10px;">The shirts customers can choose for this product, from the <a href="shirts.html">Shirts &amp; Fabrics</a> page. The chosen brand's price is added to the price above, so the price above is the printing price. Leave all unticked for a product sold without a choice of shirt.</div>
+            <div class="fg-help" style="margin-bottom:10px;">The shirts customers can choose for this product, from the <a href="products.html?view=shirts" target="_blank" rel="noopener">Shirts &amp; Fabrics</a> tab. The chosen brand's price is added to the price above, so the price above is the printing price. Leave all unticked for a product sold without a choice of shirt.</div>
             <div id="sh-brands" class="sh-brands"><span class="note">Loading the brands…</span></div>
             <label class="fg-check" style="margin-top:10px;"><input type="checkbox" id="p-own"> Customers may bring their own shirt <span class="note" id="p-own-fee"></span></label>
           </section>
@@ -489,7 +496,7 @@
       
 
               <div class="fg-help">No photo? The app shows the 3D model's picture instead.</div>
-              <div class="fg-help" id="p-limits"><i class="bi bi-file-earmark-image" style="color:var(--orange);"></i> <script>document.currentScript.parentNode.append(PICTURE_LIMITS_TEXT)</script></div>
+              <div class="fg-help" id="p-limits"><i class="bi bi-file-earmark-image" style="color:var(--orange);"></i> <span id="p-limits-text"></span></div>
 
             </div>
 
@@ -559,8 +566,10 @@
   const params = new URLSearchParams(location.search);
   const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
   let loaded = false, all = [], models = [], shop = SHOP_DEFAULTS, cats = [], catsDenied = false, catsLoaded = false, delId = null;
+  let shirtBrands = null, shirtFabrics = {}, formShirts = { brandIds: [], defaultBrandId: '', allowOwn: false };
+  $('p-limits-text').textContent = PICTURE_LIMITS_TEXT;   // upload limits (js/firebase.js)
   let cat = params.get('cat') || 'all';
-  let view = params.get('view') === 'stock' ? 'stock' : 'list';
+  let view = ['stock', 'shirts'].includes(params.get('view')) ? params.get('view') : 'list';
   let stFilter = ['low', 'out'].includes(params.get('filter')) ? params.get('filter') : 'all';
   const sameName = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
   const modelOf = p => productModel(p, models);
@@ -573,11 +582,13 @@
     if (!u) return;
     models = await loadModels();
     // Shirt brands and fabrics for the product form's Shirts part (Shirts & Fabrics page)
-    Promise.all([db.collection('shirtBrands').get(), db.collection('fabrics').get()]).then(([b, f]) => {
-      shirtFabrics = Object.fromEntries(f.docs.map(d => [d.id, d.data()]));
+    // Live, so a brand added on the Shirts & Fabrics tab shows in the product form straight away
+    const shirtsDenied = e => { $('sh-brands').innerHTML = `<span class="note">Couldn't load the shirt brands${e && e.code === 'permission-denied' ? ': publish the updated database rules (firestore.rules)' : ''}.</span>`; };
+    db.collection('fabrics').onSnapshot(f => { shirtFabrics = Object.fromEntries(f.docs.map(d => [d.id, d.data()])); renderShirtOpts(); }, shirtsDenied);
+    db.collection('shirtBrands').onSnapshot(b => {
       shirtBrands = b.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((x, y) => ((x.order ?? 100) - (y.order ?? 100)) || String(x.name).localeCompare(String(y.name)));
-      renderShirtOpts();
-    }).catch(e => { $('sh-brands').innerHTML = `<span class="note">Couldn't load the shirt brands${e.code === 'permission-denied' ? ': publish the updated database rules (firestore.rules)' : ''}.</span>`; });
+      renderShirtOpts(); $('n-shirts').textContent = shirtBrands.length;
+    }, shirtsDenied);
     $('p-style').insertAdjacentHTML('beforeend', models.map(m => `<option value="${esc(m.id)}">${esc(m.label)}${m.enabled ? '' : ' (hidden)'}</option>`).join(''));
     loadShopSettings().then(s => { shop = s; render(); });
     // Categories, live: the filter tabs, the Category picker and the Categories pop-up all follow them
@@ -614,19 +625,24 @@
     if (a && a.classList && a.classList.contains('scc-n') && !a.closest('#prod-overlay')) { renderWaiting = true; return; }
     renderWaiting = false;
     document.querySelectorAll('.view-tabs button').forEach(b => { b.classList.toggle('on', b.dataset.v === view); b.setAttribute('aria-selected', b.dataset.v === view); });
-    $('view-list').hidden = view !== 'list'; $('view-stock').hidden = view !== 'stock';
+    $('view-list').hidden = view !== 'list'; $('view-stock').hidden = view !== 'stock'; $('view-shirts').hidden = view !== 'shirts';
+    // The category tabs and search are for products; Shirts & Fabrics has its own lists
+    $('cat-tabs').hidden = view === 'shirts'; document.querySelector('.search-wrap').hidden = view === 'shirts';
+    if (view === 'shirts') openShirtsFrame();
     $('n-prod').textContent = loaded ? all.length : '';
     const alerts = stockAlerts(all);
     $('n-alert').hidden = !(alerts.low + alerts.out);
     $('n-alert').textContent = alerts.low + alerts.out;
     $('n-alert').title = `${plural(alerts.low, 'size')} running low, ${alerts.out} out of stock`;
+    $('n-shirts').textContent = shirtBrands ? shirtBrands.length : '';
+    if (view === 'shirts') return;
     renderCatTabs();
     if (view === 'list') renderGrid(); else renderStockView();
   }
   document.addEventListener('focusout', e => { if (e.target.classList && e.target.classList.contains('scc-n')) setTimeout(() => { if (renderWaiting) render(); }, 0); });
   document.querySelectorAll('.view-tabs button').forEach(b => b.addEventListener('click', () => {
     view = b.dataset.v; render();
-    const u = new URL(location.href); if (view === 'stock') u.searchParams.set('view', 'stock'); else u.searchParams.delete('view');
+    const u = new URL(location.href); if (view !== 'list') u.searchParams.set('view', view); else u.searchParams.delete('view');
     u.searchParams.delete('filter');
     history.replaceState(null, '', u);
   }));
@@ -1359,13 +1375,13 @@
   $('quick-start').addEventListener('click', e => { const b = e.target.closest('[data-qs]'); if (b) openAddForStyle(b.dataset.qs); });
 
   // ── Shirts this product offers (products/{id}.shirtOptions: {brandIds, defaultBrandId, allowOwn}) ──
-  let shirtBrands = null, shirtFabrics = {}, formShirts = { brandIds: [], defaultBrandId: '', allowOwn: false };
+  // shirtBrands, shirtFabrics and formShirts are declared with the page's other state (top of this script)
   function renderShirtOpts() {
     const box = $('sh-brands'); if (!box) return;
     if (shop) $('p-own-fee').textContent = Number(shop.ownShirtFee) > 0 ? `(handling fee ${peso(shop.ownShirtFee)} a piece, set on Shop Settings)` : '(no handling fee, set on Shop Settings)';
     $('p-own').checked = !!formShirts.allowOwn;
     if (!shirtBrands) return;
-    if (!shirtBrands.length) { box.innerHTML = '<span class="note">No shirt brands yet. Add them on the <a href="shirts.html">Shirts &amp; Fabrics</a> page.</span>'; return; }
+    if (!shirtBrands.length) { box.innerHTML = '<span class="note">No shirt brands yet. Add them on the <a href="products.html?view=shirts" target="_blank" rel="noopener">Shirts &amp; Fabrics</a> tab.</span>'; return; }
     const on = formShirts.brandIds;
     if (on.length && !on.includes(formShirts.defaultBrandId)) formShirts.defaultBrandId = on[0];
     box.innerHTML = shirtBrands.map(b => {
@@ -1383,6 +1399,19 @@
       renderShirtOpts();
     });
     box.querySelectorAll('[data-d]').forEach(r => r.onchange = () => { formShirts.defaultBrandId = r.dataset.d; });
+  }
+  /** Loads the Shirts & Fabrics tab the first time it is opened, and keeps the frame as tall as its content. */
+  function openShirtsFrame() {
+    const f = $('shirts-frame');
+    if (f.dataset.loaded) return;
+    f.dataset.loaded = '1';
+    f.addEventListener('load', () => {
+      try {
+        const doc = f.contentDocument, fit = () => { f.style.height = Math.max(400, doc.documentElement.scrollHeight) + 'px'; };
+        new ResizeObserver(fit).observe(doc.body); fit();
+      } catch (e) { f.style.height = 'calc(100vh - 170px)'; }
+    });
+    f.src = 'shirts.html';
   }
   function resetForm(title) {
     formShirts = { brandIds: [], defaultBrandId: '', allowOwn: false }; renderShirtOpts();

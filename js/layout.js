@@ -22,7 +22,6 @@
     ]],
     ['Catalog', [
       ['products.html', 'bi-box-seam', 'Products &amp; Stock'],
-      ['shirts.html', 'bi-layers', 'Shirts &amp; Fabrics'],
       ['home-page.html', 'bi-house-heart', 'Home Page'],
       ['design.html', 'bi-palette', 'Design Studio'],
       ['design-library.html', 'bi-collection', 'Design Library'],
@@ -43,8 +42,8 @@
     ], true]
   ];
   // Pages that belong under another page's link (order-detail.html is part of Orders; Categories is a pop-up on
-  // Products now, and categories.html only forwards there)
-  const PARENT = { 'order-detail.html': 'orders.html', 'categories.html': 'products.html' };
+  // Products now, and categories.html only forwards there; Shirts & Fabrics is a tab on Products)
+  const PARENT = { 'order-detail.html': 'orders.html', 'categories.html': 'products.html', 'shirts.html': 'products.html' };
 
   const page = location.pathname.split('/').pop() || 'index.html';
   const here = PARENT[page] || page;

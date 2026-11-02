@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Shirts &amp; Fabrics — KustomoImprenta Admin</title>
+  <script>
+    // This page is the "Shirts & Fabrics" tab of Products & Stock (shown there in a frame). Opened on its own, it
+    // goes to that tab instead.
+    if (window.self === window.top) location.replace('products.html?view=shirts');
+    else document.documentElement.classList.add('embedded');
+  </script>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
@@ -34,6 +40,12 @@
     .money input { border-radius: 0 8px 8px 0 !important; min-width: 0; flex: 1; }
     .sw-row { display: flex; gap: 10px; align-items: center; }
     .sw-prev { width: 64px; height: 44px; border-radius: 8px; border: 1px solid var(--border); background: #1c1c22 center / cover no-repeat; flex-shrink: 0; }
+    /* Inside the Products page: no sidebar or top bar of its own, and no gap around it */
+    html.embedded, html.embedded body { background: transparent; }
+    html.embedded .topbar { display: none; }
+    html.embedded #main { margin: 0 !important; padding: 0 !important; min-height: 0; }
+    html.embedded .page-content { padding: 0 !important; }
+    html.embedded .sf-wrap { max-width: none; }
   </style>
 </head>
 <body>
@@ -52,7 +64,7 @@
   <div class="topbar"><div class="topbar-title">Shirts <span>&amp; Fabrics</span></div></div>
   <div class="page-content">
   <div class="sf-wrap">
-    <p class="sf-intro">The shirts your shop prints on. <b>Fabrics</b> explain each material to customers (how it feels, what it suits, how to care for it). <b>Brands</b> are the shirts you stock, each made of a fabric and with its own price per piece. A product chooses which brands customers can pick on its page (Products → Shirts), and the brand's price is added to the product's printing price at checkout.</p>
+    <p class="sf-intro">The shirts your shop prints on. <b>Fabrics</b> explain each material to customers (how it feels, what it suits, how to care for it). <b>Brands</b> are the shirts you stock, each made of a fabric and with its own price per piece. Each product chooses which brands customers can pick (edit a product → <b>Shirts</b>), and the brand's price is added to the product's printing price at checkout.</p>
     <div class="card sf-ro" id="ro-note"><div class="card-head"><span class="card-title"><i class="bi bi-eye" style="color:var(--orange);"></i> View only</span></div><div style="padding:0 18px 14px;" class="note">Only the shop owner (Super Admin) adds or changes fabrics, brands and prices.</div></div>
 
     <div class="filter-bar" role="tablist" style="margin-bottom:14px;">
@@ -124,6 +136,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+  // Embedded: drop the sidebar before layout.js runs, so it doesn't start a second order ring and badges here
+  if (document.documentElement.classList.contains('embedded')) { const sb = document.getElementById('sidebar'); if (sb) sb.remove(); }
+</script>
 <script src="js/firebase.js"></script>
 <script src="js/layout.js"></script>
 <script src="js/auth.js"></script>
