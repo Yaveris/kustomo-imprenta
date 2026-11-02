@@ -530,7 +530,14 @@ service cloud.firestore {
     // (it uses its service account, which these rules don't limit), so the app can't save an unpaid order.
     match /orders/{orderId} {
       allow read: if (signedIn() &amp;&amp; resource.data.userId == request.auth.uid) || isAdmin();
-      allow create, update, delete: if isAdmin();
+      allow create, delete: if isAdmin();
+      // A customer may only answer the shop's extra work request (approve or decline), once, and change nothing else
+      allow update: if isAdmin()
+                    || (signedIn() &amp;&amp; resource.data.userId == request.auth.uid
+                        &amp;&amp; request.resource.data.diff(resource.data).affectedKeys().hasOnly(['extraWork'])
+                        &amp;&amp; resource.data.extraWork.status == 'pending'
+                        &amp;&amp; request.resource.data.extraWork.status in ['approved', 'declined']
+                        &amp;&amp; request.resource.data.extraWork.diff(resource.data.extraWork).affectedKeys().hasOnly(['status', 'answeredAt']));
     }
 
     // ── Order chats ───────────────────────────────────────────────────────────
@@ -570,6 +577,16 @@ service cloud.firestore {
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+    // Shirts &amp; Fabrics: the shop's shirt brands with their prices, and the fabrics explained to customers.
+    // Readable by anyone (like products); only the owner (Super Admin) changes them.
+    match /fabrics/{id} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+    match /shirtBrands/{id} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
     }
     match /categories/{id} {
       allow read: if signedIn();
@@ -669,6 +686,7 @@ service cloud.firestore {
   let denied = false;        // the Firestore rule isn't in place yet
   let modelsDenied = false;  // the models/ rule isn't in place yet
   let catsDenied = false;    // the categories/ rule isn't in place yet
+  let shirtsDenied = false;  // the shirtBrands/ and fabrics/ rules (panel revisions) aren't in place yet
   let reports = null;        // the app's latest reports (users/*.appStatus, newest first); null when unreadable
   let reportsError = '';
   let cloudCheck = { state: 'unk', msg: 'Checking…' };   // this page's own Cloudinary check
@@ -726,7 +744,8 @@ service cloud.firestore {
     renderStatus();
     renderChecklist();
     await Promise.all([loadReports(), checkCloudinary(), loadModels(true).then(() => { modelsDenied = modelsError() === 'permission-denied'; }),
-      loadCategories(true).then(() => { catsDenied = categoriesError() === 'permission-denied'; })]);
+      loadCategories(true).then(() => { catsDenied = categoriesError() === 'permission-denied'; }),
+      db.collection('shirtBrands').limit(1).get().then(() => { shirtsDenied = false; }, e => { shirtsDenied = !!(e && e.code === 'permission-denied'); })]);
     renderStatus();
     renderChecklist();
   }
@@ -793,6 +812,9 @@ service cloud.firestore {
     row(catsDenied ? 'bad' : 'ok', 'Database access: Categories', 'Firebase console → Firestore → Rules',
       catsDenied ? 'Not added yet, so the Categories page can\'t save and the app keeps the filters it reads off the products.'
                  : 'In place: the app\'s shop filters follow the Categories page.', 'rules');
+    row(shirtsDenied ? 'bad' : 'ok', 'Database access: Shirts, Fabrics & Extra Work', 'Firebase console → Firestore → Rules',
+      shirtsDenied ? 'Old rules: Shirts & Fabrics can\'t load or save, the app can\'t price shirts, and customers can\'t answer extra work fees. Copy the rules below and publish them.'
+                   : 'In place: brands and fabrics load in the app, and customers can approve or decline extra work fees.', 'rules');
 
     // Snap: an AR try-on result only counts if it was seen with the keys in use now
     const snapSaved = SNAP_FIELDS.some(f => current[f]);
@@ -976,7 +998,7 @@ service cloud.firestore {
     const clOwn = !!(current.cloudinaryCloudName && current.cloudinaryUploadPreset);
     setPill('snap-state', denied ? ['bad', 'Not readable yet'] : snapOwn ? ['own', 'Using your account'] : ['', 'Using the app\'s own account']);
     setPill('cl-state', denied ? ['bad', 'Not readable yet'] : clOwn ? ['own', 'Using your account'] : ['', 'Using the app\'s own account']);
-    setPill('rule-state', (denied || modelsDenied || catsDenied) ? ['bad', 'Needed'] : ['own', 'Done']);
+    setPill('rule-state', (denied || modelsDenied || catsDenied || shirtsDenied) ? ['bad', 'Needed'] : ['own', 'Done']);
     setPill('maps-state', denied ? ['bad', 'Not readable yet'] : current.mapsApiKey ? ['own', 'Using this key'] : ['', 'Using built-in key']);
     const anySaved = [...SNAP_FIELDS, ...CL_FIELDS].some(f => current[f]);
     const match = presetMatching(current, [...SNAP_FIELDS, ...CL_FIELDS]);
